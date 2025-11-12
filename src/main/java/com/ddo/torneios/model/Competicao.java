@@ -6,7 +6,7 @@ import lombok.Data;
 
 @Data
 @Entity
-public class Clube {
+public class Competicao {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
@@ -15,10 +15,8 @@ public class Clube {
     @NotBlank
     private String nome;
 
-    @NotBlank
-    private String estadio;
-
     @Column(columnDefinition = "TEXT")
     private String imagem;
+    private String divisao;
 
 }

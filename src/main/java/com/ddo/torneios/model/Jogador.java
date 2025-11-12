@@ -9,6 +9,7 @@ import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Data
+@Entity
 public class Jogador {
 
     @Id
@@ -46,7 +47,10 @@ public class Jogador {
     @Enumerated(EnumType.STRING)
     private Cargo cargo;
 
+    @Column(columnDefinition = "TEXT")
     private String imagem;
+
+    @Column(columnDefinition = "TEXT")
     private String descricao;
     private Integer pin;
 
@@ -68,4 +72,7 @@ public class Jogador {
         this.cargo = Cargo.JOGADOR;
     }
 
+    public Jogador() {
+
+    }
 }
