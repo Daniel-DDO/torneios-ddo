@@ -14,7 +14,7 @@ public class JogadorService {
     private JogadorRepository jogadorRepository;
 
     public void cadastrarJogador(JogadorRequest request) {
-        if (jogadorRepository.findByDiscord(request.getDiscord())) {
+        if (jogadorRepository.existsJogadorByDiscord(request.getDiscord())) {
             throw new JogadorExisteException(request.getDiscord());
         }
 

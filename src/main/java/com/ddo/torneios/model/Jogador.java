@@ -57,7 +57,6 @@ public class Jogador {
     private LocalDateTime suspensoAte;
 
     public Jogador(String nome, String discord) {
-        this.id = UUID.randomUUID().toString();
         this.nome = nome;
         this.discord = discord;
         this.finais = 0;
