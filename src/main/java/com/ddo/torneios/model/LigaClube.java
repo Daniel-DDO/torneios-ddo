@@ -10,8 +10,8 @@ public enum LigaClube {
     ARGENTINA("Liga Argentina - ARG"),
     MLS("Major League Soccer - EUA"),
     SAUDI_PRO_LEAGUE("Saudi Pro League - ARA"),
+    SELECAO("Seleção"),
     OUTROS("Outros");
-
 
     private final String liga;
 
