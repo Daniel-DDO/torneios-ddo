@@ -21,4 +21,6 @@ public class Clube {
     @Column(columnDefinition = "TEXT")
     private String imagem;
 
+    @Enumerated(EnumType.STRING)
+    private LigaClube ligaClube;
 }

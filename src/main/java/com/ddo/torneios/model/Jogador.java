@@ -38,7 +38,7 @@ public class Jogador {
 
     @NotNull
     @Enumerated(EnumType.STRING)
-    private Status status;
+    private StatusJogador statusJogador;
 
     @NotNull
     private boolean contaReivindicada;
@@ -67,7 +67,7 @@ public class Jogador {
         this.partidasJogadas = 0;
         this.criacaoConta = LocalDateTime.now();
         this.modificacaoConta = LocalDateTime.now();
-        this.status = Status.ATIVO;
+        this.statusJogador = StatusJogador.ATIVO;
         this.contaReivindicada = false;
         this.cargo = Cargo.JOGADOR;
     }

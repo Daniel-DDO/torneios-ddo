@@ -1,5 +1,5 @@
 package com.ddo.torneios.model;
 
-public enum Status {
+public enum StatusJogador {
     ATIVO, INATIVO, BLOQUEADO, SUSPENSO, APOSENTADO
 }
