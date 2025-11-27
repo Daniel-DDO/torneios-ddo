@@ -2,9 +2,13 @@ package com.ddo.torneios.model;
 
 import jakarta.persistence.*;
 import lombok.Data;
+import java.math.BigDecimal;
 
 @Data
 @Entity
+@Table(uniqueConstraints = {
+        @UniqueConstraint(columnNames = {"jogador_id", "torneio_id"})
+})
 public class JogadorClube {
 
     @Id
@@ -20,6 +24,19 @@ public class JogadorClube {
     private Clube clube;
 
     @ManyToOne
-    @JoinColumn(name = "torneio_id")
-    private Torneio torneio;
+    @JoinColumn(name = "temporada_id")
+    private Temporada temporada;
+
+    private BigDecimal balancoFinanceiro;
+
+    private Long cartoesAmarelos;
+    private Long cartoesVermelhos;
+
+    @Enumerated(EnumType.STRING)
+    private StatusClassificacao statusClassificacao;
+
+    private Integer totalGolsMarcados;
+    private Integer totalGolsSofridos;
+
+    private BigDecimal pontosCoeficiente;
 }
