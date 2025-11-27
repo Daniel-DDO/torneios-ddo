@@ -39,6 +39,8 @@ public class Partida {
     @ColumnDefault("false")
     private boolean houveProrrogacao;
 
+    private String estadio;
+
     @Embedded
     @AttributeOverrides({
             @AttributeOverride(name = "golsMandante", column = @Column(name = "penaltis_mandante", nullable = true)),
