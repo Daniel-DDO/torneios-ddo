@@ -1,6 +1,58 @@
 package com.ddo.torneios.dto;
 
-public record JogadorDTO(
+import com.ddo.torneios.model.Cargo;
+import com.ddo.torneios.model.Insignia;
+import com.ddo.torneios.model.Jogador;
+import com.ddo.torneios.model.StatusJogador;
 
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.util.Set;
+
+public record JogadorDTO(
+        String id,
+        String nome,
+        String discord,
+        Integer finais,
+        Integer titulos,
+        Integer golsMarcados,
+        Integer golsSofridos,
+        Integer partidasJogadas,
+        LocalDateTime criacaoConta,
+        LocalDateTime modificacaoConta,
+        StatusJogador statusJogador,
+        boolean contaReivindicada,
+        Cargo cargo,
+        String imagem,
+        String descricao,
+        LocalDateTime suspensoAte,
+        Long cartoesAmarelos,
+        Long cartoesVermelhos,
+        BigDecimal saldoVirtual,
+        Set<Insignia> insignias
 ) {
+    public JogadorDTO(Jogador jogador) {
+        this(
+                jogador.getId(),
+                jogador.getNome(),
+                jogador.getDiscord(),
+                jogador.getFinais(),
+                jogador.getTitulos(),
+                jogador.getGolsMarcados(),
+                jogador.getGolsSofridos(),
+                jogador.getPartidasJogadas(),
+                jogador.getCriacaoConta(),
+                jogador.getModificacaoConta(),
+                jogador.getStatusJogador(),
+                jogador.isContaReivindicada(),
+                jogador.getCargo(),
+                jogador.getImagem(),
+                jogador.getDescricao(),
+                jogador.getSuspensoAte(),
+                jogador.getCartoesAmarelos(),
+                jogador.getCartoesVermelhos(),
+                jogador.getSaldoVirtual(),
+                jogador.getInsignias()
+        );
+    }
 }
