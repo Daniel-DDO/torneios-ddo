@@ -1,10 +1,8 @@
 package com.ddo.torneios.service;
 
-import com.ddo.torneios.dto.JogadorDTO;
 import com.ddo.torneios.dto.PaginacaoDTO;
 import com.ddo.torneios.exception.ClubeExisteException;
 import com.ddo.torneios.model.Clube;
-import com.ddo.torneios.model.Jogador;
 import com.ddo.torneios.repository.ClubeRepository;
 import com.ddo.torneios.request.ClubeRequest;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -14,8 +12,6 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
-
-import java.util.Optional;
 
 @Service
 public class ClubeService {
