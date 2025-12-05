@@ -21,4 +21,6 @@ public class Competicao {
 
     private Integer valor; //valor da competição (peso) de 0 a 100.
 
+    @Column(columnDefinition = "TEXT")
+    private String descricao;
 }
