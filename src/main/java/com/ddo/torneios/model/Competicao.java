@@ -19,4 +19,6 @@ public class Competicao {
     private String imagem;
     private String divisao;
 
+    private Integer valor; //valor da competição (peso) de 0 a 100.
+
 }
