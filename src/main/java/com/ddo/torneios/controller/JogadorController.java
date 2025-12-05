@@ -34,4 +34,9 @@ public class JogadorController {
         PaginacaoDTO<JogadorDTO> pagina = jogadorService.listarJogadores(nomeFiltro, page, size, sortBy, direction);
         return ResponseEntity.ok(pagina);
     }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<JogadorDTO> retornarJogador(@PathVariable String id) {
+        return jogadorService.retornarJogador(id);
+    }
 }

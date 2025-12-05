@@ -16,6 +16,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 public class JogadorService {
@@ -65,4 +66,9 @@ public class JogadorService {
         );
     }
 
+    public ResponseEntity<JogadorDTO> retornarJogador(String id) {
+        return jogadorRepository.findById(id)
+                .map(jogador -> ResponseEntity.ok(new JogadorDTO(jogador)))
+                .orElse(ResponseEntity.notFound().build());
+    }
 }
