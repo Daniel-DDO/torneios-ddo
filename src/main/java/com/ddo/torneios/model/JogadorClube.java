@@ -2,6 +2,8 @@ package com.ddo.torneios.model;
 
 import jakarta.persistence.*;
 import lombok.Data;
+import org.hibernate.annotations.ColumnDefault;
+
 import java.math.BigDecimal;
 
 @Data
@@ -38,5 +40,6 @@ public class JogadorClube {
     private Integer totalGolsMarcados;
     private Integer totalGolsSofridos;
 
+    @ColumnDefault("0.00")
     private BigDecimal pontosCoeficiente;
 }

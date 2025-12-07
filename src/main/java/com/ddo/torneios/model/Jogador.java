@@ -72,6 +72,9 @@ public class Jogador {
     )
     private Set<Insignia> insignias;
 
+    @ColumnDefault("0.00")
+    private BigDecimal pontosCoeficiente;
+
     public Jogador(String nome, String discord) {
         this.nome = nome;
         this.discord = discord;

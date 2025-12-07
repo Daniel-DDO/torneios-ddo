@@ -20,8 +20,9 @@ public class ClubeService {
     private ClubeRepository clubeRepository;
 
     public void cadastrarClube(ClubeRequest request) {
-        if (clubeRepository.existsBySigla(request.getSigla())) {
-            throw new ClubeExisteException(request.getSigla());
+        if (clubeRepository.existsBySigla(request.getSigla()) &&
+        clubeRepository.existsByNome(request.getNome())) {
+            throw new ClubeExisteException(request.getSigla()+" - "+request.getNome());
         }
 
         Clube clube = new Clube(request.getNome(), request.getEstadio(), request.getImagem(),

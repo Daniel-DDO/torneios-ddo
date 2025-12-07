@@ -9,5 +9,7 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface ClubeRepository extends JpaRepository<Clube, String> {
     boolean existsBySigla(String sigla);
+    boolean existsByNome(String nome);
+
     Page<Clube> findByNomeContainingIgnoreCase(String nome, Pageable pageable);
 }
