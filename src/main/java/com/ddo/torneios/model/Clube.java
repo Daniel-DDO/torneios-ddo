@@ -49,6 +49,9 @@ public class Clube {
 
     private BigDecimal estrelas;
 
+    @Column(nullable = false, columnDefinition = "integer default 0")
+    private Integer titulos = 0;
+
     public Clube(String nome, String estadio, String imagem, LigaClube ligaClube, String sigla, String corPrimaria, String corSecundaria, BigDecimal estrelas) {
         this.nome = nome;
         this.estadio = estadio;

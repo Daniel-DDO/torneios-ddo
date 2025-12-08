@@ -9,6 +9,7 @@ import org.hibernate.annotations.ColumnDefault;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.Set;
+import java.util.concurrent.ThreadLocalRandom;
 
 @Data
 @Entity
@@ -72,6 +73,13 @@ public class Jogador {
     )
     private Set<Insignia> insignias;
 
+    @ColumnDefault("0.00")
+    private BigDecimal pontosCoeficiente;
+
+    private String codigoReivindicacao;
+
+    private LocalDateTime validadeCodigoReivindicacao;
+
     public Jogador(String nome, String discord) {
         this.nome = nome;
         this.discord = discord;
@@ -87,9 +95,17 @@ public class Jogador {
         this.cargo = Cargo.JOGADOR;
         this.cartoesAmarelos = 0L;
         this.cartoesVermelhos = 0L;
+        this.pin = ThreadLocalRandom.current().nextInt(10000, 1000000);
     }
 
     public Jogador() {
 
+    }
+
+    @PrePersist
+    public void prePersist() {
+        if (this.pin == null) {
+            this.pin = ThreadLocalRandom.current().nextInt(10000, 1000000);
+        }
     }
 }

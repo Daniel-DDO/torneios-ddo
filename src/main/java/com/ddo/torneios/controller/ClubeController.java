@@ -34,4 +34,9 @@ public class ClubeController {
         PaginacaoDTO<Clube> pagina = clubeService.listarClubes(nomeFiltro, page, size, sortBy, direction);
         return ResponseEntity.ok(pagina);
     }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<Clube> retornarClube(@PathVariable String id) {
+        return clubeService.retornarClube(id);
+    }
 }

@@ -29,6 +29,7 @@ public class ParticipacaoTorneio {
     private Integer golsPro = 0;
     private Integer golsContra = 0;
     private Integer saldoGols = 0;
+    private Double aproveitamento = 0.00;
 
     @Enumerated(EnumType.STRING)
     private StatusClassificacao statusClassificacao;

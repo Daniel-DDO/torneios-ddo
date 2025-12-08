@@ -1,6 +1,5 @@
 package com.ddo.torneios.repository;
 
-import com.ddo.torneios.dto.JogadorDTO;
 import com.ddo.torneios.model.Jogador;
 import jakarta.validation.constraints.NotBlank;
 import org.springframework.data.domain.Page;
@@ -14,6 +13,7 @@ import java.util.Optional;
 public interface JogadorRepository extends JpaRepository<Jogador, String> {
     boolean existsJogadorByDiscord(@NotBlank String discord);
     Optional<Jogador> findByDiscord(@NotBlank String discord);
+    Optional<Jogador> findByEmail(@NotBlank String email);
 
     Page<Jogador> findByNomeContainingIgnoreCase(String nome, Pageable pageable);
 }

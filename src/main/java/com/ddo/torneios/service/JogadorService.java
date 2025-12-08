@@ -1,27 +1,41 @@
 package com.ddo.torneios.service;
 
 import com.ddo.torneios.dto.JogadorDTO;
+import com.ddo.torneios.dto.LoginResponseDTO;
 import com.ddo.torneios.dto.PaginacaoDTO;
 import com.ddo.torneios.exception.JogadorExisteException;
+import com.ddo.torneios.exception.RegraNegocioException;
+import com.ddo.torneios.model.Cargo;
 import com.ddo.torneios.model.Jogador;
 import com.ddo.torneios.repository.JogadorRepository;
-import com.ddo.torneios.request.JogadorRequest;
+import com.ddo.torneios.request.*;
+import jakarta.validation.constraints.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
-import java.util.ArrayList;
+import java.time.LocalDateTime;
 import java.util.List;
+import java.util.UUID;
+import java.util.concurrent.ThreadLocalRandom;
 
 @Service
 public class JogadorService {
 
     @Autowired
     private JogadorRepository jogadorRepository;
+
+    @Autowired
+    private PasswordEncoder passwordEncoder;
+
+    @Autowired
+    private TokenService tokenService;
 
     public void cadastrarJogador(JogadorRequest request) {
         if (jogadorRepository.existsJogadorByDiscord(request.getDiscord())) {
@@ -65,4 +79,157 @@ public class JogadorService {
         );
     }
 
+    public ResponseEntity<JogadorDTO> retornarJogador(String id) {
+        return jogadorRepository.findById(id)
+                .map(jogador -> ResponseEntity.ok(new JogadorDTO(jogador)))
+                .orElse(ResponseEntity.notFound().build());
+    }
+
+    @Transactional
+    public String gerarCodigoReivindicacao(GerarCodigoRequest request) {
+        Jogador admin = jogadorRepository.findById(request.getAdminId())
+                .orElseThrow(() -> new RegraNegocioException("Admin não encontrado"));
+
+        if (!isAdministrador(admin.getCargo())) {
+            throw new RegraNegocioException("Sem permissão para gerar credenciais.");
+        }
+
+        Jogador alvo = jogadorRepository.findById(request.getJogadorId())
+                .orElseThrow(() -> new RegraNegocioException("Jogador alvo não encontrado"));
+
+        if (alvo.isContaReivindicada()) {
+            throw new RegraNegocioException("Esta conta já foi reivindicada.");
+        }
+
+        String codigo = UUID.randomUUID().toString().substring(0, 6).toUpperCase();
+
+        alvo.setCodigoReivindicacao(codigo);
+        alvo.setValidadeCodigoReivindicacao(LocalDateTime.now().plusHours(1));
+
+        jogadorRepository.save(alvo);
+        return codigo;
+    }
+
+    @Transactional
+    public void reivindicarConta(ReivindicarContaRequest request) {
+        Jogador jogador = jogadorRepository.findByDiscord(request.getDiscord())
+                .orElseThrow(() -> new RegraNegocioException("Jogador não encontrado"));
+
+        if (jogador.isContaReivindicada()) {
+            throw new RegraNegocioException("Conta já reivindicada. Faça login.");
+        }
+
+        if (jogador.getCodigoReivindicacao() == null ||
+                !jogador.getCodigoReivindicacao().equals(request.getCodigo())) {
+            throw new RegraNegocioException("Código inválido ou incorreto.");
+        }
+
+        if (LocalDateTime.now().isAfter(jogador.getValidadeCodigoReivindicacao())) {
+            throw new RegraNegocioException("O código expirou. Solicite um novo ao Admin.");
+        }
+
+        jogador.setEmail(request.getNovoEmail());
+        jogador.setSenha(passwordEncoder.encode(request.getNovaSenha()));
+        jogador.setContaReivindicada(true);
+
+        jogador.setCodigoReivindicacao(null);
+        jogador.setValidadeCodigoReivindicacao(null);
+
+        jogadorRepository.save(jogador);
+    }
+
+    public LoginResponseDTO logarJogador(LoginRequest login) {
+        Jogador jogador = jogadorRepository.findByDiscord(login.getLogin())
+                .orElse(jogadorRepository.findByEmail(login.getLogin())
+                        .orElseThrow(() -> new RegraNegocioException("Usuário não encontrado")));
+
+        if (!jogador.isContaReivindicada()) {
+            throw new RegraNegocioException("Conta não reivindicada. Solicite o código ao Admin.");
+        }
+
+        if (!passwordEncoder.matches(login.getSenha(), jogador.getSenha())) {
+            throw new RegraNegocioException("Senha incorreta.");
+        }
+
+        String token = tokenService.gerarToken(jogador);
+        return new LoginResponseDTO(token, new JogadorDTO(jogador));
+    }
+
+    public Integer consultarPinJogador(String idAdmin, String idJogadorAlvo) {
+        Jogador admin = jogadorRepository.findById(idAdmin)
+                .orElseThrow(() -> new RegraNegocioException("Admin não encontrado"));
+
+        if (!isAdministrador(admin.getCargo())) {
+            throw new RegraNegocioException("Você não tem permissão para ver PINs de jogadores.");
+        }
+
+        Jogador alvo = jogadorRepository.findById(idJogadorAlvo)
+                .orElseThrow(() -> new RegraNegocioException("Jogador alvo não encontrado"));
+
+        return alvo.getPin();
+    }
+
+    @Transactional
+    public void recuperarSenhaComPin(RecuperarSenhaRequest request) {
+        Jogador jogador = jogadorRepository.findByDiscord(request.getDiscord())
+                .orElseThrow(() -> new RegraNegocioException("Usuário não encontrado."));
+
+        if (!jogador.isContaReivindicada()) {
+            throw new RegraNegocioException("A conta não foi reivindicada ainda para tentar recuperar a senha.");
+        }
+
+        if (jogador.getPin() == null || !jogador.getPin().equals(request.getPin())) {
+            throw new RegraNegocioException("PIN incorreto. Solicite o número correto ao Administrador.");
+        }
+
+        jogador.setSenha(passwordEncoder.encode(request.getNovaSenha()));
+        jogador.setPin(ThreadLocalRandom.current().nextInt(10000, 1000000));
+
+        jogadorRepository.save(jogador);
+    }
+
+    private boolean isAdministrador(@NotNull Cargo cargo) {
+        return cargo == Cargo.ADMINISTRADOR ||
+                cargo == Cargo.DIRETOR ||
+                cargo == Cargo.PROPRIETARIO;
+    }
+
+    @Transactional
+    public String gerarPinsParaJogadoresLegados() {
+        List<Jogador> jogadores = jogadorRepository.findAll();
+        int count = 0;
+
+        for (Jogador jogador : jogadores) {
+            if (jogador.getPin() == null) {
+                jogador.setPin(ThreadLocalRandom.current().nextInt(100000, 1000000));
+                count++;
+            }
+        }
+
+        jogadorRepository.saveAll(jogadores);
+        return count + " jogadores tiveram seus PINs gerados com sucesso.";
+    }
+
+    @Transactional
+    public void reivindicarContaDiretamente(ReivindicarDiretoRequest request) {
+        Jogador jogador = jogadorRepository.findByDiscord(request.getDiscord())
+                .orElseThrow(() -> new RegraNegocioException("Jogador não encontrado para o discord: " + request.getDiscord()));
+
+        jogador.setEmail(request.getNovoEmail());
+        jogador.setSenha(passwordEncoder.encode(request.getNovaSenha()));
+        jogador.setContaReivindicada(true);
+
+        if (jogador.getPin() == null) {
+            jogador.setPin(ThreadLocalRandom.current().nextInt(100000, 1000000));
+        }
+
+        jogador.setCodigoReivindicacao(null);
+        jogador.setValidadeCodigoReivindicacao(null);
+
+        if (request.getCargo() != null) {
+            jogador.setCargo(request.getCargo());
+        }
+
+        jogadorRepository.save(jogador);
+    }
 }

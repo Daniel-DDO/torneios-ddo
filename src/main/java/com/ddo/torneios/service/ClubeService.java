@@ -1,10 +1,8 @@
 package com.ddo.torneios.service;
 
-import com.ddo.torneios.dto.JogadorDTO;
 import com.ddo.torneios.dto.PaginacaoDTO;
 import com.ddo.torneios.exception.ClubeExisteException;
 import com.ddo.torneios.model.Clube;
-import com.ddo.torneios.model.Jogador;
 import com.ddo.torneios.repository.ClubeRepository;
 import com.ddo.torneios.request.ClubeRequest;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -12,6 +10,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -21,8 +20,9 @@ public class ClubeService {
     private ClubeRepository clubeRepository;
 
     public void cadastrarClube(ClubeRequest request) {
-        if (clubeRepository.existsBySigla(request.getSigla())) {
-            throw new ClubeExisteException(request.getSigla());
+        if (clubeRepository.existsBySigla(request.getSigla()) &&
+        clubeRepository.existsByNome(request.getNome())) {
+            throw new ClubeExisteException(request.getSigla()+" - "+request.getNome());
         }
 
         Clube clube = new Clube(request.getNome(), request.getEstadio(), request.getImagem(),
@@ -61,4 +61,11 @@ public class ClubeService {
                 paginaEntidades.isLast()
         );
     }
+
+    public ResponseEntity<Clube> retornarClube(String id) {
+        return clubeRepository.findById(id)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
+    }
+
 }

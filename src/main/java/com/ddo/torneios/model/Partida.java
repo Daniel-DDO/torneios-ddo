@@ -2,6 +2,8 @@ package com.ddo.torneios.model;
 
 import jakarta.persistence.*;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.ToString;
 import org.hibernate.annotations.ColumnDefault;
 
 @Data
@@ -28,9 +30,6 @@ public class Partida {
 
     private Integer numeroRodada;
 
-    @Enumerated(EnumType.STRING)
-    private FaseTorneio faseTorneio;
-
     @Column(columnDefinition = "TEXT")
     private String logEventos;
 
@@ -40,6 +39,12 @@ public class Partida {
     private boolean houveProrrogacao;
 
     private String estadio;
+
+    @ToString.Exclude
+    @EqualsAndHashCode.Exclude
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "torneio_id")
+    private Torneio torneio;
 
     @Embedded
     @AttributeOverrides({
