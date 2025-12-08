@@ -3,7 +3,6 @@ package com.ddo.torneios.model;
 public enum TipoTorneio {
     GRUPOS,
     PONTOS_CORRIDOS,
-    MATA_MATA_UNICO,
-    MATA_MATA_IDA_VOLTA,
+    MATA_MATA,
     JOGO_UNICO
 }

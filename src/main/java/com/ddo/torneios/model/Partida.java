@@ -30,9 +30,6 @@ public class Partida {
 
     private Integer numeroRodada;
 
-    @Enumerated(EnumType.STRING)
-    private FaseTorneio faseTorneio;
-
     @Column(columnDefinition = "TEXT")
     private String logEventos;
 
