@@ -22,6 +22,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 
@@ -139,9 +140,17 @@ public class JogadorService {
     }
 
     public LoginResponseDTO logarJogador(LoginRequest login) {
-        Jogador jogador = jogadorRepository.findByDiscord(login.getLogin())
-                .orElse(jogadorRepository.findByEmail(login.getLogin())
-                        .orElseThrow(() -> new RegraNegocioException("Usuário não encontrado")));
+        String identificador = login.getLogin().trim();
+
+        Optional<Jogador> jogadorOpt = jogadorRepository.findByDiscord(identificador);
+
+        if (jogadorOpt.isEmpty()) {
+            jogadorOpt = jogadorRepository.findByEmail(identificador);
+        }
+
+        Jogador jogador = jogadorOpt.orElseThrow(() ->
+                new RegraNegocioException("Usuário não encontrado")
+        );
 
         if (!jogador.isContaReivindicada()) {
             throw new RegraNegocioException("Conta não reivindicada. Solicite o código ao Admin.");
