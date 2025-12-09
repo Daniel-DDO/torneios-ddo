@@ -11,8 +11,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.HashMap;
 import java.util.List;
@@ -124,5 +128,26 @@ public class JogadorController {
         PageRequest pageRequest = PageRequest.of(page, size, Sort.by("nome").ascending());
         Page<Jogador> jogadores = jogadorService.listarTodosPaginado(pageRequest);
         return ResponseEntity.ok(jogadores);
+    }
+
+    @PatchMapping("/perfil")
+    public ResponseEntity<Jogador> editarPerfil(@RequestBody JogadorEditarRequest request) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+
+        String idJogadorLogado = authentication.getName();
+        Jogador jogadorAtualizado = jogadorService.editarPerfilLogado(idJogadorLogado, request);
+
+        return ResponseEntity.ok(jogadorAtualizado);
+    }
+
+    @PatchMapping(value = "/foto", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<Jogador> atualizarFotoPerfil(@RequestParam("file") MultipartFile file) {
+
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String idJogador = authentication.getName();
+
+        Jogador jogadorAtualizado = jogadorService.atualizarFotoPerfil(idJogador, file);
+
+        return ResponseEntity.ok(jogadorAtualizado);
     }
 }

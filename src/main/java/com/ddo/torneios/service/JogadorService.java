@@ -10,6 +10,7 @@ import com.ddo.torneios.model.Cargo;
 import com.ddo.torneios.model.Jogador;
 import com.ddo.torneios.repository.JogadorRepository;
 import com.ddo.torneios.request.*;
+import jakarta.persistence.EntityNotFoundException;
 import jakarta.validation.constraints.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -20,7 +21,10 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -38,6 +42,9 @@ public class JogadorService {
 
     @Autowired
     private TokenService tokenService;
+
+    @Autowired
+    private ImgBBService imgBBService;
 
     public void cadastrarJogador(JogadorRequest request) {
         if (jogadorRepository.existsJogadorByDiscord(request.getDiscord())) {
@@ -256,5 +263,49 @@ public class JogadorService {
 
     public Page<Jogador> listarTodosPaginado(Pageable pageable) {
         return jogadorRepository.findAll(pageable);
+    }
+
+    @Transactional
+    public Jogador editarPerfilLogado(String idString, JogadorEditarRequest request) {
+
+        Jogador jogador = jogadorRepository.findById(idString)
+                .orElseThrow(() -> new EntityNotFoundException("Jogador não encontrado com ID: " + idString));
+
+        if (StringUtils.hasText(request.getNome())) {
+            jogador.setNome(request.getNome());
+        }
+
+        if (StringUtils.hasText(request.getImagem())) {
+            jogador.setImagem(request.getImagem());
+        }
+
+        if (StringUtils.hasText(request.getDescricao())) {
+            jogador.setDescricao(request.getDescricao());
+        }
+
+        jogador.setModificacaoConta(LocalDateTime.now());
+        return jogadorRepository.save(jogador);
+    }
+
+    @Transactional
+    public Jogador atualizarFotoPerfil(String idJogador, MultipartFile arquivo) {
+        if (arquivo.isEmpty()) {
+            throw new RuntimeException("Arquivo de imagem vazio.");
+        }
+
+        try {
+            String urlImagem = imgBBService.uploadImagem(arquivo);
+
+            Jogador jogador = jogadorRepository.findById(idJogador)
+                    .orElseThrow(() -> new EntityNotFoundException("Jogador não encontrado"));
+
+            jogador.setImagem(urlImagem);
+            jogador.setModificacaoConta(LocalDateTime.now());
+
+            return jogadorRepository.save(jogador);
+
+        } catch (IOException e) {
+            throw new RuntimeException("Erro ao processar arquivo", e);
+        }
     }
 }
