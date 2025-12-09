@@ -253,4 +253,8 @@ public class JogadorService {
     public List<Jogador> findByDiscordContainingIgnoreCase(String termo) {
         return jogadorRepository.findByDiscordContainingIgnoreCase(termo);
     }
+
+    public Page<Jogador> listarTodosPaginado(Pageable pageable) {
+        return jogadorRepository.findAll(pageable);
+    }
 }
