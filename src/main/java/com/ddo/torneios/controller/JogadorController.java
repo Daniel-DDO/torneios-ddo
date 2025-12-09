@@ -11,6 +11,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+
 @RestController
 @RequestMapping("/jogador")
 public class JogadorController {
@@ -83,5 +88,28 @@ public class JogadorController {
     public ResponseEntity<Void> reivindicarDireto(@RequestBody ReivindicarDiretoRequest request) {
         jogadorService.reivindicarContaDiretamente(request);
         return ResponseEntity.ok().build();
+    }
+
+    @GetMapping("/buscar-autocomplete")
+    public ResponseEntity<List<Map<String, String>>> buscarJogadoresAutocomplete(@RequestParam String termo) {
+        if (termo == null || termo.length() < 3) {
+            return ResponseEntity.badRequest().build();
+        }
+
+        List<Jogador> jogadores = jogadorService.findByDiscordContainingIgnoreCase(termo);
+
+        List<Map<String, String>> resultado = jogadores.stream()
+                .limit(5)
+                .map(j -> {
+                    Map<String, String> map = new HashMap<>();
+                    map.put("id", String.valueOf(j.getId()));
+                    map.put("discord", j.getDiscord());
+                    map.put("nome", j.getNome());
+                    map.put("imagem", j.getImagem());
+                    return map;
+                })
+                .collect(Collectors.toList());
+
+        return ResponseEntity.ok(resultado);
     }
 }

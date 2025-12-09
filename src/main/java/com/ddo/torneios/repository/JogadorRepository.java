@@ -7,6 +7,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
 import java.util.Optional;
 
 @Repository
@@ -15,6 +16,7 @@ public interface JogadorRepository extends JpaRepository<Jogador, String> {
     boolean existsJogadorByEmail(@NotBlank String novoEmail);
     Optional<Jogador> findByDiscord(@NotBlank String discord);
     Optional<Jogador> findByEmail(@NotBlank String email);
+    List<Jogador> findByDiscordContainingIgnoreCase(String discord);
 
     Page<Jogador> findByNomeContainingIgnoreCase(String nome, Pageable pageable);
 }

@@ -249,4 +249,8 @@ public class JogadorService {
 
         jogadorRepository.save(jogador);
     }
+
+    public List<Jogador> findByDiscordContainingIgnoreCase(String termo) {
+        return jogadorRepository.findByDiscordContainingIgnoreCase(termo);
+    }
 }
