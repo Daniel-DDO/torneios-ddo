@@ -3,6 +3,7 @@ package com.ddo.torneios.service;
 import com.ddo.torneios.dto.JogadorDTO;
 import com.ddo.torneios.dto.LoginResponseDTO;
 import com.ddo.torneios.dto.PaginacaoDTO;
+import com.ddo.torneios.exception.EmailJaCadastradoException;
 import com.ddo.torneios.exception.JogadorExisteException;
 import com.ddo.torneios.exception.RegraNegocioException;
 import com.ddo.torneios.model.Cargo;
@@ -129,7 +130,14 @@ public class JogadorService {
             throw new RegraNegocioException("O código expirou. Solicite um novo ao Admin.");
         }
 
-        jogador.setEmail(request.getNovoEmail());
+        String novoEmail = request.getNovoEmail();
+
+        if (!novoEmail.isBlank()) {
+            if (jogadorRepository.existsJogadorByEmail(novoEmail)) {
+                throw new EmailJaCadastradoException(novoEmail);
+            }
+            jogador.setEmail(novoEmail);
+        }
         jogador.setSenha(passwordEncoder.encode(request.getNovaSenha()));
         jogador.setContaReivindicada(true);
 

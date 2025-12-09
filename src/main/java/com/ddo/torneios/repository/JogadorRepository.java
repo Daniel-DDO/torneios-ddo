@@ -12,6 +12,7 @@ import java.util.Optional;
 @Repository
 public interface JogadorRepository extends JpaRepository<Jogador, String> {
     boolean existsJogadorByDiscord(@NotBlank String discord);
+    boolean existsJogadorByEmail(@NotBlank String novoEmail);
     Optional<Jogador> findByDiscord(@NotBlank String discord);
     Optional<Jogador> findByEmail(@NotBlank String email);
 
