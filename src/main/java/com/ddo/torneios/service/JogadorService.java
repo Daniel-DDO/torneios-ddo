@@ -6,6 +6,7 @@ import com.ddo.torneios.dto.PaginacaoDTO;
 import com.ddo.torneios.exception.EmailJaCadastradoException;
 import com.ddo.torneios.exception.JogadorExisteException;
 import com.ddo.torneios.exception.RegraNegocioException;
+import com.ddo.torneios.model.Avatar;
 import com.ddo.torneios.model.Cargo;
 import com.ddo.torneios.model.Jogador;
 import com.ddo.torneios.repository.JogadorRepository;
@@ -45,6 +46,9 @@ public class JogadorService {
 
     @Autowired
     private ImgBBService imgBBService;
+
+    @Autowired
+    private AvatarService avatarService;
 
     public void cadastrarJogador(JogadorRequest request) {
         if (jogadorRepository.existsJogadorByDiscord(request.getDiscord())) {
@@ -307,5 +311,15 @@ public class JogadorService {
         } catch (IOException e) {
             throw new RuntimeException("Erro ao processar arquivo", e);
         }
+    }
+
+    public Jogador atualizarFotoPorAvatarId(String idJogador, String avatarId) {
+        Jogador jogador = jogadorRepository.findById(idJogador)
+                .orElseThrow(() -> new RuntimeException("Jogador não encontrado."));
+
+        Avatar avatar = avatarService.buscarAvatarPorId(avatarId);
+        jogador.setImagem(avatar.getUrl());
+
+        return jogadorRepository.save(jogador);
     }
 }

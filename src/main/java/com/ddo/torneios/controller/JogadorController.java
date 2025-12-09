@@ -150,4 +150,17 @@ public class JogadorController {
 
         return ResponseEntity.ok(jogadorAtualizado);
     }
+
+    @PutMapping("/avatarId")
+    public ResponseEntity<Jogador> atualizarFotoPorAvatarId(@RequestBody Map<String, String> payload) {
+
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String idJogador = authentication.getName();
+
+        String avatarId = payload.get("avatarId");
+
+        Jogador jogadorAtualizado = jogadorService.atualizarFotoPorAvatarId(idJogador, avatarId);
+
+        return ResponseEntity.ok(jogadorAtualizado);
+    }
 }

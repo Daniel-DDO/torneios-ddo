@@ -53,4 +53,9 @@ public class AvatarService {
                 cargo == Cargo.DIRETOR ||
                 cargo == Cargo.PROPRIETARIO;
     }
+
+    public Avatar buscarAvatarPorId(String id) {
+        return avatarRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Avatar não encontrado com o ID: " + id));
+    }
 }

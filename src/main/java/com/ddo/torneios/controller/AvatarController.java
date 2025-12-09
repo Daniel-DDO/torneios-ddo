@@ -36,4 +36,9 @@ public class AvatarController {
         avatarService.deletarAvatar(adminId, avatarId);
         return ResponseEntity.noContent().build();
     }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<Avatar> buscarPorId(@PathVariable String id) {
+        return ResponseEntity.ok(avatarService.buscarAvatarPorId(id));
+    }
 }
