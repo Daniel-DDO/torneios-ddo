@@ -30,4 +30,10 @@ public class AvatarController {
         );
         return ResponseEntity.status(201).body(novo);
     }
+
+    @DeleteMapping("/{avatarId}")
+    public ResponseEntity<Void> deletar(@RequestHeader("X-Admin-Id") String adminId, @PathVariable String avatarId) {
+        avatarService.deletarAvatar(adminId, avatarId);
+        return ResponseEntity.noContent().build();
+    }
 }
