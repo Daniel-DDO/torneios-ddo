@@ -322,4 +322,13 @@ public class JogadorService {
 
         return jogadorRepository.save(jogador);
     }
+
+    @Transactional
+    public void removerAvatar(String idJogador) {
+        Jogador jogador = jogadorRepository.findById(idJogador)
+                .orElseThrow(() -> new RuntimeException("Jogador não encontrado"));
+
+        jogador.setImagem(null);
+        jogadorRepository.save(jogador);
+    }
 }

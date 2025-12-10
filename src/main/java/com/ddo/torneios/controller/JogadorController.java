@@ -152,15 +152,23 @@ public class JogadorController {
     }
 
     @PutMapping("/avatarId")
-    public ResponseEntity<Jogador> atualizarFotoPorAvatarId(@RequestBody Map<String, String> payload) {
+    public ResponseEntity<Void> atualizarFotoPorAvatarId(@RequestBody Map<String, String> payload) {
 
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         String idJogador = authentication.getName();
 
         String avatarId = payload.get("avatarId");
 
-        Jogador jogadorAtualizado = jogadorService.atualizarFotoPorAvatarId(idJogador, avatarId);
+        jogadorService.atualizarFotoPorAvatarId(idJogador, avatarId);
+        return ResponseEntity.ok().build();
+    }
 
-        return ResponseEntity.ok(jogadorAtualizado);
+    @DeleteMapping("/avatar")
+    public ResponseEntity<Void> removerAvatar() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String idJogador = authentication.getName();
+
+        jogadorService.removerAvatar(idJogador);
+        return ResponseEntity.noContent().build();
     }
 }
