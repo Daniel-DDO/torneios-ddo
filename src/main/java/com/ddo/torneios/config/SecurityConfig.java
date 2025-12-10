@@ -32,6 +32,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.DELETE, "/jogador/avatar").authenticated()
                         .requestMatchers(HttpMethod.PUT, "/jogador/atualizarConta").authenticated()
                         .requestMatchers(HttpMethod.PUT, "/jogador/alterarSenha").authenticated()
+                        .requestMatchers(HttpMethod.PATCH, "/jogador/uploadfoto").authenticated()
                         .anyRequest().permitAll()
                 )
                 .addFilterBefore(securityFilter, UsernamePasswordAuthenticationFilter.class);

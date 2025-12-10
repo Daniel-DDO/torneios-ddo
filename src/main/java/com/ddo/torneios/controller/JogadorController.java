@@ -140,15 +140,12 @@ public class JogadorController {
         return ResponseEntity.ok(jogadorAtualizado);
     }
 
-    @PatchMapping(value = "/foto", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ResponseEntity<Jogador> atualizarFotoPerfil(@RequestParam("file") MultipartFile file) {
-
+    @PatchMapping(value = "/uploadfoto", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<Void> atualizarFotoPerfil(@RequestParam("file") MultipartFile file) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         String idJogador = authentication.getName();
-
-        Jogador jogadorAtualizado = jogadorService.atualizarFotoPerfil(idJogador, file);
-
-        return ResponseEntity.ok(jogadorAtualizado);
+        jogadorService.atualizarFotoPerfil(idJogador, file);
+        return ResponseEntity.ok().build();
     }
 
     @PutMapping("/avatarId")
