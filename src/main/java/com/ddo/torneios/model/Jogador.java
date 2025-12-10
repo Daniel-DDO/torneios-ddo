@@ -5,15 +5,20 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 import org.hibernate.annotations.ColumnDefault;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.userdetails.UserDetails;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.Collection;
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ThreadLocalRandom;
 
 @Data
 @Entity
-public class Jogador {
+public class Jogador implements UserDetails {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
@@ -107,5 +112,36 @@ public class Jogador {
         if (this.pin == null) {
             this.pin = ThreadLocalRandom.current().nextInt(10000, 1000000);
         }
+    }
+
+    @Override
+    public Collection<? extends GrantedAuthority> getAuthorities() {
+        if (this.cargo == Cargo.PROPRIETARIO) {
+            return List.of(new SimpleGrantedAuthority("PROPRIETARIO"), new SimpleGrantedAuthority("ROLE_ADMIN"));
+        }
+        else if (this.cargo == Cargo.DIRETOR) {
+            return List.of(new SimpleGrantedAuthority("DIRETOR"));
+        }
+        else if (this.cargo == Cargo.ADMINISTRADOR) {
+            return List.of(new SimpleGrantedAuthority("ADMINISTRADOR"));
+        }
+        else {
+            return List.of(new SimpleGrantedAuthority("JOGADOR"));
+        }
+    }
+
+    @Override
+    public String getPassword() {
+        return this.senha;
+    }
+
+    @Override
+    public String getUsername() {
+        return this.discord;
+    }
+
+    @Override
+    public boolean isAccountNonExpired() {
+        return true;
     }
 }

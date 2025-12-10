@@ -33,6 +33,12 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.PUT, "/jogador/atualizarConta").authenticated()
                         .requestMatchers(HttpMethod.PUT, "/jogador/alterarSenha").authenticated()
                         .requestMatchers(HttpMethod.PATCH, "/jogador/uploadfoto").authenticated()
+                        .requestMatchers(HttpMethod.POST, "/temporada/**").hasAuthority("PROPRIETARIO")
+                        .requestMatchers(HttpMethod.PUT, "/temporada/**").hasAuthority("PROPRIETARIO")
+                        .requestMatchers(HttpMethod.PATCH, "/temporada/**").hasAuthority("PROPRIETARIO")
+                        .requestMatchers(HttpMethod.DELETE, "/temporada/**").hasAuthority("PROPRIETARIO")
+                        .requestMatchers(HttpMethod.POST, "/torneio/**").hasAuthority("PROPRIETARIO")
+                        .requestMatchers(HttpMethod.DELETE, "/torneio/**").hasAuthority("PROPRIETARIO")
                         .anyRequest().permitAll()
                 )
                 .addFilterBefore(securityFilter, UsernamePasswordAuthenticationFilter.class);
