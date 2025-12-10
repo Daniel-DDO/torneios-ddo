@@ -152,15 +152,16 @@ public class JogadorController {
     }
 
     @PutMapping("/avatarId")
-    public ResponseEntity<Void> atualizarFotoPorAvatarId(@RequestBody Map<String, String> payload) {
-
+    public ResponseEntity<JogadorDTO> atualizarFotoPorAvatarId(@RequestBody Map<String, String> payload) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         String idJogador = authentication.getName();
 
         String avatarId = payload.get("avatarId");
 
-        jogadorService.atualizarFotoPorAvatarId(idJogador, avatarId);
-        return ResponseEntity.ok().build();
+        Jogador jogadorAtualizado = jogadorService.atualizarFotoPorAvatarId(idJogador, avatarId);
+
+        JogadorDTO responseDTO = new JogadorDTO(jogadorAtualizado);
+        return ResponseEntity.ok(responseDTO);
     }
 
     @DeleteMapping("/avatar")

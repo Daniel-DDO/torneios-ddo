@@ -315,11 +315,9 @@ public class JogadorService {
 
     public Jogador atualizarFotoPorAvatarId(String idJogador, String avatarId) {
         Jogador jogador = jogadorRepository.findById(idJogador)
-                .orElseThrow(() -> new RuntimeException("Jogador não encontrado."));
+                .orElseThrow(() -> new RuntimeException("Jogador não encontrado com ID: " + idJogador));
 
-        Avatar avatar = avatarService.buscarAvatarPorId(avatarId);
-        jogador.setImagem(avatar.getUrl());
-
+        jogador.setImagem(avatarId);
         return jogadorRepository.save(jogador);
     }
 
