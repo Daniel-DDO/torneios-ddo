@@ -27,7 +27,6 @@ public class AvatarService {
 
     @Transactional
     public Avatar cadastrarAvatar(String adminId, String nome, String url) {
-        // 1. Busca quem está tentando criar
         Jogador admin = jogadorRepository.findById(adminId)
                 .orElseThrow(() -> new RegraNegocioException("Usuário admin não encontrado."));
 
@@ -53,5 +52,10 @@ public class AvatarService {
         return cargo == Cargo.ADMINISTRADOR ||
                 cargo == Cargo.DIRETOR ||
                 cargo == Cargo.PROPRIETARIO;
+    }
+
+    public Avatar buscarAvatarPorId(String id) {
+        return avatarRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Avatar não encontrado com o ID: " + id));
     }
 }

@@ -48,8 +48,6 @@ public class TokenService {
     }
 
     private SecretKey getKey() {
-        // Importante: A senha definida no application.properties deve ter
-        // pelo menos 32 caracteres para ser segura com HS256.
         return Keys.hmacShaKeyFor(secretString.getBytes(StandardCharsets.UTF_8));
     }
 }

@@ -3,12 +3,15 @@ package com.ddo.torneios.service;
 import com.ddo.torneios.dto.JogadorDTO;
 import com.ddo.torneios.dto.LoginResponseDTO;
 import com.ddo.torneios.dto.PaginacaoDTO;
+import com.ddo.torneios.exception.EmailJaCadastradoException;
 import com.ddo.torneios.exception.JogadorExisteException;
 import com.ddo.torneios.exception.RegraNegocioException;
+import com.ddo.torneios.model.Avatar;
 import com.ddo.torneios.model.Cargo;
 import com.ddo.torneios.model.Jogador;
 import com.ddo.torneios.repository.JogadorRepository;
 import com.ddo.torneios.request.*;
+import jakarta.persistence.EntityNotFoundException;
 import jakarta.validation.constraints.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -19,9 +22,13 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 
@@ -36,6 +43,12 @@ public class JogadorService {
 
     @Autowired
     private TokenService tokenService;
+
+    @Autowired
+    private ImgBBService imgBBService;
+
+    @Autowired
+    private AvatarService avatarService;
 
     public void cadastrarJogador(JogadorRequest request) {
         if (jogadorRepository.existsJogadorByDiscord(request.getDiscord())) {
@@ -128,7 +141,14 @@ public class JogadorService {
             throw new RegraNegocioException("O código expirou. Solicite um novo ao Admin.");
         }
 
-        jogador.setEmail(request.getNovoEmail());
+        String novoEmail = request.getNovoEmail();
+
+        if (!novoEmail.isBlank()) {
+            if (jogadorRepository.existsJogadorByEmail(novoEmail)) {
+                throw new EmailJaCadastradoException(novoEmail);
+            }
+            jogador.setEmail(novoEmail);
+        }
         jogador.setSenha(passwordEncoder.encode(request.getNovaSenha()));
         jogador.setContaReivindicada(true);
 
@@ -139,9 +159,17 @@ public class JogadorService {
     }
 
     public LoginResponseDTO logarJogador(LoginRequest login) {
-        Jogador jogador = jogadorRepository.findByDiscord(login.getLogin())
-                .orElse(jogadorRepository.findByEmail(login.getLogin())
-                        .orElseThrow(() -> new RegraNegocioException("Usuário não encontrado")));
+        String identificador = login.getLogin().trim();
+
+        Optional<Jogador> jogadorOpt = jogadorRepository.findByDiscord(identificador);
+
+        if (jogadorOpt.isEmpty()) {
+            jogadorOpt = jogadorRepository.findByEmail(identificador);
+        }
+
+        Jogador jogador = jogadorOpt.orElseThrow(() ->
+                new RegraNegocioException("Usuário não encontrado")
+        );
 
         if (!jogador.isContaReivindicada()) {
             throw new RegraNegocioException("Conta não reivindicada. Solicite o código ao Admin.");
@@ -230,6 +258,77 @@ public class JogadorService {
             jogador.setCargo(request.getCargo());
         }
 
+        jogadorRepository.save(jogador);
+    }
+
+    public List<Jogador> findByDiscordContainingIgnoreCase(String termo) {
+        return jogadorRepository.findByDiscordContainingIgnoreCase(termo);
+    }
+
+    public Page<Jogador> listarTodosPaginado(Pageable pageable) {
+        return jogadorRepository.findAll(pageable);
+    }
+
+    @Transactional
+    public Jogador editarPerfilLogado(String idString, JogadorEditarRequest request) {
+
+        Jogador jogador = jogadorRepository.findById(idString)
+                .orElseThrow(() -> new EntityNotFoundException("Jogador não encontrado com ID: " + idString));
+
+        if (StringUtils.hasText(request.getNome())) {
+            jogador.setNome(request.getNome());
+        }
+
+        if (StringUtils.hasText(request.getImagem())) {
+            jogador.setImagem(request.getImagem());
+        }
+
+        if (StringUtils.hasText(request.getDescricao())) {
+            jogador.setDescricao(request.getDescricao());
+        }
+
+        jogador.setModificacaoConta(LocalDateTime.now());
+        return jogadorRepository.save(jogador);
+    }
+
+    @Transactional
+    public Jogador atualizarFotoPerfil(String idJogador, MultipartFile arquivo) {
+        if (arquivo.isEmpty()) {
+            throw new RuntimeException("Arquivo de imagem vazio.");
+        }
+
+        try {
+            String urlImagem = imgBBService.uploadImagem(arquivo);
+
+            Jogador jogador = jogadorRepository.findById(idJogador)
+                    .orElseThrow(() -> new EntityNotFoundException("Jogador não encontrado"));
+
+            jogador.setImagem(urlImagem);
+            jogador.setModificacaoConta(LocalDateTime.now());
+
+            return jogadorRepository.save(jogador);
+
+        } catch (IOException e) {
+            throw new RuntimeException("Erro ao processar arquivo", e);
+        }
+    }
+
+    public Jogador atualizarFotoPorAvatarId(String idJogador, String avatarId) {
+        Jogador jogador = jogadorRepository.findById(idJogador)
+                .orElseThrow(() -> new RuntimeException("Jogador não encontrado com ID: " + idJogador));
+
+        jogador.setImagem(avatarId);
+        jogador.setModificacaoConta(LocalDateTime.now());
+        return jogadorRepository.save(jogador);
+    }
+
+    @Transactional
+    public void removerAvatar(String idJogador) {
+        Jogador jogador = jogadorRepository.findById(idJogador)
+                .orElseThrow(() -> new RuntimeException("Jogador não encontrado"));
+
+        jogador.setImagem(null);
+        jogador.setModificacaoConta(LocalDateTime.now());
         jogadorRepository.save(jogador);
     }
 }
