@@ -5,10 +5,13 @@ import lombok.Data;
 
 @Data
 public class JogadorClubeRequest {
-    @NotBlank
+
+    @NotBlank(message = "O Jogador é obrigatório")
     private String jogadorId;
-    @NotBlank
+
+    @NotBlank(message = "O Clube é obrigatório")
     private String clubeId;
-    @NotBlank
+
+    @NotBlank(message = "A Temporada é obrigatória")
     private String temporadaId;
 }

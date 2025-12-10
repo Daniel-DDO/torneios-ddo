@@ -39,6 +39,10 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.DELETE, "/temporada/**").hasAuthority("PROPRIETARIO")
                         .requestMatchers(HttpMethod.POST, "/torneio/**").hasAuthority("PROPRIETARIO")
                         .requestMatchers(HttpMethod.DELETE, "/torneio/**").hasAuthority("PROPRIETARIO")
+                        .requestMatchers(HttpMethod.DELETE, "/inscricao/**").hasAuthority("PROPRIETARIO")
+                        .requestMatchers(HttpMethod.DELETE, "/fase-torneio/**").hasAuthority("PROPRIETARIO")
+                        .requestMatchers(HttpMethod.POST, "/inscricao/**").hasAuthority("PROPRIETARIO")
+                        .requestMatchers(HttpMethod.DELETE, "/participacao-fase/**").hasAuthority("PROPRIETARIO")
                         .anyRequest().permitAll()
                 )
                 .addFilterBefore(securityFilter, UsernamePasswordAuthenticationFilter.class);
