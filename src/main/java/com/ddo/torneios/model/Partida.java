@@ -60,6 +60,8 @@ public class Partida {
 
     private String linkPartida;
 
+    private Integer chaveIndex; //chave do mata-mata
+
     @Embedded
     @AttributeOverrides({
             @AttributeOverride(name = "golsMandante", column = @Column(name = "penaltis_mandante")),

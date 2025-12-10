@@ -2,11 +2,16 @@ package com.ddo.torneios.model;
 
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
+import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
+
 import java.time.LocalDate;
 import java.util.List;
 
 @Data
+@AllArgsConstructor
+@NoArgsConstructor
 @Entity
 public class Temporada {
 
@@ -23,4 +28,10 @@ public class Temporada {
 
     @OneToMany(mappedBy = "temporada", cascade = CascadeType.ALL)
     private List<Torneio> torneios;
+
+    public Temporada(String nome, LocalDate dataInicio, LocalDate dataFim) {
+        this.nome = nome;
+        this.dataInicio = dataInicio;
+        this.dataFim = dataFim;
+    }
 }
