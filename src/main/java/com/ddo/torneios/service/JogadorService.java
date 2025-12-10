@@ -318,6 +318,7 @@ public class JogadorService {
                 .orElseThrow(() -> new RuntimeException("Jogador não encontrado com ID: " + idJogador));
 
         jogador.setImagem(avatarId);
+        jogador.setModificacaoConta(LocalDateTime.now());
         return jogadorRepository.save(jogador);
     }
 
@@ -327,6 +328,7 @@ public class JogadorService {
                 .orElseThrow(() -> new RuntimeException("Jogador não encontrado"));
 
         jogador.setImagem(null);
+        jogador.setModificacaoConta(LocalDateTime.now());
         jogadorRepository.save(jogador);
     }
 }
