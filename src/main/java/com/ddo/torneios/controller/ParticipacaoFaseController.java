@@ -5,5 +5,5 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/participacao-torneio")
-public class ParticipacaoTorneioController {
+public class ParticipacaoFaseController {
 }

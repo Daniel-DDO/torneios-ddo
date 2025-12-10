@@ -6,30 +6,30 @@ import lombok.Data;
 @Data
 @Entity
 @Table(uniqueConstraints = {
-        @UniqueConstraint(columnNames = {"torneio_id", "jogador_clube_id"})
+        @UniqueConstraint(columnNames = {"fase_id", "jogador_clube_id"})
 })
-public class ParticipacaoTorneio {
+public class ParticipacaoFase {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     private String id;
 
     @ManyToOne
-    @JoinColumn(name = "torneio_id")
-    private Torneio torneio;
+    @JoinColumn(name = "fase_id", nullable = false)
+    private FaseTorneio fase;
 
     @ManyToOne
-    @JoinColumn(name = "jogador_clube_id")
+    @JoinColumn(name = "jogador_clube_id", nullable = false)
     private JogadorClube jogadorClube;
 
     private Integer pontos = 0;
+    private Integer partidasJogadas = 0;
     private Integer vitorias = 0;
     private Integer empates = 0;
     private Integer derrotas = 0;
     private Integer golsPro = 0;
     private Integer golsContra = 0;
     private Integer saldoGols = 0;
-    private Double aproveitamento = 0.00;
 
     @Enumerated(EnumType.STRING)
     private StatusClassificacao statusClassificacao;
