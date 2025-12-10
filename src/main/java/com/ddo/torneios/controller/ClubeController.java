@@ -39,4 +39,10 @@ public class ClubeController {
     public ResponseEntity<Clube> retornarClube(@PathVariable String id) {
         return clubeService.retornarClube(id);
     }
+
+    @PatchMapping("/{id}")
+    public ResponseEntity<Clube> atualizarClube(@PathVariable String id, @RequestBody ClubeRequest request) {
+        Clube clubeAtualizado = clubeService.atualizarClube(id, request);
+        return ResponseEntity.ok(clubeAtualizado);
+    }
 }

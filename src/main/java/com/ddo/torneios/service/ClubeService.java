@@ -5,6 +5,7 @@ import com.ddo.torneios.exception.ClubeExisteException;
 import com.ddo.torneios.model.Clube;
 import com.ddo.torneios.repository.ClubeRepository;
 import com.ddo.torneios.request.ClubeRequest;
+import jakarta.persistence.EntityNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -68,4 +69,45 @@ public class ClubeService {
                 .orElse(ResponseEntity.notFound().build());
     }
 
+    public Clube atualizarClube(String id, ClubeRequest request) {
+        Clube clube = clubeRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Clube não encontrado com ID: " + id));
+
+        if (request.getNome() != null && !request.getNome().isBlank()) {
+            if (clubeRepository.existsByNome(request.getNome())) {
+                throw new ClubeExisteException(request.getNome());
+            }
+            clube.setNome(request.getNome());
+        }
+
+        if (request.getSigla() != null && !request.getSigla().isBlank()) {
+            clube.setSigla(request.getSigla());
+        }
+
+        if (request.getEstadio() != null && !request.getEstadio().isBlank()) {
+            clube.setEstadio(request.getEstadio());
+        }
+
+        if (request.getImagem() != null) {
+            clube.setImagem(request.getImagem());
+        }
+
+        if (request.getLigaClube() != null) {
+            clube.setLigaClube(request.getLigaClube());
+        }
+
+        if (request.getEstrelas() != null) {
+            clube.setEstrelas(request.getEstrelas());
+        }
+
+        if (request.getCorPrimaria() != null && !request.getCorPrimaria().isBlank()) {
+            clube.setCorPrimaria(request.getCorPrimaria());
+        }
+
+        if (request.getCorSecundaria() != null && !request.getCorSecundaria().isBlank()) {
+            clube.setCorSecundaria(request.getCorSecundaria());
+        }
+
+        return clubeRepository.save(clube);
+    }
 }

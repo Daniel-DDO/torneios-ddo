@@ -43,6 +43,8 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.DELETE, "/fase-torneio/**").hasAuthority("PROPRIETARIO")
                         .requestMatchers(HttpMethod.POST, "/inscricao/**").hasAuthority("PROPRIETARIO")
                         .requestMatchers(HttpMethod.DELETE, "/participacao-fase/**").hasAuthority("PROPRIETARIO")
+                        .requestMatchers(HttpMethod.POST, "/clube/cadastrar").authenticated()
+                        .requestMatchers(HttpMethod.PATCH, "/clube/{id}").authenticated()
                         .anyRequest().permitAll()
                 )
                 .addFilterBefore(securityFilter, UsernamePasswordAuthenticationFilter.class);
