@@ -31,6 +31,10 @@ public class FaseTorneio {
     @Column(name = "numero_rodadas")
     private Integer numeroRodadas;
 
+    @OrderBy("numero ASC")
+    @OneToMany(mappedBy = "fase", cascade = CascadeType.ALL)
+    private List<Rodada> rodadas;
+
     @Enumerated(EnumType.STRING)
     @Column(name = "fase_inicial_mata_mata")
     private FaseMataMata faseInicialMataMata;
@@ -48,7 +52,6 @@ public class FaseTorneio {
     private AlgoritmoGeracaoMataMata algoritmoMataMata;
 
     //Configurações paramétricas
-    private Integer quantidadeRodadasLiga;
     private Integer maxJogosEmCasa;
 
     @PrePersist

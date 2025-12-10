@@ -23,7 +23,9 @@ public class Partida {
     private FaseTorneio fase;
 
     //só é usado para fase de liga ou grupos, em mata-mata é null
-    private Integer numeroRodada;
+    @ManyToOne
+    @JoinColumn(name = "rodada_id")
+    private Rodada rodada;
 
     //só é usado para o mata-mata, se for fase de liga, é null
     @Enumerated(EnumType.STRING)
@@ -74,13 +76,11 @@ public class Partida {
     public JogadorClube getVencedor() {
         if (!realizada) return null;
 
-        if (wo) {
-            if (golsMandante > golsVisitante) return mandante;
-            if (golsVisitante > golsMandante) return visitante;
-        }
+        int gMandante = (golsMandante != null) ? golsMandante : 0;
+        int gVisitante = (golsVisitante != null) ? golsVisitante : 0;
 
-        if (golsMandante > golsVisitante) return mandante;
-        if (golsVisitante > golsMandante) return visitante;
+        if (gMandante > gVisitante) return mandante;
+        if (gVisitante > gMandante) return visitante;
 
         if (houvePenaltis()) {
             if (penaltis.getGolsMandante() > penaltis.getGolsVisitante()) return mandante;
