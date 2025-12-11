@@ -14,6 +14,9 @@ import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
+import java.util.Collections;
+import java.util.List;
+
 @Service
 public class ClubeService {
 
@@ -109,5 +112,13 @@ public class ClubeService {
         }
 
         return clubeRepository.save(clube);
+    }
+
+    public List<Clube> buscarAutocomplete(String termo) {
+        if (termo == null || termo.trim().length() < 3) {
+            return Collections.emptyList();
+        }
+
+        return clubeRepository.findTop10ByNomeContainingIgnoreCase(termo.trim());
     }
 }

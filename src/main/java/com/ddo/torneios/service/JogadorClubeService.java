@@ -10,6 +10,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.util.Collections;
 import java.util.List;
 
 @Service
@@ -26,6 +27,9 @@ public class JogadorClubeService {
 
     @Autowired
     private TemporadaRepository temporadaRepository;
+
+    @Autowired
+    private TorneioRepository torneioRepository;
 
     @Transactional
     public JogadorClubeDTO inscreverJogador(JogadorClubeRequest request) {
@@ -80,5 +84,38 @@ public class JogadorClubeService {
             throw new EntityNotFoundException("Inscrição não encontrada com ID: " + id);
         }
         jogadorClubeRepository.deleteById(id);
+    }
+
+    public List<JogadorClubeDTO> listarTodos() {
+        return jogadorClubeRepository.findAll().stream()
+                .map(JogadorClubeDTO::new)
+                .toList();
+    }
+
+    public List<JogadorClubeDTO> listarInscritosPorTorneio(String torneioId) {
+        Torneio torneio = torneioRepository.findById(torneioId)
+                .orElseThrow(() -> new EntityNotFoundException("Torneio não encontrado com ID: " + torneioId));
+
+        return listarInscritosPorTemporada(torneio.getTemporada().getId());
+    }
+
+    public List<JogadorClubeDTO> buscarAutocompletePorJogador(String termo) {
+        if (termo == null || termo.trim().length() < 3) {
+            return Collections.emptyList();
+        }
+        return jogadorClubeRepository.findTop10ByJogadorNomeContainingIgnoreCase(termo.trim())
+                .stream()
+                .map(JogadorClubeDTO::new)
+                .toList();
+    }
+
+    public List<JogadorClubeDTO> buscarAutocompletePorClube(String termo) {
+        if (termo == null || termo.trim().length() < 3) {
+            return Collections.emptyList();
+        }
+        return jogadorClubeRepository.findTop10ByClubeNomeContainingIgnoreCase(termo.trim())
+                .stream()
+                .map(JogadorClubeDTO::new)
+                .toList();
     }
 }

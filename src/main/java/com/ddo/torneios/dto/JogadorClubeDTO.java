@@ -20,7 +20,13 @@ public record JogadorClubeDTO(
         Integer golsSofridos,
         Integer jogos,
         BigDecimal pontosCoeficiente,
-        StatusClassificacao statusTemporada
+        StatusClassificacao statusTemporada,
+        Integer vitorias,
+        Integer empates,
+        Integer derrotas,
+        Integer cartoesAmarelos,
+        Integer cartoesVermelhos,
+        BigDecimal balancoFinanceiro
 ) {
     public JogadorClubeDTO(JogadorClube entidade) {
         this(
@@ -38,7 +44,13 @@ public record JogadorClubeDTO(
                 entidade.getTotalGolsSofridos(),
                 entidade.getPartidasJogadas(),
                 entidade.getPontosCoeficiente(),
-                entidade.getStatusTemporada()
+                entidade.getStatusTemporada(),
+                entidade.getVitorias(),
+                entidade.getEmpates(),
+                entidade.getDerrotas(),
+                entidade.getTotalCartoesAmarelos(),
+                entidade.getTotalCartoesVermelhos(),
+                entidade.getBalancoFinanceiro()
         );
     }
 }

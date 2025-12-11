@@ -7,6 +7,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @RestController
 @RequestMapping("/competicao")
 public class CompeticaoController {
@@ -30,5 +32,11 @@ public class CompeticaoController {
     ) {
         PaginacaoDTO<Competicao> pagina = competicaoService.listarCompeticoes(nomeFiltro, page, size, sortBy, direction);
         return ResponseEntity.ok(pagina);
+    }
+
+    @GetMapping("/lista-simples")
+    public ResponseEntity<List<Competicao>> listarTodasParaSelect() {
+        List<Competicao> lista = competicaoService.listarTodasSemPaginacao();
+        return ResponseEntity.ok(lista);
     }
 }

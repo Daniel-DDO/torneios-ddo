@@ -10,6 +10,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @RestController
 @RequestMapping("/clube")
 public class ClubeController {
@@ -44,5 +46,11 @@ public class ClubeController {
     public ResponseEntity<Clube> atualizarClube(@PathVariable String id, @RequestBody ClubeRequest request) {
         Clube clubeAtualizado = clubeService.atualizarClube(id, request);
         return ResponseEntity.ok(clubeAtualizado);
+    }
+
+    @GetMapping("/buscar-autocomplete")
+    public ResponseEntity<List<Clube>> buscarAutocomplete(@RequestParam String termo) {
+        List<Clube> sugestoes = clubeService.buscarAutocomplete(termo);
+        return ResponseEntity.ok(sugestoes);
     }
 }

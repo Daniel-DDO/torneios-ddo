@@ -10,4 +10,6 @@ import java.util.List;
 public interface ParticipacaoFaseRepository extends JpaRepository<ParticipacaoFase, String> {
     boolean existsByFaseIdAndJogadorClubeId(String faseId, String jogadorClubeId);
     List<ParticipacaoFase> findByFaseIdOrderByPontosDescVitoriasDescSaldoGolsDescGolsProDesc(String faseId);
+    List<ParticipacaoFase> findTop10ByJogadorClubeJogadorNomeContainingIgnoreCase(String nome);
+    List<ParticipacaoFase> findTop10ByJogadorClubeClubeNomeContainingIgnoreCase(String nome);
 }

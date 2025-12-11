@@ -10,4 +10,5 @@ import java.util.List;
 public interface FaseTorneioRepository extends JpaRepository<FaseTorneio, String> {
     List<FaseTorneio> findByTorneioIdOrderByOrdemAsc(String torneioId);
     boolean existsByTorneioIdAndOrdem(String torneioId, Integer ordem);
+    List<FaseTorneio> findTop10ByNomeContainingIgnoreCase(String nome);
 }

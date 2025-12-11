@@ -1,5 +1,7 @@
 package com.ddo.torneios.config;
 
+import com.ddo.torneios.model.Jogador;
+import com.ddo.torneios.repository.JogadorRepository;
 import com.ddo.torneios.service.TokenService;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -12,13 +14,15 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
-import java.util.Collections;
 
 @Component
 public class SecurityFilter extends OncePerRequestFilter {
 
     @Autowired
     private TokenService tokenService;
+
+    @Autowired
+    private JogadorRepository jogadorRepository;
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
@@ -28,8 +32,16 @@ public class SecurityFilter extends OncePerRequestFilter {
             String idJogador = tokenService.validarTokenEObterId(token);
 
             if (idJogador != null) {
-                UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(idJogador, null, Collections.emptyList());
-                SecurityContextHolder.getContext().setAuthentication(authentication);
+                Jogador jogador = jogadorRepository.findById(idJogador).orElse(null);
+
+                if (jogador != null) {
+                    UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
+                            jogador,
+                            null,
+                            jogador.getAuthorities()
+                    );
+                    SecurityContextHolder.getContext().setAuthentication(authentication);
+                }
             }
         }
         filterChain.doFilter(request, response);

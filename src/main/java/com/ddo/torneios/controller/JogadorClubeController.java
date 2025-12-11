@@ -35,4 +35,28 @@ public class JogadorClubeController {
         jogadorClubeService.removerInscricao(id);
         return ResponseEntity.noContent().build();
     }
+
+    @GetMapping("/torneio/{torneioId}")
+    public ResponseEntity<List<JogadorClubeDTO>> listarInscritosPorTorneio(@PathVariable String torneioId) {
+        List<JogadorClubeDTO> inscritos = jogadorClubeService.listarInscritosPorTorneio(torneioId);
+        return ResponseEntity.ok(inscritos);
+    }
+
+    @GetMapping("/all")
+    public ResponseEntity<List<JogadorClubeDTO>> listarTodos() {
+        List<JogadorClubeDTO> lista = jogadorClubeService.listarTodos();
+        return ResponseEntity.ok(lista);
+    }
+
+    @GetMapping("/buscar-autocomplete/jogador")
+    public ResponseEntity<List<JogadorClubeDTO>> buscarPorNomeJogador(@RequestParam String termo) {
+        List<JogadorClubeDTO> resultados = jogadorClubeService.buscarAutocompletePorJogador(termo);
+        return ResponseEntity.ok(resultados);
+    }
+
+    @GetMapping("/buscar-autocomplete/clube")
+    public ResponseEntity<List<JogadorClubeDTO>> buscarPorNomeClube(@RequestParam String termo) {
+        List<JogadorClubeDTO> resultados = jogadorClubeService.buscarAutocompletePorClube(termo);
+        return ResponseEntity.ok(resultados);
+    }
 }

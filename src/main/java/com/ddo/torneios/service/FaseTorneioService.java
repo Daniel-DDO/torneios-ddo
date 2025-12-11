@@ -11,6 +11,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Collections;
 import java.util.List;
 
 @Service
@@ -65,5 +66,16 @@ public class FaseTorneioService {
             throw new EntityNotFoundException("Fase não encontrada com ID: " + id);
         }
         faseTorneioRepository.deleteById(id);
+    }
+
+    public List<FaseTorneioDTO> buscarAutocomplete(String termo) {
+        if (termo == null || termo.trim().length() < 3) {
+            return Collections.emptyList();
+        }
+
+        return faseTorneioRepository.findTop10ByNomeContainingIgnoreCase(termo.trim())
+                .stream()
+                .map(FaseTorneioDTO::new)
+                .toList();
     }
 }
