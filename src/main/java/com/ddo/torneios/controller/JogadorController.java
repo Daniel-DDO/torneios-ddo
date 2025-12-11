@@ -14,7 +14,9 @@ import org.springframework.data.domain.Sort;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -167,6 +169,16 @@ public class JogadorController {
         String idJogador = authentication.getName();
 
         jogadorService.removerAvatar(idJogador);
+        return ResponseEntity.noContent().build();
+    }
+
+    @PutMapping("/me/credenciais")
+    public ResponseEntity<Void> alterarCredenciais(
+            @RequestBody @Valid AlterarCredenciaisRequest request,
+            @AuthenticationPrincipal UserDetails userDetails) {
+
+        jogadorService.alterarCredenciais(userDetails.getUsername(), request);
+
         return ResponseEntity.noContent().build();
     }
 }
