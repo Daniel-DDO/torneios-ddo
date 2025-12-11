@@ -47,4 +47,16 @@ public class JogadorClubeController {
         List<JogadorClubeDTO> lista = jogadorClubeService.listarTodos();
         return ResponseEntity.ok(lista);
     }
+
+    @GetMapping("/buscar-autocomplete/jogador")
+    public ResponseEntity<List<JogadorClubeDTO>> buscarPorNomeJogador(@RequestParam String termo) {
+        List<JogadorClubeDTO> resultados = jogadorClubeService.buscarAutocompletePorJogador(termo);
+        return ResponseEntity.ok(resultados);
+    }
+
+    @GetMapping("/buscar-autocomplete/clube")
+    public ResponseEntity<List<JogadorClubeDTO>> buscarPorNomeClube(@RequestParam String termo) {
+        List<JogadorClubeDTO> resultados = jogadorClubeService.buscarAutocompletePorClube(termo);
+        return ResponseEntity.ok(resultados);
+    }
 }

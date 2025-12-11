@@ -47,4 +47,10 @@ public class ParticipacaoFaseController {
         ParticipacaoFaseDTO dto = participacaoFaseService.buscarPorId(id);
         return ResponseEntity.ok(dto);
     }
+
+    @GetMapping("/buscar-autocomplete")
+    public ResponseEntity<List<ParticipacaoFaseDTO>> buscarAutocomplete(@RequestParam String termo) {
+        List<ParticipacaoFaseDTO> resultados = participacaoFaseService.buscarAutocomplete(termo);
+        return ResponseEntity.ok(resultados);
+    }
 }

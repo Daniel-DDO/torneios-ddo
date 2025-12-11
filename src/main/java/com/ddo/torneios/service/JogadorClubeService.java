@@ -10,6 +10,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.util.Collections;
 import java.util.List;
 
 @Service
@@ -96,5 +97,25 @@ public class JogadorClubeService {
                 .orElseThrow(() -> new EntityNotFoundException("Torneio não encontrado com ID: " + torneioId));
 
         return listarInscritosPorTemporada(torneio.getTemporada().getId());
+    }
+
+    public List<JogadorClubeDTO> buscarAutocompletePorJogador(String termo) {
+        if (termo == null || termo.trim().length() < 3) {
+            return Collections.emptyList();
+        }
+        return jogadorClubeRepository.findTop10ByJogadorNomeContainingIgnoreCase(termo.trim())
+                .stream()
+                .map(JogadorClubeDTO::new)
+                .toList();
+    }
+
+    public List<JogadorClubeDTO> buscarAutocompletePorClube(String termo) {
+        if (termo == null || termo.trim().length() < 3) {
+            return Collections.emptyList();
+        }
+        return jogadorClubeRepository.findTop10ByClubeNomeContainingIgnoreCase(termo.trim())
+                .stream()
+                .map(JogadorClubeDTO::new)
+                .toList();
     }
 }

@@ -11,4 +11,6 @@ public interface JogadorClubeRepository extends JpaRepository<JogadorClube, Stri
     boolean existsByJogadorIdAndTemporadaId(String jogadorId, String temporadaId);
     boolean existsByClubeIdAndTemporadaId(String clubeId, String temporadaId);
     List<JogadorClube> findByTemporadaId(String temporadaId);
+    List<JogadorClube> findTop10ByJogadorNomeContainingIgnoreCase(String nome);
+    List<JogadorClube> findTop10ByClubeNomeContainingIgnoreCase(String nome);
 }

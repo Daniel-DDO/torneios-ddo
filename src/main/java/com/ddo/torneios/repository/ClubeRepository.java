@@ -15,4 +15,5 @@ public interface ClubeRepository extends JpaRepository<Clube, String> {
     List<Clube> findByNomeContainingIgnoreCase(String nome);
 
     Page<Clube> findByNomeContainingIgnoreCase(String nome, Pageable pageable);
+    List<Clube> findTop10ByNomeContainingIgnoreCase(String nome);
 }

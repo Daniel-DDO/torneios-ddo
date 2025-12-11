@@ -13,6 +13,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Collections;
 import java.util.List;
 
 @Service
@@ -94,5 +95,16 @@ public class ParticipacaoFaseService {
         ParticipacaoFase participacao = participacaoFaseRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Participação não encontrada com ID: " + id));
         return new ParticipacaoFaseDTO(participacao);
+    }
+
+    public List<ParticipacaoFaseDTO> buscarAutocomplete(String termo) {
+        if (termo == null || termo.trim().length() < 3) {
+            return Collections.emptyList();
+        }
+
+        return participacaoFaseRepository.findTop10ByJogadorClubeJogadorNomeContainingIgnoreCase(termo.trim())
+                .stream()
+                .map(ParticipacaoFaseDTO::new)
+                .toList();
     }
 }
