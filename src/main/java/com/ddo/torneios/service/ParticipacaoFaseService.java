@@ -83,4 +83,16 @@ public class ParticipacaoFaseService {
         }
         participacaoFaseRepository.deleteById(id);
     }
+
+    public List<ParticipacaoFaseDTO> listarTodos() {
+        return participacaoFaseRepository.findAll().stream()
+                .map(ParticipacaoFaseDTO::new)
+                .toList();
+    }
+
+    public ParticipacaoFaseDTO buscarPorId(String id) {
+        ParticipacaoFase participacao = participacaoFaseRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Participação não encontrada com ID: " + id));
+        return new ParticipacaoFaseDTO(participacao);
+    }
 }

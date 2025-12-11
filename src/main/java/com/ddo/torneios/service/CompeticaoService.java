@@ -12,6 +12,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
+
 @Service
 public class CompeticaoService {
 
@@ -55,5 +57,9 @@ public class CompeticaoService {
                 paginaEntidades.getSize(),
                 paginaEntidades.isLast()
         );
+    }
+
+    public List<Competicao> listarTodasSemPaginacao() {
+        return competicaoRepository.findAll(Sort.by(Sort.Direction.ASC, "nome"));
     }
 }

@@ -35,4 +35,16 @@ public class ParticipacaoFaseController {
         participacaoFaseService.removerParticipante(id);
         return ResponseEntity.noContent().build();
     }
+
+    @GetMapping("/all")
+    public ResponseEntity<List<ParticipacaoFaseDTO>> listarTodos() {
+        List<ParticipacaoFaseDTO> lista = participacaoFaseService.listarTodos();
+        return ResponseEntity.ok(lista);
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<ParticipacaoFaseDTO> buscarPorId(@PathVariable String id) {
+        ParticipacaoFaseDTO dto = participacaoFaseService.buscarPorId(id);
+        return ResponseEntity.ok(dto);
+    }
 }

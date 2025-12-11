@@ -35,4 +35,16 @@ public class JogadorClubeController {
         jogadorClubeService.removerInscricao(id);
         return ResponseEntity.noContent().build();
     }
+
+    @GetMapping("/torneio/{torneioId}")
+    public ResponseEntity<List<JogadorClubeDTO>> listarInscritosPorTorneio(@PathVariable String torneioId) {
+        List<JogadorClubeDTO> inscritos = jogadorClubeService.listarInscritosPorTorneio(torneioId);
+        return ResponseEntity.ok(inscritos);
+    }
+
+    @GetMapping("/all")
+    public ResponseEntity<List<JogadorClubeDTO>> listarTodos() {
+        List<JogadorClubeDTO> lista = jogadorClubeService.listarTodos();
+        return ResponseEntity.ok(lista);
+    }
 }
