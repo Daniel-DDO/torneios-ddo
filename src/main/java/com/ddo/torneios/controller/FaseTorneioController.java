@@ -35,4 +35,10 @@ public class FaseTorneioController {
         faseTorneioService.deletarFase(id);
         return ResponseEntity.noContent().build();
     }
+
+    @GetMapping("/buscar-autocomplete")
+    public ResponseEntity<List<FaseTorneioDTO>> buscarAutocomplete(@RequestParam String termo) {
+        List<FaseTorneioDTO> fases = faseTorneioService.buscarAutocomplete(termo);
+        return ResponseEntity.ok(fases);
+    }
 }

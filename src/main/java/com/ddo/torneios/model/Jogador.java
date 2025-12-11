@@ -137,7 +137,7 @@ public class Jogador implements UserDetails {
 
     @Override
     public String getUsername() {
-        return this.discord;
+        return this.id;
     }
 
     @Override
