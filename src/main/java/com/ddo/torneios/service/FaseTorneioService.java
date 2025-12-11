@@ -1,9 +1,15 @@
 package com.ddo.torneios.service;
 
 import com.ddo.torneios.dto.FaseTorneioDTO;
+import com.ddo.torneios.dto.PartidaDTO;
+import com.ddo.torneios.dto.RodadaDTO;
 import com.ddo.torneios.model.FaseTorneio;
+import com.ddo.torneios.model.Partida;
+import com.ddo.torneios.model.Rodada;
 import com.ddo.torneios.model.Torneio;
 import com.ddo.torneios.repository.FaseTorneioRepository;
+import com.ddo.torneios.repository.PartidaRepository;
+import com.ddo.torneios.repository.RodadaRepository;
 import com.ddo.torneios.repository.TorneioRepository;
 import com.ddo.torneios.request.FaseTorneioRequest;
 import jakarta.persistence.EntityNotFoundException;
@@ -22,6 +28,12 @@ public class FaseTorneioService {
 
     @Autowired
     private TorneioRepository torneioRepository;
+
+    @Autowired
+    private RodadaRepository rodadaRepository;
+
+    @Autowired
+    private PartidaRepository partidaRepository;
 
     @Transactional
     public FaseTorneioDTO criarFase(FaseTorneioRequest request) {
@@ -76,6 +88,30 @@ public class FaseTorneioService {
         return faseTorneioRepository.findTop10ByNomeContainingIgnoreCase(termo.trim())
                 .stream()
                 .map(FaseTorneioDTO::new)
+                .toList();
+    }
+
+    public List<RodadaDTO> buscarTabelaLiga(String faseId) {
+        List<Rodada> rodadas = rodadaRepository.buscarTodasPorFaseComPartidas(faseId);
+
+        return rodadas.stream()
+                .map(RodadaDTO::new)
+                .toList();
+    }
+
+    public List<PartidaDTO> buscarPartidasMataMata(String faseId) {
+        List<Partida> partidas = partidaRepository.findByFaseIdOrderByDataHoraAsc(faseId);
+
+        return partidas.stream()
+                .map(PartidaDTO::new)
+                .toList();
+    }
+
+    public List<PartidaDTO> buscarHistoricoJogador(String faseId, String jogadorClubeId) {
+        List<Partida> partidas = partidaRepository.findByJogadorNaFase(faseId, jogadorClubeId);
+
+        return partidas.stream()
+                .map(PartidaDTO::new)
                 .toList();
     }
 }

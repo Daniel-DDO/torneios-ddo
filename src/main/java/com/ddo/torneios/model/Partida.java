@@ -62,6 +62,11 @@ public class Partida {
 
     private Integer chaveIndex; //chave do mata-mata
 
+    private Integer cartoesAmarelosMandante;
+    private Integer cartoesVermelhosMandante;
+    private Integer cartoesAmarelosVisitante;
+    private Integer cartoesVermelhosVisitante;
+
     @Embedded
     @AttributeOverrides({
             @AttributeOverride(name = "golsMandante", column = @Column(name = "penaltis_mandante")),

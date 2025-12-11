@@ -1,6 +1,8 @@
 package com.ddo.torneios.controller;
 
 import com.ddo.torneios.dto.FaseTorneioDTO;
+import com.ddo.torneios.dto.PartidaDTO;
+import com.ddo.torneios.dto.RodadaDTO;
 import com.ddo.torneios.request.FaseTorneioRequest;
 import com.ddo.torneios.service.FaseTorneioService;
 import jakarta.validation.Valid;
@@ -40,5 +42,26 @@ public class FaseTorneioController {
     public ResponseEntity<List<FaseTorneioDTO>> buscarAutocomplete(@RequestParam String termo) {
         List<FaseTorneioDTO> fases = faseTorneioService.buscarAutocomplete(termo);
         return ResponseEntity.ok(fases);
+    }
+
+    @GetMapping("/{faseId}/tabela")
+    public ResponseEntity<List<RodadaDTO>> getTabelaLiga(@PathVariable String faseId) {
+        List<RodadaDTO> tabela = faseTorneioService.buscarTabelaLiga(faseId);
+        return ResponseEntity.ok(tabela);
+    }
+
+    @GetMapping("/{faseId}/partidas")
+    public ResponseEntity<List<PartidaDTO>> getPartidasFase(@PathVariable String faseId) {
+        List<PartidaDTO> partidas = faseTorneioService.buscarPartidasMataMata(faseId);
+        return ResponseEntity.ok(partidas);
+    }
+
+    @GetMapping("/{faseId}/jogador/{jogadorClubeId}/historico")
+    public ResponseEntity<List<PartidaDTO>> getHistoricoJogador(
+            @PathVariable String faseId,
+            @PathVariable String jogadorClubeId) {
+
+        List<PartidaDTO> historico = faseTorneioService.buscarHistoricoJogador(faseId, jogadorClubeId);
+        return ResponseEntity.ok(historico);
     }
 }
