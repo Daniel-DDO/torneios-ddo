@@ -33,4 +33,6 @@ public class ParticipacaoFase {
 
     @Enumerated(EnumType.STRING)
     private StatusClassificacao statusClassificacao;
+
+    private Integer posicaoClassificacao;
 }
