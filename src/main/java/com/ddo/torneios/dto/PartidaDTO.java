@@ -47,7 +47,9 @@ public record PartidaDTO(
         Integer cartoesVermelhosVisitante,
 
         BigDecimal coeficienteMandante,
-        BigDecimal coeficienteVisitante
+        BigDecimal coeficienteVisitante,
+
+        String tipoPartida
 ) {
     public PartidaDTO(Partida p) {
         this(
@@ -86,7 +88,9 @@ public record PartidaDTO(
                 p.getCartoesVermelhosVisitante(),
 
                 p.getCoeficienteMandante(),
-                p.getCoeficienteVisitante()
+                p.getCoeficienteVisitante(),
+
+                p.getTipoPartida() != null ? p.getTipoPartida().name() : null
         );
     }
 }

@@ -62,4 +62,15 @@ public class CompeticaoService {
     public List<Competicao> listarTodasSemPaginacao() {
         return competicaoRepository.findAll(Sort.by(Sort.Direction.ASC, "nome"));
     }
+
+    public List<Competicao> buscarAutocomplete(String termo) {
+        if (termo == null || termo.trim().isEmpty()) {
+            return List.of();
+        }
+
+        Pageable limit = PageRequest.of(0, 10, Sort.by("nome").ascending());
+
+        return competicaoRepository.findByNomeContainingIgnoreCase(termo.trim(), limit)
+                .getContent();
+    }
 }

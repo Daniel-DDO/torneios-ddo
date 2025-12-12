@@ -147,6 +147,7 @@ public class GeradorLigaSuicaStrategy implements GeradorPartidasStrategy<Partida
         Partida p = new Partida();
         p.setFase(f);
         p.setLogEventos("Rodada " + rd);
+        p.setTipoPartida(TipoPartida.PONTOS_CORRIDOS);
         p.setRealizada(false);
 
         if (m1 <= m2) {

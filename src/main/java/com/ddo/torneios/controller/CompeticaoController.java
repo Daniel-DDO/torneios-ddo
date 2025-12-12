@@ -39,4 +39,9 @@ public class CompeticaoController {
         List<Competicao> lista = competicaoService.listarTodasSemPaginacao();
         return ResponseEntity.ok(lista);
     }
+
+    @GetMapping("/buscar-autocomplete")
+    public ResponseEntity<List<Competicao>> autocomplete(@RequestParam String termo) {
+        return ResponseEntity.ok(competicaoService.buscarAutocomplete(termo));
+    }
 }

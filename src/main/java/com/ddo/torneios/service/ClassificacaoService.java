@@ -3,6 +3,7 @@ package com.ddo.torneios.service;
 import com.ddo.torneios.dto.PartidaDTO;
 import com.ddo.torneios.model.*;
 import com.ddo.torneios.repository.*;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -10,23 +11,19 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.*;
-import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 public class ClassificacaoService {
 
     @Autowired
     private ParticipacaoFaseRepository participacaoRepository;
-
     @Autowired
     private FaseTorneioRepository faseRepository;
-
     @Autowired
     private PartidaRepository partidaRepository;
-
     @Autowired
     private JogadorClubeRepository jogadorClubeRepository;
-
     @Autowired
     private JogadorRepository jogadorRepository;
 
@@ -71,15 +68,20 @@ public class ClassificacaoService {
         partida.setGolsVisitante(dto.golsVisitante());
         partida.setRealizada(true);
         partida.setWo(dto.wo());
+        partida.setCartoesAmarelosMandante(dto.cartoesAmarelosMandante());
+        partida.setCartoesVermelhosMandante(dto.cartoesVermelhosMandante());
+        partida.setCartoesAmarelosVisitante(dto.cartoesAmarelosVisitante());
+        partida.setCartoesVermelhosVisitante(dto.cartoesVermelhosVisitante());
+
+        atribuirHistoricoJogadores(partida, pMandante, pVisitante);
 
         JogadorClube jcMandante = partida.getMandante();
         JogadorClube jcVisitante = partida.getVisitante();
+        Jogador jGlobalMandante = jcMandante.getJogador();
+        Jogador jGlobalVisitante = jcVisitante.getJogador();
 
         jcMandante.setPontosCoeficiente(safeAdd(jcMandante.getPontosCoeficiente(), coefM));
         jcVisitante.setPontosCoeficiente(safeAdd(jcVisitante.getPontosCoeficiente(), coefV));
-
-        Jogador jGlobalMandante = jcMandante.getJogador();
-        Jogador jGlobalVisitante = jcVisitante.getJogador();
 
         jGlobalMandante.setPontosCoeficiente(safeAdd(jGlobalMandante.getPontosCoeficiente(), coefM));
         jGlobalVisitante.setPontosCoeficiente(safeAdd(jGlobalVisitante.getPontosCoeficiente(), coefV));
@@ -96,14 +98,115 @@ public class ClassificacaoService {
         participacaoRepository.saveAll(List.of(pMandante, pVisitante));
     }
 
+    /**
+     * Atualiza estatísticas gerais (Gols, Jogos, Cartões, Vitórias) em todas as camadas.
+     */
+    private void atribuirHistoricoJogadores(Partida partida, ParticipacaoFase pMandante, ParticipacaoFase pVisitante) {
+        JogadorClube jcMandante = pMandante.getJogadorClube();
+        JogadorClube jcVisitante = pVisitante.getJogadorClube();
+        Jogador jMandante = jcMandante.getJogador();
+        Jogador jVisitante = jcVisitante.getJogador();
+
+        int gm = safeInt(partida.getGolsMandante());
+        int gv = safeInt(partida.getGolsVisitante());
+        int cam = safeInt(partida.getCartoesAmarelosMandante());
+        int cvm = safeInt(partida.getCartoesVermelhosMandante());
+        int cav = safeInt(partida.getCartoesAmarelosVisitante());
+        int cvv = safeInt(partida.getCartoesVermelhosVisitante());
+
+        atualizarStatsEntidades(pMandante, jcMandante, jMandante, gm, gv, cam, cvm);
+        atualizarStatsEntidades(pVisitante, jcVisitante, jVisitante, gv, gm, cav, cvv);
+
+        if (gm > gv) {
+            incrementarResultado(pMandante, jcMandante, jMandante, 1, 0, 0); //vitoria mandante
+            incrementarResultado(pVisitante, jcVisitante, jVisitante, 0, 0, 1); //derrota visitante
+        } else if (gv > gm) {
+            incrementarResultado(pMandante, jcMandante, jMandante, 0, 0, 1); //derrota mandante
+            incrementarResultado(pVisitante, jcVisitante, jVisitante, 1, 0, 0); //vitoria visitante
+        } else {
+            incrementarResultado(pMandante, jcMandante, jMandante, 0, 1, 0); //empate
+            incrementarResultado(pVisitante, jcVisitante, jVisitante, 0, 1, 0); //empate
+        }
+    }
+
+    private void atualizarStatsEntidades(ParticipacaoFase pf, JogadorClube jc, Jogador j, int golsPro, int golsContra, int ca, int cv) {
+        pf.setPartidasJogadas(safeInt(pf.getPartidasJogadas()) + 1);
+        jc.setPartidasJogadas(safeInt(jc.getPartidasJogadas()) + 1);
+        j.setPartidasJogadas(safeInt(j.getPartidasJogadas()) + 1);
+
+        pf.setGolsPro(safeInt(pf.getGolsPro()) + golsPro);
+        jc.setTotalGolsMarcados(safeInt(jc.getTotalGolsMarcados()) + golsPro);
+        j.setGolsMarcados(safeInt(j.getGolsMarcados()) + golsPro);
+
+        pf.setGolsContra(safeInt(pf.getGolsContra()) + golsContra);
+        jc.setTotalGolsSofridos(safeInt(jc.getTotalGolsSofridos()) + golsContra);
+        j.setGolsSofridos(safeInt(j.getGolsSofridos()) + golsContra);
+
+        pf.setSaldoGols(pf.getGolsPro() - pf.getGolsContra());
+
+        jc.setTotalCartoesAmarelos(safeInt(jc.getTotalCartoesAmarelos()) + ca);
+        jc.setTotalCartoesVermelhos(safeInt(jc.getTotalCartoesVermelhos()) + cv);
+
+        j.setCartoesAmarelos(safeLong(j.getCartoesAmarelos()) + ca);
+        j.setCartoesVermelhos(safeLong(j.getCartoesVermelhos()) + cv);
+    }
+
+    private void incrementarResultado(ParticipacaoFase pf, JogadorClube jc, Jogador j, int v, int e, int d) {
+        pf.setVitorias(safeInt(pf.getVitorias()) + v);
+        pf.setEmpates(safeInt(pf.getEmpates()) + e);
+        pf.setDerrotas(safeInt(pf.getDerrotas()) + d);
+
+        jc.setVitorias(safeInt(jc.getVitorias()) + v);
+        jc.setEmpates(safeInt(jc.getEmpates()) + e);
+        jc.setDerrotas(safeInt(jc.getDerrotas()) + d);
+
+        j.setVitorias(safeInt(j.getVitorias()) + v);
+        j.setEmpates(safeInt(j.getEmpates())+  e);
+        j.setDerrotas(safeInt(j.getDerrotas()) + d);
+    }
+
+    private void processarLiga(PartidaDTO dto, ParticipacaoFase m, ParticipacaoFase v) {
+        //Os gols e saldos já foram atualizados em 'atribuirHistoricoJogadores'
+
+        int gm = safeInt(dto.golsMandante());
+        int gv = safeInt(dto.golsVisitante());
+
+        if (gm > gv) {
+            m.setPontos(safeInt(m.getPontos()) + 3);
+        } else if (gm < gv) {
+            v.setPontos(safeInt(v.getPontos()) + 3);
+        } else {
+            m.setPontos(safeInt(m.getPontos()) + 1);
+            v.setPontos(safeInt(v.getPontos()) + 1);
+        }
+    }
+
+    private void processarMataMata(PartidaDTO dto, ParticipacaoFase m, ParticipacaoFase v) {
+        int totalM = safeInt(dto.golsMandante()) + safeInt(dto.penaltisMandante());
+        int totalV = safeInt(dto.golsVisitante()) + safeInt(dto.penaltisVisitante());
+
+        ParticipacaoFase venceu = totalM > totalV ? m : v;
+        ParticipacaoFase perdeu = venceu == m ? v : m;
+
+        perdeu.setStatusClassificacao(StatusClassificacao.ELIMINADO);
+
+        if (dto.etapaMataMata() != null) {
+            try {
+                FaseMataMata atual = FaseMataMata.valueOf(dto.etapaMataMata());
+                venceu.setStatusClassificacao(definirProximoStatus(atual));
+            } catch (Exception ignored) {
+            }
+        }
+    }
+
     private BigDecimal calcularCoeficiente(
             Integer golsM, Integer golsS, boolean vit, boolean emp, boolean der,
             Integer ca, Integer cv, BigDecimal estrelas, Integer valorTorneio
     ) {
-        double gm = golsM != null ? golsM : 0;
-        double gs = golsS != null ? golsS : 0;
-        double amt = ca != null ? ca : 0;
-        double vrm = cv != null ? cv : 0;
+        double gm = safeInt(golsM);
+        double gs = safeInt(golsS);
+        double amt = safeInt(ca);
+        double vrm = safeInt(cv);
         double nivelTime = estrelas != null ? estrelas.doubleValue() : 1.0;
         double pesoTorneio = valorTorneio != null ? valorTorneio / 100.0 : 1.0;
 
@@ -129,60 +232,6 @@ public class ClassificacaoService {
         return BigDecimal.valueOf(Math.max(pontosTotais, -8.0)).setScale(2, RoundingMode.HALF_UP);
     }
 
-    private BigDecimal safeAdd(BigDecimal base, BigDecimal toAdd) {
-        if (base == null) base = BigDecimal.ZERO;
-        if (toAdd == null) toAdd = BigDecimal.ZERO;
-        return base.add(toAdd);
-    }
-
-    private void processarLiga(PartidaDTO dto, ParticipacaoFase m, ParticipacaoFase v) {
-        m.setPartidasJogadas(m.getPartidasJogadas() + 1);
-        v.setPartidasJogadas(v.getPartidasJogadas() + 1);
-
-        int gm = dto.golsMandante() != null ? dto.golsMandante() : 0;
-        int gv = dto.golsVisitante() != null ? dto.golsVisitante() : 0;
-
-        m.setGolsPro(m.getGolsPro() + gm);
-        m.setGolsContra(m.getGolsContra() + gv);
-        v.setGolsPro(v.getGolsPro() + gv);
-        v.setGolsContra(v.getGolsContra() + gm);
-        m.setSaldoGols(m.getGolsPro() - m.getGolsContra());
-        v.setSaldoGols(v.getGolsPro() - v.getGolsContra());
-
-        if (gm > gv) {
-            m.setPontos(m.getPontos() + 3);
-            m.setVitorias(m.getVitorias() + 1);
-            v.setDerrotas(v.getDerrotas() + 1);
-        } else if (gm < gv) {
-            v.setPontos(v.getPontos() + 3);
-            v.setVitorias(v.getVitorias() + 1);
-            m.setDerrotas(m.getDerrotas() + 1);
-        } else {
-            m.setPontos(m.getPontos() + 1);
-            v.setPontos(v.getPontos() + 1);
-            m.setEmpates(m.getEmpates() + 1);
-            v.setEmpates(v.getEmpates() + 1);
-        }
-    }
-
-    private void processarMataMata(PartidaDTO dto, ParticipacaoFase m, ParticipacaoFase v) {
-        int totalM = (dto.golsMandante() != null ? dto.golsMandante() : 0) + (dto.penaltisMandante() != null ? dto.penaltisMandante() : 0);
-        int totalV = (dto.golsVisitante() != null ? dto.golsVisitante() : 0) + (dto.penaltisVisitante() != null ? dto.penaltisVisitante() : 0);
-
-        ParticipacaoFase venceu = totalM > totalV ? m : v;
-        ParticipacaoFase perdeu = venceu == m ? v : m;
-
-        perdeu.setStatusClassificacao(StatusClassificacao.ELIMINADO);
-
-        if (dto.etapaMataMata() != null) {
-            try {
-                FaseMataMata atual = FaseMataMata.valueOf(dto.etapaMataMata());
-                venceu.setStatusClassificacao(definirProximoStatus(atual));
-            } catch (Exception e) {
-            }
-        }
-    }
-
     private StatusClassificacao definirProximoStatus(FaseMataMata etapaAtual) {
         return switch (etapaAtual) {
             case OITAVAS -> StatusClassificacao.QUARTAS;
@@ -198,12 +247,12 @@ public class ClassificacaoService {
                 .orElseThrow(() -> new RuntimeException("Participação não encontrada"));
     }
 
-    public List<ParticipacaoFase> ordernarRanking(List<ParticipacaoFase> lista) {
-        return lista.stream()
-                .sorted(Comparator.comparing(ParticipacaoFase::getPontos).reversed()
-                        .thenComparing(Comparator.comparing(ParticipacaoFase::getVitorias).reversed())
-                        .thenComparing(Comparator.comparing(ParticipacaoFase::getSaldoGols).reversed())
-                        .thenComparing(Comparator.comparing(ParticipacaoFase::getGolsPro).reversed()))
-                .collect(Collectors.toList());
+    private BigDecimal safeAdd(BigDecimal base, BigDecimal toAdd) {
+        if (base == null) base = BigDecimal.ZERO;
+        if (toAdd == null) toAdd = BigDecimal.ZERO;
+        return base.add(toAdd);
     }
+
+    private Integer safeInt(Integer v) { return v == null ? 0 : v; }
+    private Long safeLong(Long v) { return v == null ? 0L : v; }
 }

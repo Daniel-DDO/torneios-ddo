@@ -98,24 +98,31 @@ public class GeradorMataMataSorteioDirigidoStrategy implements GeradorPartidasSt
 
     private List<Partida> criarConfronto(FaseTorneio fase, int index, ParticipacaoFase fav, ParticipacaoFase des) {
         List<Partida> lista = new ArrayList<>();
+
+        FaseMataMata etapa = fase.getFaseInicialMataMata();
+        boolean isFinal = etapa == FaseMataMata.FINAL;
+
         if (Boolean.TRUE.equals(fase.getTemJogoVolta())) {
             //Ida
             Partida p1 = criarBase(fase, index);
             p1.setMandante(des.getJogadorClube());
             p1.setVisitante(fav.getJogadorClube());
             p1.setLogEventos("Ida");
+            p1.setTipoPartida(isFinal ? TipoPartida.FINAL_IDA : TipoPartida.MATA_MATA_IDA);
             lista.add(p1);
             //Volta
             Partida p2 = criarBase(fase, index);
             p2.setMandante(fav.getJogadorClube());
             p2.setVisitante(des.getJogadorClube());
             p2.setLogEventos("Volta");
+            p2.setTipoPartida(isFinal ? TipoPartida.FINAL_VOLTA : TipoPartida.MATA_MATA_VOLTA);
             lista.add(p2);
         } else {
             Partida p = criarBase(fase, index);
             p.setMandante(fav.getJogadorClube());
             p.setVisitante(des.getJogadorClube());
             p.setLogEventos("Único");
+            p.setTipoPartida(isFinal ? TipoPartida.FINAL_UNICA : TipoPartida.MATA_MATA_UNICO);
             lista.add(p);
         }
         return lista;

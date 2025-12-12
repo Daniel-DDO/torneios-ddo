@@ -105,6 +105,7 @@ public class GeradorLigaBalanceadaStrategy implements GeradorPartidasStrategy<Ro
                 partida.setRodada(rodada);
                 partida.setMandante(mandante);
                 partida.setVisitante(visitante);
+                partida.setTipoPartida(TipoPartida.PONTOS_CORRIDOS);
                 partida.setRealizada(false);
 
                 partidasDestaRodada.add(partida);
@@ -193,6 +194,7 @@ public class GeradorLigaBalanceadaStrategy implements GeradorPartidasStrategy<Ro
                 partida.setRodada(rodada);
                 partida.setMandante(mandante);
                 partida.setVisitante(visitante);
+                partida.setTipoPartida(TipoPartida.PONTOS_CORRIDOS);
                 partida.setRealizada(false);
 
                 partidasDestaRodada.add(partida);

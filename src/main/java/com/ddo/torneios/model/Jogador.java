@@ -37,6 +37,9 @@ public class Jogador implements UserDetails {
     private Integer golsMarcados;
     private Integer golsSofridos;
     private Integer partidasJogadas;
+    private Integer vitorias;
+    private Integer empates;
+    private Integer derrotas;
 
     @NotNull
     private LocalDateTime criacaoConta;

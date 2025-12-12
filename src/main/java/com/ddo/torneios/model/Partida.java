@@ -71,6 +71,9 @@ public class Partida {
     private BigDecimal coeficienteMandante;
     private BigDecimal coeficienteVisitante;
 
+    @Enumerated(EnumType.STRING)
+    private TipoPartida tipoPartida;
+
     @Embedded
     @AttributeOverrides({
             @AttributeOverride(name = "golsMandante", column = @Column(name = "penaltis_mandante")),
