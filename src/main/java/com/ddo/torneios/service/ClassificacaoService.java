@@ -2,10 +2,7 @@ package com.ddo.torneios.service;
 
 import com.ddo.torneios.dto.PartidaDTO;
 import com.ddo.torneios.model.*;
-import com.ddo.torneios.repository.FaseTorneioRepository;
-import com.ddo.torneios.repository.ParticipacaoFaseRepository;
-import com.ddo.torneios.repository.PartidaRepository;
-import com.ddo.torneios.repository.JogadorClubeRepository;
+import com.ddo.torneios.repository.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -29,6 +26,9 @@ public class ClassificacaoService {
 
     @Autowired
     private JogadorClubeRepository jogadorClubeRepository;
+
+    @Autowired
+    private JogadorRepository jogadorRepository;
 
     @Transactional
     public void registrarResultado(PartidaDTO dto) {
@@ -72,8 +72,17 @@ public class ClassificacaoService {
         partida.setRealizada(true);
         partida.setWo(dto.wo());
 
-        partida.getMandante().setPontosCoeficiente(partida.getMandante().getPontosCoeficiente().add(coefM));
-        partida.getVisitante().setPontosCoeficiente(partida.getVisitante().getPontosCoeficiente().add(coefV));
+        JogadorClube jcMandante = partida.getMandante();
+        JogadorClube jcVisitante = partida.getVisitante();
+
+        jcMandante.setPontosCoeficiente(safeAdd(jcMandante.getPontosCoeficiente(), coefM));
+        jcVisitante.setPontosCoeficiente(safeAdd(jcVisitante.getPontosCoeficiente(), coefV));
+
+        Jogador jGlobalMandante = jcMandante.getJogador();
+        Jogador jGlobalVisitante = jcVisitante.getJogador();
+
+        jGlobalMandante.setPontosCoeficiente(safeAdd(jGlobalMandante.getPontosCoeficiente(), coefM));
+        jGlobalVisitante.setPontosCoeficiente(safeAdd(jGlobalVisitante.getPontosCoeficiente(), coefV));
 
         if (fase.getTipoTorneio() == TipoTorneio.MATA_MATA) {
             processarMataMata(dto, pMandante, pVisitante);
@@ -82,7 +91,8 @@ public class ClassificacaoService {
         }
 
         partidaRepository.save(partida);
-        jogadorClubeRepository.saveAll(List.of(partida.getMandante(), partida.getVisitante()));
+        jogadorClubeRepository.saveAll(List.of(jcMandante, jcVisitante));
+        jogadorRepository.saveAll(List.of(jGlobalMandante, jGlobalVisitante));
         participacaoRepository.saveAll(List.of(pMandante, pVisitante));
     }
 
@@ -119,26 +129,31 @@ public class ClassificacaoService {
         return BigDecimal.valueOf(Math.max(pontosTotais, -8.0)).setScale(2, RoundingMode.HALF_UP);
     }
 
-    private ParticipacaoFase encontrarParticipacao(String fId, String jcId) {
-        return participacaoRepository.findByFaseIdAndJogadorClubeId(fId, jcId)
-                .orElseThrow(() -> new RuntimeException("Participação não encontrada"));
+    private BigDecimal safeAdd(BigDecimal base, BigDecimal toAdd) {
+        if (base == null) base = BigDecimal.ZERO;
+        if (toAdd == null) toAdd = BigDecimal.ZERO;
+        return base.add(toAdd);
     }
 
     private void processarLiga(PartidaDTO dto, ParticipacaoFase m, ParticipacaoFase v) {
         m.setPartidasJogadas(m.getPartidasJogadas() + 1);
         v.setPartidasJogadas(v.getPartidasJogadas() + 1);
-        m.setGolsPro(m.getGolsPro() + dto.golsMandante());
-        m.setGolsContra(m.getGolsContra() + dto.golsVisitante());
-        v.setGolsPro(v.getGolsPro() + dto.golsVisitante());
-        v.setGolsContra(v.getGolsContra() + dto.golsMandante());
+
+        int gm = dto.golsMandante() != null ? dto.golsMandante() : 0;
+        int gv = dto.golsVisitante() != null ? dto.golsVisitante() : 0;
+
+        m.setGolsPro(m.getGolsPro() + gm);
+        m.setGolsContra(m.getGolsContra() + gv);
+        v.setGolsPro(v.getGolsPro() + gv);
+        v.setGolsContra(v.getGolsContra() + gm);
         m.setSaldoGols(m.getGolsPro() - m.getGolsContra());
         v.setSaldoGols(v.getGolsPro() - v.getGolsContra());
 
-        if (dto.golsMandante() > dto.golsVisitante()) {
+        if (gm > gv) {
             m.setPontos(m.getPontos() + 3);
             m.setVitorias(m.getVitorias() + 1);
             v.setDerrotas(v.getDerrotas() + 1);
-        } else if (dto.golsMandante() < dto.golsVisitante()) {
+        } else if (gm < gv) {
             v.setPontos(v.getPontos() + 3);
             v.setVitorias(v.getVitorias() + 1);
             m.setDerrotas(m.getDerrotas() + 1);
@@ -151,8 +166,8 @@ public class ClassificacaoService {
     }
 
     private void processarMataMata(PartidaDTO dto, ParticipacaoFase m, ParticipacaoFase v) {
-        int totalM = dto.golsMandante() + (dto.penaltisMandante() != null ? dto.penaltisMandante() : 0);
-        int totalV = dto.golsVisitante() + (dto.penaltisVisitante() != null ? dto.penaltisVisitante() : 0);
+        int totalM = (dto.golsMandante() != null ? dto.golsMandante() : 0) + (dto.penaltisMandante() != null ? dto.penaltisMandante() : 0);
+        int totalV = (dto.golsVisitante() != null ? dto.golsVisitante() : 0) + (dto.penaltisVisitante() != null ? dto.penaltisVisitante() : 0);
 
         ParticipacaoFase venceu = totalM > totalV ? m : v;
         ParticipacaoFase perdeu = venceu == m ? v : m;
@@ -160,86 +175,35 @@ public class ClassificacaoService {
         perdeu.setStatusClassificacao(StatusClassificacao.ELIMINADO);
 
         if (dto.etapaMataMata() != null) {
-            FaseMataMata atual = FaseMataMata.valueOf(dto.etapaMataMata());
-            venceu.setStatusClassificacao(switch (atual) {
-                case OITAVAS -> StatusClassificacao.QUARTAS;
-                case QUARTAS -> StatusClassificacao.SEMIFINALISTA;
-                case SEMIFINAL -> StatusClassificacao.FINALISTA;
-                case FINAL -> StatusClassificacao.CAMPEAO;
-                default -> StatusClassificacao.ATIVO;
-            });
-        }
-    }
-
-    @Transactional
-    public List<ParticipacaoFase> promoverParaProximaFase(String origemId, String destinoId) {
-        FaseTorneio destino = faseRepository.findById(destinoId).orElseThrow();
-        List<ParticipacaoFase> classificados = participacaoRepository.findByFaseIdOrderByPontosDescVitoriasDescSaldoGolsDescGolsProDesc(origemId)
-                .stream().filter(p -> p.getStatusClassificacao() == StatusClassificacao.CLASSIFICADO).toList();
-
-        return participacaoRepository.saveAll(classificados.stream().map(a -> {
-            ParticipacaoFase n = new ParticipacaoFase();
-            n.setFase(destino);
-            n.setJogadorClube(a.getJogadorClube());
-            n.setPosicaoClassificacao(a.getPosicaoClassificacao());
-            if (destino.getTipoTorneio() == TipoTorneio.MATA_MATA) {
-                n.setStatusClassificacao(mapearStatusInicial(destino.getFaseInicialMataMata()));
-            }
-            return n;
-        }).toList());
-    }
-
-    @Transactional
-    public void finalizarLiga(String faseId, int vagas) {
-        FaseTorneio fase = faseRepository.findById(faseId).orElseThrow();
-        List<ParticipacaoFase> todos = participacaoRepository.findByFaseIdOrderByPontosDescVitoriasDescSaldoGolsDescGolsProDesc(faseId);
-
-        if (fase.getAlgoritmoLiga() == AlgoritmoGeracaoLiga.FASE_GRUPOS) {
-            Map<String, List<ParticipacaoFase>> grupos = todos.stream().collect(Collectors.groupingBy(p -> p.getGrupo() != null ? p.getGrupo() : "Sem Grupo"));
-            List<ParticipacaoFase> passdireto = new ArrayList<>();
-            List<ParticipacaoFase> terceiros = new ArrayList<>();
-
-            grupos.forEach((n, m) -> {
-                List<ParticipacaoFase> r = ordernarRanking(m);
-                for (int i = 0; i < r.size(); i++) {
-                    r.get(i).setPosicaoClassificacao(i + 1);
-                    if (i < 2) passdireto.add(r.get(i));
-                    else if (i == 2) terceiros.add(r.get(i));
-                    else r.get(i).setStatusClassificacao(StatusClassificacao.ELIMINADO);
-                }
-            });
-
-            passdireto.forEach(p -> p.setStatusClassificacao(StatusClassificacao.CLASSIFICADO));
-            int rest = vagas - passdireto.size();
-            if (rest > 0) {
-                ordernarRanking(terceiros).stream().limit(rest).forEach(p -> p.setStatusClassificacao(StatusClassificacao.CLASSIFICADO));
-                terceiros.stream().filter(p -> p.getStatusClassificacao() != StatusClassificacao.CLASSIFICADO).forEach(p -> p.setStatusClassificacao(StatusClassificacao.ELIMINADO));
-            }
-        } else {
-            List<ParticipacaoFase> r = ordernarRanking(todos);
-            for (int i = 0; i < r.size(); i++) {
-                r.get(i).setPosicaoClassificacao(i + 1);
-                r.get(i).setStatusClassificacao(i < vagas ? StatusClassificacao.CLASSIFICADO : StatusClassificacao.ELIMINADO);
+            try {
+                FaseMataMata atual = FaseMataMata.valueOf(dto.etapaMataMata());
+                venceu.setStatusClassificacao(definirProximoStatus(atual));
+            } catch (Exception e) {
             }
         }
-        participacaoRepository.saveAll(todos);
     }
 
-    public List<ParticipacaoFase> ordernarRanking(List<ParticipacaoFase> lista) {
-        return lista.stream().sorted(Comparator.comparing(ParticipacaoFase::getPontos).reversed()
-                .thenComparing(Comparator.comparing(ParticipacaoFase::getVitorias).reversed())
-                .thenComparing(Comparator.comparing(ParticipacaoFase::getSaldoGols).reversed())
-                .thenComparing(Comparator.comparing(ParticipacaoFase::getGolsPro).reversed())).toList();
-    }
-
-    private StatusClassificacao mapearStatusInicial(FaseMataMata e) {
-        return switch (e) {
-            case OITAVAS -> StatusClassificacao.OITAVAS;
-            case QUARTAS -> StatusClassificacao.QUARTAS;
-            case SEMIFINAL -> StatusClassificacao.SEMIFINALISTA;
-            case FINAL -> StatusClassificacao.FINALISTA;
+    private StatusClassificacao definirProximoStatus(FaseMataMata etapaAtual) {
+        return switch (etapaAtual) {
+            case OITAVAS -> StatusClassificacao.QUARTAS;
+            case QUARTAS -> StatusClassificacao.SEMIFINALISTA;
+            case SEMIFINAL -> StatusClassificacao.FINALISTA;
+            case FINAL -> StatusClassificacao.CAMPEAO;
             default -> StatusClassificacao.ATIVO;
         };
     }
 
+    private ParticipacaoFase encontrarParticipacao(String fId, String jcId) {
+        return participacaoRepository.findByFaseIdAndJogadorClubeId(fId, jcId)
+                .orElseThrow(() -> new RuntimeException("Participação não encontrada"));
+    }
+
+    public List<ParticipacaoFase> ordernarRanking(List<ParticipacaoFase> lista) {
+        return lista.stream()
+                .sorted(Comparator.comparing(ParticipacaoFase::getPontos).reversed()
+                        .thenComparing(Comparator.comparing(ParticipacaoFase::getVitorias).reversed())
+                        .thenComparing(Comparator.comparing(ParticipacaoFase::getSaldoGols).reversed())
+                        .thenComparing(Comparator.comparing(ParticipacaoFase::getGolsPro).reversed()))
+                .collect(Collectors.toList());
+    }
 }
