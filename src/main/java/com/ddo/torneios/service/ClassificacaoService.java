@@ -39,14 +39,12 @@ public class ClassificacaoService {
 
         FaseTorneio fase = partida.getFase();
 
-        // Buscando o valor (peso) da competição
         Integer valorCompeticao = fase.getTorneio().getCompeticao().getValor();
-        if (valorCompeticao == null) valorCompeticao = 100; // Default caso não preenchido
+        if (valorCompeticao == null) valorCompeticao = 100;
 
         ParticipacaoFase pMandante = encontrarParticipacao(fase.getId(), partida.getMandante().getId());
         ParticipacaoFase pVisitante = encontrarParticipacao(fase.getId(), partida.getVisitante().getId());
 
-        // Cálculo para o Mandante
         BigDecimal coefM = calcularCoeficiente(
                 dto.golsMandante(), dto.golsVisitante(),
                 dto.golsMandante() > dto.golsVisitante(),
@@ -57,7 +55,6 @@ public class ClassificacaoService {
                 valorCompeticao
         );
 
-        // Cálculo para o Visitante
         BigDecimal coefV = calcularCoeficiente(
                 dto.golsVisitante(), dto.golsMandante(),
                 dto.golsVisitante() > dto.golsMandante(),
