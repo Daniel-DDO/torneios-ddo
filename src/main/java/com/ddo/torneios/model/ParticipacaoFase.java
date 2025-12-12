@@ -1,7 +1,7 @@
 package com.ddo.torneios.model;
 
 import jakarta.persistence.*;
-import lombok.Data;
+        import lombok.Data;
 
 @Data
 @Entity
@@ -35,4 +35,6 @@ public class ParticipacaoFase {
     private StatusClassificacao statusClassificacao;
 
     private Integer posicaoClassificacao;
+
+    private String grupo; //para fase de grupos
 }

@@ -6,6 +6,7 @@ import lombok.EqualsAndHashCode;
 import lombok.ToString;
 import org.hibernate.annotations.ColumnDefault;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Data
@@ -66,6 +67,9 @@ public class Partida {
     private Integer cartoesVermelhosMandante;
     private Integer cartoesAmarelosVisitante;
     private Integer cartoesVermelhosVisitante;
+
+    private BigDecimal coeficienteMandante;
+    private BigDecimal coeficienteVisitante;
 
     @Embedded
     @AttributeOverrides({

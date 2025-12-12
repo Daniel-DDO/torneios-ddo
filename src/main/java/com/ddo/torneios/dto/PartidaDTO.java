@@ -2,6 +2,7 @@ package com.ddo.torneios.dto;
 
 import com.ddo.torneios.model.Partida;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 public record PartidaDTO(
@@ -43,7 +44,10 @@ public record PartidaDTO(
         Integer cartoesAmarelosMandante,
         Integer cartoesVermelhosMandante,
         Integer cartoesAmarelosVisitante,
-        Integer cartoesVermelhosVisitante
+        Integer cartoesVermelhosVisitante,
+
+        BigDecimal coeficienteMandante,
+        BigDecimal coeficienteVisitante
 ) {
     public PartidaDTO(Partida p) {
         this(
@@ -79,7 +83,10 @@ public record PartidaDTO(
                 p.getCartoesAmarelosMandante(),
                 p.getCartoesVermelhosMandante(),
                 p.getCartoesAmarelosVisitante(),
-                p.getCartoesVermelhosVisitante()
+                p.getCartoesVermelhosVisitante(),
+
+                p.getCoeficienteMandante(),
+                p.getCoeficienteVisitante()
         );
     }
 }
