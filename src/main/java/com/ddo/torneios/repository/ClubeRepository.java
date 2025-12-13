@@ -25,4 +25,7 @@ public interface ClubeRepository extends JpaRepository<Clube, String> {
     Page<Clube> findByLigaClubeNot(LigaClube ligaClube, Pageable pageable);
 
     Long countByLigaClube(LigaClube liga);
+
+    boolean existsBySiglaIn(List<String> siglas);
+    boolean existsByNomeIn(List<String> nomes);
 }

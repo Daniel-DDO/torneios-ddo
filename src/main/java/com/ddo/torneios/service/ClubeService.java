@@ -169,4 +169,45 @@ public class ClubeService {
         Pageable top = PageRequest.of(0, limit, Sort.by("titulos").descending());
         return clubeRepository.findAll(top).getContent();
     }
+
+    @Transactional
+    public void cadastrarVariosClubes(List<ClubeRequest> requests) {
+        List<String> siglasRequest = requests.stream().map(ClubeRequest::getSigla).toList();
+        List<String> nomesRequest = requests.stream().map(ClubeRequest::getNome).toList();
+
+        if (siglasRequest.stream().distinct().count() < requests.size()) {
+            throw new ClubeExisteException("Existem siglas duplicadas na lista enviada.");
+        }
+
+        if (nomesRequest.stream().distinct().count() < requests.size()) {
+            throw new ClubeExisteException("Existem nomes duplicadas na lista enviada.");
+        }
+
+        if (clubeRepository.existsBySiglaIn(siglasRequest)) {
+            throw new ClubeExisteException("Uma ou mais siglas já estão cadastradas no sistema.");
+        }
+
+        if (clubeRepository.existsByNomeIn(nomesRequest)) {
+            throw new ClubeExisteException("Um ou mais nomes já estão cadastrados no sistema.");
+        }
+
+        List<Clube> clubes = requests.stream()
+                .map(request -> new Clube(
+                        request.getNome(),
+                        request.getEstadio(),
+                        request.getImagem(),
+                        request.getLigaClube(),
+                        request.getSigla(),
+                        request.getCorPrimaria(),
+                        request.getCorSecundaria(),
+                        request.getEstrelas()
+                ))
+                .toList();
+
+        clubeRepository.saveAll(clubes);
+    }
+
+    public LigaClube[] listarLigas() {
+        return LigaClube.values();
+    }
 }

@@ -92,4 +92,15 @@ public class ClubeController {
     public List<Clube> getTopVencedores(@RequestParam(defaultValue = "5") int limit) {
         return clubeService.listarTopVencedores(limit);
     }
+
+    @PostMapping("/cadastrar-lote")
+    public ResponseEntity<Void> cadastrarEmLote(@RequestBody List<@Valid ClubeRequest> requests) {
+        clubeService.cadastrarVariosClubes(requests);
+        return ResponseEntity.status(HttpStatus.CREATED).build();
+    }
+
+    @GetMapping("/ligas")
+    public ResponseEntity<LigaClube[]> getLigas() {
+        return ResponseEntity.ok(clubeService.listarLigas());
+    }
 }
