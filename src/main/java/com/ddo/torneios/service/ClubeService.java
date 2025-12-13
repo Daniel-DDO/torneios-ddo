@@ -3,6 +3,7 @@ package com.ddo.torneios.service;
 import com.ddo.torneios.dto.PaginacaoDTO;
 import com.ddo.torneios.exception.ClubeExisteException;
 import com.ddo.torneios.model.Clube;
+import com.ddo.torneios.model.LigaClube;
 import com.ddo.torneios.repository.ClubeRepository;
 import com.ddo.torneios.request.ClubeRequest;
 import jakarta.persistence.EntityNotFoundException;
@@ -13,6 +14,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Collections;
 import java.util.List;
@@ -120,5 +122,51 @@ public class ClubeService {
         }
 
         return clubeRepository.findTop10ByNomeContainingIgnoreCase(termo.trim());
+    }
+
+    public PaginacaoDTO<Clube> listarSomenteSelecoes(int page, int size) {
+        Pageable pageable = PageRequest.of(page, size, Sort.by("nome").ascending());
+        Page<Clube> pagina = clubeRepository.findByLigaClube(LigaClube.SELECAO, pageable);
+        return converterParaDTO(pagina);
+    }
+
+    public PaginacaoDTO<Clube> listarExcetoSelecoes(int page, int size) {
+        Pageable pageable = PageRequest.of(page, size, Sort.by("nome").ascending());
+        Page<Clube> pagina = clubeRepository.findByLigaClubeNot(LigaClube.SELECAO, pageable);
+        return converterParaDTO(pagina);
+    }
+
+    public PaginacaoDTO<Clube> listarPorLiga(LigaClube liga, int page, int size) {
+        Pageable pageable = PageRequest.of(page, size, Sort.by("nome").ascending());
+        Page<Clube> pagina = clubeRepository.findByLigaClube(liga, pageable);
+        return converterParaDTO(pagina);
+    }
+
+    private PaginacaoDTO<Clube> converterParaDTO(Page<Clube> pagina) {
+        return new PaginacaoDTO<>(
+                pagina.getContent(),
+                pagina.getNumber(),
+                pagina.getTotalPages(),
+                pagina.getTotalElements(),
+                pagina.getSize(),
+                pagina.isLast()
+        );
+    }
+
+    public Long contarClubesPorLiga(LigaClube liga) {
+        return clubeRepository.countByLigaClube(liga);
+    }
+
+    @Transactional
+    public void alternarStatusAtivo(String id) {
+        Clube clube = clubeRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Clube não encontrado"));
+        clube.setAtivo(!clube.isAtivo());
+        clubeRepository.save(clube);
+    }
+
+    public List<Clube> listarTopVencedores(int limit) {
+        Pageable top = PageRequest.of(0, limit, Sort.by("titulos").descending());
+        return clubeRepository.findAll(top).getContent();
     }
 }

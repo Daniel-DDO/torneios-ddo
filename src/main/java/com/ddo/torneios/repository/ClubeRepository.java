@@ -1,6 +1,7 @@
 package com.ddo.torneios.repository;
 
 import com.ddo.torneios.model.Clube;
+import com.ddo.torneios.model.LigaClube;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -16,4 +17,12 @@ public interface ClubeRepository extends JpaRepository<Clube, String> {
 
     Page<Clube> findByNomeContainingIgnoreCase(String nome, Pageable pageable);
     List<Clube> findTop10ByNomeContainingIgnoreCase(String nome);
+
+    List<Clube> findByLigaClube(LigaClube ligaClube);
+    List<Clube> findByLigaClubeNot(LigaClube ligaClube);
+
+    Page<Clube> findByLigaClube(LigaClube ligaClube, Pageable pageable);
+    Page<Clube> findByLigaClubeNot(LigaClube ligaClube, Pageable pageable);
+
+    Long countByLigaClube(LigaClube liga);
 }

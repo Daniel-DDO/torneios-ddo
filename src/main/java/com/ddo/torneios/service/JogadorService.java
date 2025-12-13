@@ -360,4 +360,50 @@ public class JogadorService {
         jogador.setModificacaoConta(LocalDateTime.now());
         jogadorRepository.save(jogador);
     }
+
+    public PaginacaoDTO<JogadorDTO> listarJogadoresDinamico(int page, int size) {
+        Pageable pageable = PageRequest.of(page, size, Sort.by("nome").ascending());
+
+        Page<Jogador> paginaEntidades = jogadorRepository.findAll(pageable);
+
+        Page<JogadorDTO> paginaDTO = paginaEntidades.map(JogadorDTO::new);
+
+        return new PaginacaoDTO<>(
+                paginaDTO.getContent(),
+                paginaDTO.getNumber(),
+                paginaDTO.getTotalPages(),
+                paginaDTO.getTotalElements(),
+                paginaDTO.getSize(),
+                paginaDTO.isLast()
+        );
+    }
+
+    public Long contarContasReivindicadas() {
+        return jogadorRepository.countByContaReivindicadaTrue();
+    }
+
+    @Transactional
+    public JogadorDTO alterarCargo(String idJogador, Cargo novoCargo) {
+        Jogador jogador = jogadorRepository.findById(idJogador)
+                .orElseThrow(() -> new EntityNotFoundException("Jogador não encontrado"));
+        jogador.setCargo(novoCargo);
+        return new JogadorDTO(jogadorRepository.save(jogador));
+    }
+
+    public PaginacaoDTO<JogadorDTO> listarPorCargo(Cargo cargo, int page, int size) {
+        Pageable pageable = PageRequest.of(page, size, Sort.by("nome").ascending());
+
+        Page<Jogador> paginaEntidades = jogadorRepository.findByCargo(cargo, pageable);
+
+        Page<JogadorDTO> paginaDTO = paginaEntidades.map(JogadorDTO::new);
+
+        return new PaginacaoDTO<>(
+                paginaDTO.getContent(),
+                paginaDTO.getNumber(),
+                paginaDTO.getTotalPages(),
+                paginaDTO.getTotalElements(),
+                paginaDTO.getSize(),
+                paginaDTO.isLast()
+        );
+    }
 }

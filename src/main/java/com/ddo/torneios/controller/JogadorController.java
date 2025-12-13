@@ -3,6 +3,7 @@ package com.ddo.torneios.controller;
 import com.ddo.torneios.dto.JogadorDTO;
 import com.ddo.torneios.dto.LoginResponseDTO;
 import com.ddo.torneios.dto.PaginacaoDTO;
+import com.ddo.torneios.model.Cargo;
 import com.ddo.torneios.model.Jogador;
 import com.ddo.torneios.request.*;
 import com.ddo.torneios.service.JogadorService;
@@ -180,5 +181,32 @@ public class JogadorController {
         jogadorService.alterarCredenciais(userDetails.getUsername(), request);
 
         return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/todos")
+    public PaginacaoDTO<JogadorDTO> listarTodos(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        return jogadorService.listarJogadoresDinamico(page, size);
+    }
+
+    @GetMapping("/estatisticas/ativos")
+    public ResponseEntity<Long> getTotalAtivos() {
+        return ResponseEntity.ok(jogadorService.contarContasReivindicadas());
+    }
+
+    @PatchMapping("/{id}/cargo")
+    public ResponseEntity<JogadorDTO> updateCargo(
+            @PathVariable String id,
+            @RequestParam Cargo novoCargo) {
+        return ResponseEntity.ok(jogadorService.alterarCargo(id, novoCargo));
+    }
+
+    @GetMapping("/filtro/cargo")
+    public PaginacaoDTO<JogadorDTO> getPorCargo(
+            @RequestParam Cargo cargo,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        return jogadorService.listarPorCargo(cargo, page, size);
     }
 }
