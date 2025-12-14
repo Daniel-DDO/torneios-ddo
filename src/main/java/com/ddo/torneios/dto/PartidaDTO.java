@@ -49,7 +49,10 @@ public record PartidaDTO(
         BigDecimal coeficienteMandante,
         BigDecimal coeficienteVisitante,
 
-        String tipoPartida
+        String tipoPartida,
+
+        String proximaPartidaId,
+        Integer slotNaProxima
 ) {
     public PartidaDTO(Partida p) {
         this(
@@ -90,7 +93,10 @@ public record PartidaDTO(
                 p.getCoeficienteMandante(),
                 p.getCoeficienteVisitante(),
 
-                p.getTipoPartida() != null ? p.getTipoPartida().name() : null
+                p.getTipoPartida() != null ? p.getTipoPartida().name() : null,
+
+                p.getProximaPartida() != null ? p.getProximaPartida().getId() : null,
+                p.getSlotNaProxima()
         );
     }
 }

@@ -1,8 +1,11 @@
 package com.ddo.torneios.service;
 
+import com.ddo.torneios.dto.LinhaClassificacaoDTO;
 import com.ddo.torneios.dto.PartidaDTO;
 import com.ddo.torneios.model.*;
 import com.ddo.torneios.repository.*;
+import lombok.Getter;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -255,4 +258,132 @@ public class ClassificacaoService {
 
     private Integer safeInt(Integer v) { return v == null ? 0 : v; }
     private Long safeLong(Long v) { return v == null ? 0L : v; }
+
+    public List<LinhaClassificacaoDTO> calcularClassificacao(FaseTorneio fase) {
+        List<Partida> partidas = partidaRepository.findByFaseAndRealizadaTrue(fase);
+        Map<String, AcumuladorStatus> mapa = new HashMap<>();
+
+        fase.getParticipacoes().forEach(p -> {
+            String id = p.getJogadorClube().getId();
+            AcumuladorStatus acc = new AcumuladorStatus();
+            acc.setJogadorClubeId(id);
+            acc.setNomeJogador(p.getJogadorClube().getJogador().getNome());
+            acc.setNomeClube(p.getJogadorClube().getClube().getNome());
+            acc.setImagemClube(p.getJogadorClube().getClube().getImagem());
+            mapa.put(id, acc);
+        });
+
+        for (Partida p : partidas) {
+            acumularPartida(mapa, p);
+        }
+
+        List<AcumuladorStatus> ordenados = mapa.values().stream()
+                .sorted((a, b) -> {
+                    //Pontos
+                    if (b.getPontos() != a.getPontos()) return b.getPontos() - a.getPontos();
+                    //Saldo de Gols
+                    if (b.getSaldo() != a.getSaldo()) return b.getSaldo() - a.getSaldo();
+                    //Vitórias
+                    if (b.getVitorias() != a.getVitorias()) return b.getVitorias() - a.getVitorias();
+                    //Gols Pró
+                    if (b.getGolsPro() != a.getGolsPro()) return b.getGolsPro() - a.getGolsPro();
+                    //Gols Contra (Menos é melhor)
+                    if (a.getGolsContra() != b.getGolsContra()) return a.getGolsContra() - b.getGolsContra();
+                    //Cartões Amarelos (Menos é melhor)
+                    if (a.getAmarelos() != b.getAmarelos()) return a.getAmarelos() - b.getAmarelos();
+                    //Cartões Vermelhos (Menos é melhor)
+                    if (a.getVermelhos() != b.getVermelhos()) return a.getVermelhos() - b.getVermelhos();
+
+                    //confronto Direto (se tudo acima empatar)
+                    return compararConfrontoDireto(a, b, partidas);
+                })
+                .toList();
+
+        return atribuirZonasEPosicao(ordenados, fase);
+    }
+
+    private void acumularPartida(Map<String, AcumuladorStatus> mapa, Partida p) {
+        AcumuladorStatus m = mapa.get(p.getMandante().getId());
+        AcumuladorStatus v = mapa.get(p.getVisitante().getId());
+
+        int gM = p.getGolsMandante() != null ? p.getGolsMandante() : 0;
+        int gV = p.getGolsVisitante() != null ? p.getGolsVisitante() : 0;
+
+        //gols e jogos
+        m.jogos++; v.jogos++;
+        m.golsPro += gM; m.golsContra += gV;
+        v.golsPro += gV; v.golsContra += gM;
+
+        //cartões (Null-safe)
+        m.amarelos += (p.getCartoesAmarelosMandante() != null ? p.getCartoesAmarelosMandante() : 0);
+        m.vermelhos += (p.getCartoesVermelhosMandante() != null ? p.getCartoesVermelhosMandante() : 0);
+        v.amarelos += (p.getCartoesAmarelosVisitante() != null ? p.getCartoesAmarelosVisitante() : 0);
+        v.vermelhos += (p.getCartoesVermelhosVisitante() != null ? p.getCartoesVermelhosVisitante() : 0);
+
+        //pontuação
+        if (gM > gV) {
+            m.pontos += 3; m.vitorias++; v.derrotas++;
+        } else if (gV > gM) {
+            v.pontos += 3; v.vitorias++; m.derrotas++;
+        } else {
+            m.pontos += 1; v.pontos += 1; m.empates++; v.empates++;
+        }
+    }
+
+    private int compararConfrontoDireto(AcumuladorStatus a, AcumuladorStatus b, List<Partida> partidas) {
+        int pontosA = 0;
+        int pontosB = 0;
+
+        for (Partida p : partidas) {
+            String mId = p.getMandante().getId();
+            String vId = p.getVisitante().getId();
+
+            if ((mId.equals(a.getJogadorClubeId()) && vId.equals(b.getJogadorClubeId())) ||
+                    (mId.equals(b.getJogadorClubeId()) && vId.equals(a.getJogadorClubeId()))) {
+
+                int gM = p.getGolsMandante();
+                int gV = p.getGolsVisitante();
+
+                if (gM > gV) {
+                    if (mId.equals(a.getJogadorClubeId())) pontosA += 3; else pontosB += 3;
+                } else if (gV > gM) {
+                    if (vId.equals(a.getJogadorClubeId())) pontosA += 3; else pontosB += 3;
+                } else {
+                    pontosA += 1; pontosB += 1;
+                }
+            }
+        }
+        return pontosB - pontosA;
+    }
+
+    private List<LinhaClassificacaoDTO> atribuirZonasEPosicao(List<AcumuladorStatus> lista, FaseTorneio fase) {
+        List<LinhaClassificacaoDTO> resultado = new ArrayList<>();
+
+        for (int i = 0; i < lista.size(); i++) {
+            int pos = i + 1;
+            AcumuladorStatus acc = lista.get(i);
+
+            ZonaFase zona = (fase.getZonas() == null) ? null : fase.getZonas().stream()
+                    .filter(z -> pos >= z.getPosicaoDe() && pos <= z.getPosicaoAte())
+                    .findFirst().orElse(null);
+
+            resultado.add(new LinhaClassificacaoDTO(
+                    pos, acc.jogadorClubeId, acc.nomeJogador, acc.nomeClube, acc.imagemClube,
+                    acc.pontos, acc.jogos, acc.vitorias, acc.empates, acc.derrotas,
+                    acc.golsPro, acc.golsContra, acc.getSaldo(),
+                    zona != null ? zona.getNome() : "",
+                    zona != null ? zona.getCorHex() : "#FFFFFF"
+            ));
+        }
+        return resultado;
+    }
+
+    @Getter
+    @Setter
+    class AcumuladorStatus {
+        int pontos, jogos, vitorias, empates, derrotas, golsPro, golsContra, amarelos, vermelhos;
+        String jogadorClubeId, nomeJogador, nomeClube, imagemClube;
+
+        int getSaldo() { return golsPro - golsContra; }
+    }
 }

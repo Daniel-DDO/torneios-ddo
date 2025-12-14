@@ -1,5 +1,6 @@
 package com.ddo.torneios.repository;
 
+import com.ddo.torneios.model.FaseTorneio;
 import com.ddo.torneios.model.Rodada;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -19,4 +20,6 @@ public interface RodadaRepository extends JpaRepository<Rodada, String> {
             "WHERE LOWER(r.nome) LIKE LOWER(CONCAT('%', :termo, '%')) " +
             "OR CAST(r.numero AS string) LIKE :termo")
     List<Rodada> buscarAutocomplete(@Param("termo") String termo, Pageable pageable);
+
+    void deleteByFase(FaseTorneio fase);
 }

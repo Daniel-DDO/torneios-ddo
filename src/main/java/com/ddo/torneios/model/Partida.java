@@ -81,6 +81,12 @@ public class Partida {
     })
     private DisputaPenaltis penaltis;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "partida_proxima_id")
+    private Partida proximaPartida; //partida da próxima fase
+
+    private Integer slotNaProxima;
+
     public boolean houvePenaltis() {
         return penaltis != null &&
                 penaltis.getGolsMandante() != null &&
