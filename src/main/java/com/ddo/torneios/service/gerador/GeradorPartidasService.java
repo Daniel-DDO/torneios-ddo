@@ -63,15 +63,32 @@ public class GeradorPartidasService {
         Object primeiro = lista.get(0);
 
         if (primeiro instanceof Rodada) {
-            rodadaRepository.saveAll((List<Rodada>) lista);
+            List<Rodada> rodadas = (List<Rodada>) lista;
+            rodadas.forEach(rodada -> {
+                if (rodada.getPartidas() != null) {
+                    rodada.getPartidas().forEach(this::vincularEstadioDoMandante);
+                }
+            });
+            rodadaRepository.saveAll(rodadas);
         }
         else if (primeiro instanceof Partida) {
-            partidaRepository.saveAll((List<Partida>) lista);
+            List<Partida> partidas = (List<Partida>) lista;
+            partidas.forEach(this::vincularEstadioDoMandante);
+            partidaRepository.saveAll(partidas);
             partidaRepository.flush();
         }
     }
 
     public Optional<FaseTorneio> buscarPorId(String faseId) {
         return faseRepository.findById(faseId);
+    }
+
+    private void vincularEstadioDoMandante(Partida partida) {
+        if (partida.getMandante() != null &&
+                partida.getMandante().getClube() != null &&
+                partida.getMandante().getClube().getEstadio() != null) {
+
+            partida.setEstadio(partida.getMandante().getClube().getEstadio());
+        }
     }
 }

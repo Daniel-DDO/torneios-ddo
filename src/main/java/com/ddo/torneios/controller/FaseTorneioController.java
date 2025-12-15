@@ -2,12 +2,14 @@ package com.ddo.torneios.controller;
 
 import com.ddo.torneios.dto.FaseTorneioDTO;
 import com.ddo.torneios.dto.PartidaDTO;
+import com.ddo.torneios.dto.RelatorioFaseDTO;
 import com.ddo.torneios.dto.RodadaDTO;
 import com.ddo.torneios.model.FaseTorneio;
 import com.ddo.torneios.model.ZonaFase;
 import com.ddo.torneios.repository.FaseTorneioRepository;
 import com.ddo.torneios.request.FaseTorneioRequest;
 import com.ddo.torneios.service.ClassificacaoService;
+import com.ddo.torneios.service.ExportService;
 import com.ddo.torneios.service.FaseTorneioService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -29,6 +31,9 @@ public class FaseTorneioController {
 
     @Autowired
     private FaseTorneioRepository faseRepository;
+
+    @Autowired
+    private ExportService exportService;
 
     @PostMapping("/criar")
     public ResponseEntity<FaseTorneioDTO> criarFase(@RequestBody @Valid FaseTorneioRequest request) {
@@ -89,5 +94,14 @@ public class FaseTorneioController {
         classificacaoService.recalcularETransmitir(fase);
 
         return ResponseEntity.ok().build();
+    }
+
+    @GetMapping("/{faseId}/dados-exportacao")
+    public ResponseEntity<RelatorioFaseDTO> getDadosExportacao(@PathVariable String faseId) {
+        FaseTorneio fase = faseRepository.findById(faseId)
+                .orElseThrow(() -> new RuntimeException("Fase não encontrada"));
+
+        RelatorioFaseDTO dados = exportService.prepararDadosExportacao(fase);
+        return ResponseEntity.ok(dados);
     }
 }
