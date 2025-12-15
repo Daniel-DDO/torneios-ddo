@@ -3,7 +3,11 @@ package com.ddo.torneios.controller;
 import com.ddo.torneios.dto.FaseTorneioDTO;
 import com.ddo.torneios.dto.PartidaDTO;
 import com.ddo.torneios.dto.RodadaDTO;
+import com.ddo.torneios.model.FaseTorneio;
+import com.ddo.torneios.model.ZonaFase;
+import com.ddo.torneios.repository.FaseTorneioRepository;
 import com.ddo.torneios.request.FaseTorneioRequest;
+import com.ddo.torneios.service.ClassificacaoService;
 import com.ddo.torneios.service.FaseTorneioService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,6 +23,12 @@ public class FaseTorneioController {
 
     @Autowired
     private FaseTorneioService faseTorneioService;
+
+    @Autowired
+    private ClassificacaoService classificacaoService;
+
+    @Autowired
+    private FaseTorneioRepository faseRepository;
 
     @PostMapping("/criar")
     public ResponseEntity<FaseTorneioDTO> criarFase(@RequestBody @Valid FaseTorneioRequest request) {
@@ -63,5 +73,21 @@ public class FaseTorneioController {
 
         List<PartidaDTO> historico = faseTorneioService.buscarHistoricoJogador(faseId, jogadorClubeId);
         return ResponseEntity.ok(historico);
+    }
+
+    @PostMapping("/{faseId}/zonas")
+    public ResponseEntity<Void> atualizarZonas(
+            @PathVariable String faseId,
+            @RequestBody List<ZonaFase> novasZonas) {
+
+        FaseTorneio fase = faseRepository.findById(faseId)
+                .orElseThrow(() -> new RuntimeException("Fase não encontrada"));
+
+        fase.setZonas(novasZonas);
+        faseRepository.save(fase);
+
+        classificacaoService.recalcularETransmitir(fase);
+
+        return ResponseEntity.ok().build();
     }
 }

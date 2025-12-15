@@ -64,7 +64,7 @@ public class PartidaService {
         partida.setCoeficienteMandante(null);
         partida.setCoeficienteVisitante(null);
 
-        // Aqui você poderia chamar um serviço para desfazer a pontuação se necessário
+        //Aqui tem q chamar um serviço para desfazer a pontuação
 
         partidaRepository.save(partida);
     }

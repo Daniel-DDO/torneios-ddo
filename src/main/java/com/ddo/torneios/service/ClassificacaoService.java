@@ -8,6 +8,7 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -29,6 +30,8 @@ public class ClassificacaoService {
     private JogadorClubeRepository jogadorClubeRepository;
     @Autowired
     private JogadorRepository jogadorRepository;
+    @Autowired
+    private SimpMessagingTemplate messagingTemplate;
 
     @Transactional
     public void registrarResultado(PartidaDTO dto) {
@@ -99,6 +102,17 @@ public class ClassificacaoService {
         jogadorClubeRepository.saveAll(List.of(jcMandante, jcVisitante));
         jogadorRepository.saveAll(List.of(jGlobalMandante, jGlobalVisitante));
         participacaoRepository.saveAll(List.of(pMandante, pVisitante));
+
+        try {
+            List<LinhaClassificacaoDTO> novaClassificacao = calcularClassificacao(fase);
+
+            String topico = "/topic/classificacao/" + fase.getId();
+            messagingTemplate.convertAndSend(topico, novaClassificacao);
+
+            log.info("Classificação atualizada e enviada via WebSocket para a fase: {}", fase.getId());
+        } catch (Exception e) {
+            log.error("Erro ao enviar atualização de classificação via WebSocket", e);
+        }
     }
 
     /**
@@ -376,6 +390,13 @@ public class ClassificacaoService {
             ));
         }
         return resultado;
+    }
+
+    public void recalcularETransmitir(FaseTorneio fase) {
+        List<LinhaClassificacaoDTO> dtos = calcularClassificacao(fase);
+
+        String topico = "/topic/classificacao/" + fase.getId();
+        messagingTemplate.convertAndSend(topico, dtos);
     }
 
     @Getter
