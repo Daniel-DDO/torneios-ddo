@@ -211,11 +211,7 @@ public class GeradorLigaBalanceadaStrategy implements GeradorPartidasStrategy<Ro
             listaRotativa.add(1, ultimo);
         }
 
-        //embaralha a ordem das rodadas
-        //isso impede que a sequência de adversários seja previsível
-        Collections.shuffle(todasRodadas);
-
-        //reatribui os números das rodadas sequencialmente após o embaralhamento
+        //reatribui os números das rodadas sequencialmente
         for (int i = 0; i < todasRodadas.size(); i++) {
             todasRodadas.get(i).setNumero(i + 1);
         }
