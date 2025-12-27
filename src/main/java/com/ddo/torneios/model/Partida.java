@@ -6,6 +6,7 @@ import lombok.EqualsAndHashCode;
 import lombok.ToString;
 import org.hibernate.annotations.ColumnDefault;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Data
@@ -62,12 +63,29 @@ public class Partida {
 
     private Integer chaveIndex; //chave do mata-mata
 
+    private Integer cartoesAmarelosMandante;
+    private Integer cartoesVermelhosMandante;
+    private Integer cartoesAmarelosVisitante;
+    private Integer cartoesVermelhosVisitante;
+
+    private BigDecimal coeficienteMandante;
+    private BigDecimal coeficienteVisitante;
+
+    @Enumerated(EnumType.STRING)
+    private TipoPartida tipoPartida;
+
     @Embedded
     @AttributeOverrides({
             @AttributeOverride(name = "golsMandante", column = @Column(name = "penaltis_mandante")),
             @AttributeOverride(name = "golsVisitante", column = @Column(name = "penaltis_visitante"))
     })
     private DisputaPenaltis penaltis;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "partida_proxima_id")
+    private Partida proximaPartida; //partida da próxima fase
+
+    private Integer slotNaProxima;
 
     public boolean houvePenaltis() {
         return penaltis != null &&

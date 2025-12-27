@@ -1,5 +1,6 @@
 package com.ddo.torneios.repository;
 
+import com.ddo.torneios.model.Cargo;
 import com.ddo.torneios.model.Jogador;
 import jakarta.validation.constraints.NotBlank;
 import org.springframework.data.domain.Page;
@@ -19,4 +20,8 @@ public interface JogadorRepository extends JpaRepository<Jogador, String> {
     List<Jogador> findByDiscordContainingIgnoreCase(String discord);
 
     Page<Jogador> findByNomeContainingIgnoreCase(String nome, Pageable pageable);
+    Page<Jogador> findByCargo(Cargo cargo, Pageable pageable);
+    Page<Jogador> findByCargoNot(Cargo cargo, Pageable pageable);
+    Long countByContaReivindicadaTrue();
+
 }

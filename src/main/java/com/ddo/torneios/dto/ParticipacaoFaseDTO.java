@@ -20,7 +20,8 @@ public record ParticipacaoFaseDTO(
         Integer golsPro,
         Integer golsContra,
         Integer saldoGols,
-        StatusClassificacao statusClassificacao
+        StatusClassificacao statusClassificacao,
+        Integer posicaoClassificacao
 ) {
     public ParticipacaoFaseDTO(ParticipacaoFase entidade) {
         this(
@@ -40,7 +41,8 @@ public record ParticipacaoFaseDTO(
                 entidade.getGolsPro(),
                 entidade.getGolsContra(),
                 entidade.getSaldoGols(),
-                entidade.getStatusClassificacao()
+                entidade.getStatusClassificacao(),
+                entidade.getPosicaoClassificacao()
         );
     }
 }

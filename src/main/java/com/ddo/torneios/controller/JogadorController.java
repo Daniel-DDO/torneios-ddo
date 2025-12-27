@@ -3,6 +3,7 @@ package com.ddo.torneios.controller;
 import com.ddo.torneios.dto.JogadorDTO;
 import com.ddo.torneios.dto.LoginResponseDTO;
 import com.ddo.torneios.dto.PaginacaoDTO;
+import com.ddo.torneios.model.Cargo;
 import com.ddo.torneios.model.Jogador;
 import com.ddo.torneios.request.*;
 import com.ddo.torneios.service.JogadorService;
@@ -14,7 +15,9 @@ import org.springframework.data.domain.Sort;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -168,5 +171,42 @@ public class JogadorController {
 
         jogadorService.removerAvatar(idJogador);
         return ResponseEntity.noContent().build();
+    }
+
+    @PutMapping("/me/credenciais")
+    public ResponseEntity<Void> alterarCredenciais(
+            @RequestBody @Valid AlterarCredenciaisRequest request,
+            @AuthenticationPrincipal UserDetails userDetails) {
+
+        jogadorService.alterarCredenciais(userDetails.getUsername(), request);
+
+        return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/todos")
+    public PaginacaoDTO<JogadorDTO> listarTodos(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        return jogadorService.listarJogadoresDinamico(page, size);
+    }
+
+    @GetMapping("/estatisticas/ativos")
+    public ResponseEntity<Long> getTotalAtivos() {
+        return ResponseEntity.ok(jogadorService.contarContasReivindicadas());
+    }
+
+    @PatchMapping("/{id}/cargo")
+    public ResponseEntity<JogadorDTO> updateCargo(
+            @PathVariable String id,
+            @RequestParam Cargo novoCargo) {
+        return ResponseEntity.ok(jogadorService.alterarCargo(id, novoCargo));
+    }
+
+    @GetMapping("/filtro/cargo")
+    public PaginacaoDTO<JogadorDTO> getPorCargo(
+            @RequestParam Cargo cargo,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        return jogadorService.listarPorCargo(cargo, page, size);
     }
 }

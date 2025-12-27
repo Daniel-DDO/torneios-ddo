@@ -54,6 +54,13 @@ public class FaseTorneio {
     //Configurações paramétricas
     private Integer maxJogosEmCasa;
 
+    @ElementCollection
+    @CollectionTable(name = "fase_zonas", joinColumns = @JoinColumn(name = "fase_id"))
+    private List<ZonaFase> zonas;
+
+    @Column(name = "final_jogo_unico")
+    private Boolean finalJogoUnico = true;
+
     @PrePersist
     @PreUpdate
     private void validarConsistencia() {

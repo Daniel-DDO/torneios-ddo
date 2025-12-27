@@ -10,6 +10,7 @@ public enum LigaClube {
     ARGENTINA("Liga Argentina - ARG"),
     MLS("Major League Soccer - EUA"),
     SAUDI_PRO_LEAGUE("Saudi Pro League - ARA"),
+    ERIDIVISE("Eridivise - HOL"),
     SELECAO("Seleção"),
     OUTROS("Outros");
 

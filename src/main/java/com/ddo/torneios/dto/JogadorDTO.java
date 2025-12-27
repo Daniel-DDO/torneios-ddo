@@ -18,6 +18,9 @@ public record JogadorDTO(
         Integer golsMarcados,
         Integer golsSofridos,
         Integer partidasJogadas,
+        Integer vitorias,
+        Integer empates,
+        Integer derrotas,
         LocalDateTime criacaoConta,
         LocalDateTime modificacaoConta,
         StatusJogador statusJogador,
@@ -29,7 +32,8 @@ public record JogadorDTO(
         Long cartoesAmarelos,
         Long cartoesVermelhos,
         BigDecimal saldoVirtual,
-        Set<Insignia> insignias
+        Set<Insignia> insignias,
+        BigDecimal pontosCoeficiente
 ) {
     public JogadorDTO(Jogador jogador) {
         this(
@@ -41,6 +45,9 @@ public record JogadorDTO(
                 jogador.getGolsMarcados(),
                 jogador.getGolsSofridos(),
                 jogador.getPartidasJogadas(),
+                jogador.getVitorias(),
+                jogador.getEmpates(),
+                jogador.getDerrotas(),
                 jogador.getCriacaoConta(),
                 jogador.getModificacaoConta(),
                 jogador.getStatusJogador(),
@@ -52,7 +59,8 @@ public record JogadorDTO(
                 jogador.getCartoesAmarelos(),
                 jogador.getCartoesVermelhos(),
                 jogador.getSaldoVirtual(),
-                jogador.getInsignias()
+                jogador.getInsignias(),
+                jogador.getPontosCoeficiente()
         );
     }
 }

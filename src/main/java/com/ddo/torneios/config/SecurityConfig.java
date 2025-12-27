@@ -45,6 +45,8 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.DELETE, "/participacao-fase/**").hasAuthority("PROPRIETARIO")
                         .requestMatchers(HttpMethod.POST, "/clube/cadastrar").authenticated()
                         .requestMatchers(HttpMethod.PATCH, "/clube/{id}").authenticated()
+                        .requestMatchers(HttpMethod.DELETE, "/api/fases/**").hasAuthority("PROPRIETARIO")
+                        .requestMatchers(HttpMethod.POST, "/api/fases/**").hasAuthority("PROPRIETARIO")
                         .anyRequest().permitAll()
                 )
                 .addFilterBefore(securityFilter, UsernamePasswordAuthenticationFilter.class);
@@ -57,7 +59,7 @@ public class SecurityConfig {
         CorsConfiguration configuration = new CorsConfiguration();
 
         configuration.setAllowedOriginPatterns(Arrays.asList("*"));
-        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS", "HEAD", "TRACE", "CONNECT"));
+        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS", "HEAD", "TRACE", "CONNECT", "PATCH"));
         configuration.setAllowedHeaders(Arrays.asList("*"));
         configuration.setAllowCredentials(true);
 

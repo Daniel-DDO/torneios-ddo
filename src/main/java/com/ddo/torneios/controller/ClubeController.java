@@ -2,6 +2,7 @@ package com.ddo.torneios.controller;
 
 import com.ddo.torneios.dto.PaginacaoDTO;
 import com.ddo.torneios.model.Clube;
+import com.ddo.torneios.model.LigaClube;
 import com.ddo.torneios.request.ClubeRequest;
 import com.ddo.torneios.service.ClubeService;
 import jakarta.validation.Valid;
@@ -52,5 +53,54 @@ public class ClubeController {
     public ResponseEntity<List<Clube>> buscarAutocomplete(@RequestParam String termo) {
         List<Clube> sugestoes = clubeService.buscarAutocomplete(termo);
         return ResponseEntity.ok(sugestoes);
+    }
+
+    @GetMapping("/selecoes")
+    public PaginacaoDTO<Clube> getSelecoes(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        return clubeService.listarSomenteSelecoes(page, size);
+    }
+
+    @GetMapping("/clubes")
+    public PaginacaoDTO<Clube> getClubesExcetoSelecao(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        return clubeService.listarExcetoSelecoes(page, size);
+    }
+
+    @GetMapping("/liga/{liga}")
+    public PaginacaoDTO<Clube> getPorLiga(
+            @PathVariable LigaClube liga,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        return clubeService.listarPorLiga(liga, page, size);
+    }
+
+    @GetMapping("/estatisticas/contagem/{liga}")
+    public ResponseEntity<Long> getContagemPorLiga(@PathVariable LigaClube liga) {
+        return ResponseEntity.ok(clubeService.contarClubesPorLiga(liga));
+    }
+
+    @PatchMapping("/{id}/status")
+    public ResponseEntity<Void> toggleStatus(@PathVariable String id) {
+        clubeService.alternarStatusAtivo(id);
+        return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/rankings/titulos")
+    public List<Clube> getTopVencedores(@RequestParam(defaultValue = "5") int limit) {
+        return clubeService.listarTopVencedores(limit);
+    }
+
+    @PostMapping("/cadastrar-lote")
+    public ResponseEntity<Void> cadastrarEmLote(@RequestBody List<@Valid ClubeRequest> requests) {
+        clubeService.cadastrarVariosClubes(requests);
+        return ResponseEntity.status(HttpStatus.CREATED).build();
+    }
+
+    @GetMapping("/ligas")
+    public ResponseEntity<LigaClube[]> getLigas() {
+        return ResponseEntity.ok(clubeService.listarLigas());
     }
 }

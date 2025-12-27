@@ -331,4 +331,79 @@ public class JogadorService {
         jogador.setModificacaoConta(LocalDateTime.now());
         jogadorRepository.save(jogador);
     }
+
+    @Transactional
+    public void alterarCredenciais(String idJogador, AlterarCredenciaisRequest request) {
+        Jogador jogador = jogadorRepository.findById(idJogador)
+                .orElseThrow(() -> new EntityNotFoundException("Jogador não encontrado"));
+
+        if (!passwordEncoder.matches(request.getSenhaAtual(), jogador.getSenha())) {
+            throw new RegraNegocioException("A senha atual informada está incorreta.");
+        }
+
+        if (StringUtils.hasText(request.getNovoEmail())) {
+            if (!request.getNovoEmail().equalsIgnoreCase(jogador.getEmail())) {
+                if (jogadorRepository.existsJogadorByEmail(request.getNovoEmail())) {
+                    throw new EmailJaCadastradoException(request.getNovoEmail());
+                }
+                jogador.setEmail(request.getNovoEmail());
+            }
+        }
+
+        if (StringUtils.hasText(request.getNovaSenha())) {
+            if (passwordEncoder.matches(request.getNovaSenha(), jogador.getSenha())) {
+                throw new RegraNegocioException("A nova senha não pode ser igual à senha atual.");
+            }
+            jogador.setSenha(passwordEncoder.encode(request.getNovaSenha()));
+        }
+
+        jogador.setModificacaoConta(LocalDateTime.now());
+        jogadorRepository.save(jogador);
+    }
+
+    public PaginacaoDTO<JogadorDTO> listarJogadoresDinamico(int page, int size) {
+        Pageable pageable = PageRequest.of(page, size, Sort.by("nome").ascending());
+
+        Page<Jogador> paginaEntidades = jogadorRepository.findAll(pageable);
+
+        Page<JogadorDTO> paginaDTO = paginaEntidades.map(JogadorDTO::new);
+
+        return new PaginacaoDTO<>(
+                paginaDTO.getContent(),
+                paginaDTO.getNumber(),
+                paginaDTO.getTotalPages(),
+                paginaDTO.getTotalElements(),
+                paginaDTO.getSize(),
+                paginaDTO.isLast()
+        );
+    }
+
+    public Long contarContasReivindicadas() {
+        return jogadorRepository.countByContaReivindicadaTrue();
+    }
+
+    @Transactional
+    public JogadorDTO alterarCargo(String idJogador, Cargo novoCargo) {
+        Jogador jogador = jogadorRepository.findById(idJogador)
+                .orElseThrow(() -> new EntityNotFoundException("Jogador não encontrado"));
+        jogador.setCargo(novoCargo);
+        return new JogadorDTO(jogadorRepository.save(jogador));
+    }
+
+    public PaginacaoDTO<JogadorDTO> listarPorCargo(Cargo cargo, int page, int size) {
+        Pageable pageable = PageRequest.of(page, size, Sort.by("nome").ascending());
+
+        Page<Jogador> paginaEntidades = jogadorRepository.findByCargo(cargo, pageable);
+
+        Page<JogadorDTO> paginaDTO = paginaEntidades.map(JogadorDTO::new);
+
+        return new PaginacaoDTO<>(
+                paginaDTO.getContent(),
+                paginaDTO.getNumber(),
+                paginaDTO.getTotalPages(),
+                paginaDTO.getTotalElements(),
+                paginaDTO.getSize(),
+                paginaDTO.isLast()
+        );
+    }
 }

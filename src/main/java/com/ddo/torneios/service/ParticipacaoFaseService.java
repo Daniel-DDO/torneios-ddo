@@ -10,6 +10,7 @@ import com.ddo.torneios.repository.ParticipacaoFaseRepository;
 import com.ddo.torneios.request.ParticipacaoFaseRequest;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -102,7 +103,9 @@ public class ParticipacaoFaseService {
             return Collections.emptyList();
         }
 
-        return participacaoFaseRepository.findTop10ByJogadorClubeJogadorNomeContainingIgnoreCase(termo.trim())
+        PageRequest limit = PageRequest.of(0, 10);
+
+        return participacaoFaseRepository.buscarTop10PorNomeOuDiscord(termo.trim(), limit)
                 .stream()
                 .map(ParticipacaoFaseDTO::new)
                 .toList();

@@ -1,7 +1,11 @@
 package com.ddo.torneios.controller;
 
+import com.ddo.torneios.dto.LinhaClassificacaoDTO;
 import com.ddo.torneios.dto.ParticipacaoFaseDTO;
+import com.ddo.torneios.model.FaseTorneio;
+import com.ddo.torneios.repository.FaseTorneioRepository;
 import com.ddo.torneios.request.ParticipacaoFaseRequest;
+import com.ddo.torneios.service.ClassificacaoService;
 import com.ddo.torneios.service.ParticipacaoFaseService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,15 +22,30 @@ public class ParticipacaoFaseController {
     @Autowired
     private ParticipacaoFaseService participacaoFaseService;
 
+    @Autowired
+    private FaseTorneioRepository faseRepository;
+
+    @Autowired
+    private ClassificacaoService classificacaoService;
+
     @PostMapping("/add")
     public ResponseEntity<ParticipacaoFaseDTO> adicionarParticipante(@RequestBody @Valid ParticipacaoFaseRequest request) {
         ParticipacaoFaseDTO dto = participacaoFaseService.adicionarParticipante(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(dto);
     }
 
-    @GetMapping("/fase/{faseId}")
-    public ResponseEntity<List<ParticipacaoFaseDTO>> listarClassificacao(@PathVariable String faseId) {
+    @GetMapping("/fase-a/{faseId}")
+    public ResponseEntity<List<ParticipacaoFaseDTO>> listarClassificacaoAnt(@PathVariable String faseId) {
         List<ParticipacaoFaseDTO> classificacao = participacaoFaseService.listarClassificacao(faseId);
+        return ResponseEntity.ok(classificacao);
+    }
+
+    @GetMapping("/fase/{faseId}")
+    public ResponseEntity<List<LinhaClassificacaoDTO>> listarClassificacao(@PathVariable String faseId) {
+        FaseTorneio fase = faseRepository.findById(faseId)
+                .orElseThrow(() -> new RuntimeException("Fase não encontrada"));
+
+        List<LinhaClassificacaoDTO> classificacao = classificacaoService.calcularClassificacao(fase);
         return ResponseEntity.ok(classificacao);
     }
 

@@ -4,5 +4,6 @@ public enum TipoTorneio {
     GRUPOS,
     PONTOS_CORRIDOS,
     MATA_MATA,
-    JOGO_UNICO
+    JOGO_UNICO,
+    LIGA_SUICA
 }
