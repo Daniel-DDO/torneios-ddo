@@ -39,10 +39,12 @@ public class GeradorLigaBalanceadaStrategy implements GeradorPartidasStrategy<Ro
         //se true, usa o algoritmo original (padrão). Se false, usa o de caos.
         boolean usarAlgoritmoPadrao = random.nextBoolean();
 
+        //gambiarra temporaria
         if (usarAlgoritmoPadrao) {
             return gerarAlgoritmoPadrao(fase, participantes, rodadasDesejadas, n);
         } else {
-            return gerarAlgoritmoCaos(fase, participantes, rodadasDesejadas, n);
+            return gerarAlgoritmoPadrao(fase, participantes, rodadasDesejadas, n);
+            //return gerarAlgoritmoCaos(fase, participantes, rodadasDesejadas, n);
         }
     }
 
