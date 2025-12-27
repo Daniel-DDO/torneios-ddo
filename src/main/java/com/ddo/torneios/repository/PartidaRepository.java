@@ -4,6 +4,7 @@ import com.ddo.torneios.model.FaseMataMata;
 import com.ddo.torneios.model.FaseTorneio;
 import com.ddo.torneios.model.Partida;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -46,4 +47,13 @@ public interface PartidaRepository extends JpaRepository<Partida, String> {
     List<Partida> findByFaseAndEtapaMataMataAndChaveIndex(FaseTorneio fase, FaseMataMata etapa, Integer chave);
 
     List<Partida> findByFase(FaseTorneio fase);
+
+    @Query("SELECT p FROM Partida p " +
+            "WHERE (p.mandante.jogador.id = :jogadorId OR p.visitante.jogador.id = :jogadorId) " +
+            "AND p.realizada = :realizada")
+    List<Partida> findPorJogadorIdEStatus(
+            @Param("jogadorId") String jogadorId,
+            @Param("realizada") boolean realizada,
+            Sort sort
+    );
 }

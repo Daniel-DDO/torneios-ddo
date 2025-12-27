@@ -8,6 +8,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -30,9 +31,11 @@ public class GeradorPartidasService {
 
         faseRepository.save(fase);
 
+        //se já existirem partidas realizadas (com placar), nn permite gerar.
         if (checarSeJaExistemResultados(fase)) {
-            throw new IllegalStateException("Esta fase já possui resultados. Impossível gerar novamente.");
+            throw new IllegalStateException("Esta fase já possui partidas realizadas (com placar). Impossível gerar novamente sem resetar os jogos antes.");
         }
+
         limparGeracoesAnteriores(fase);
 
         GeradorPartidasStrategy<?> strategy = strategyFactory.getStrategy(fase);
@@ -50,9 +53,15 @@ public class GeradorPartidasService {
     @Transactional
     public void limparGeracoesAnteriores(FaseTorneio fase) {
         partidaRepository.deleteByFaseAndRodadaIsNull(fase);
+        partidaRepository.flush(); // Garante que saiu do banco
+
         if (fase.getRodadas() != null && !fase.getRodadas().isEmpty()) {
-            rodadaRepository.deleteAll(fase.getRodadas());
+            List<Rodada> rodadasParaRemover = new ArrayList<>(fase.getRodadas());
             fase.getRodadas().clear();
+
+            rodadaRepository.deleteAll(rodadasParaRemover);
+            rodadaRepository.flush();
+            faseRepository.saveAndFlush(fase);
         }
     }
 

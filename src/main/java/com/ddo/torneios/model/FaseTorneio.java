@@ -32,7 +32,7 @@ public class FaseTorneio {
     private Integer numeroRodadas;
 
     @OrderBy("numero ASC")
-    @OneToMany(mappedBy = "fase", cascade = CascadeType.ALL)
+    @OneToMany(mappedBy = "fase", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Rodada> rodadas;
 
     @Enumerated(EnumType.STRING)

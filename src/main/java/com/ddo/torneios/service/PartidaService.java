@@ -79,4 +79,22 @@ public class PartidaService {
                 .map(PartidaDTO::new)
                 .collect(Collectors.toList());
     }
+
+    public List<PartidaDTO> minhasPartidasFeitas(String jogadorId) {
+        Sort sort = Sort.by(Sort.Direction.DESC, "dataHora");
+
+        return partidaRepository.findPorJogadorIdEStatus(jogadorId, true, sort)
+                .stream()
+                .map(PartidaDTO::new)
+                .collect(Collectors.toList());
+    }
+
+    public List<PartidaDTO> minhasPartidasParaFazer(String jogadorId) {
+        Sort sort = Sort.by(Sort.Direction.ASC, "dataHora");
+
+        return partidaRepository.findPorJogadorIdEStatus(jogadorId, false, sort)
+                .stream()
+                .map(PartidaDTO::new)
+                .collect(Collectors.toList());
+    }
 }
