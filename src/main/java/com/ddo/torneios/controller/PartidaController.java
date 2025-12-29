@@ -1,8 +1,10 @@
 package com.ddo.torneios.controller;
 
 import com.ddo.torneios.dto.PartidaDTO;
+import com.ddo.torneios.model.ReportPartida;
 import com.ddo.torneios.repository.PartidaRepository;
 import com.ddo.torneios.service.ClassificacaoService;
+import com.ddo.torneios.service.JuizVirtualService;
 import com.ddo.torneios.service.PartidaService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -22,6 +24,9 @@ public class PartidaController {
 
     @Autowired
     private PartidaService partidaService;
+
+    @Autowired
+    private JuizVirtualService juizVirtualService;
 
     @PostMapping("/registrar-resultado")
     public ResponseEntity<String> registrarResultado(@RequestBody PartidaDTO dto) {
@@ -72,4 +77,15 @@ public class PartidaController {
     public ResponseEntity<List<PartidaDTO>> buscarAutocomplete(@RequestParam String termo) {
         return ResponseEntity.ok(partidaService.buscarAutocomplete(termo));
     }
+
+    @PostMapping("/{partidaId}/analisar-problema")
+    public ResponseEntity<ReportPartida> analisarProblema(
+            @PathVariable String partidaId,
+            @RequestBody RelatoProblemaRequest request) {
+
+        ReportPartida report = juizVirtualService.analisarProblema(partidaId, request.texto());
+        return ResponseEntity.ok(report);
+    }
+
+    public record RelatoProblemaRequest(String texto) {}
 }
