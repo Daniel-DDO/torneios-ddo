@@ -1,6 +1,7 @@
 package com.ddo.torneios.service;
 
 import com.ddo.torneios.dto.JogadorDTO;
+import com.ddo.torneios.dto.JogadorResumoDTO;
 import com.ddo.torneios.dto.LoginResponseDTO;
 import com.ddo.torneios.dto.PaginacaoDTO;
 import com.ddo.torneios.exception.EmailJaCadastradoException;
@@ -27,10 +28,12 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.time.LocalDateTime;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.stream.Collectors;
 
 @Service
 public class JogadorService {
@@ -405,5 +408,26 @@ public class JogadorService {
                 paginaDTO.getSize(),
                 paginaDTO.isLast()
         );
+    }
+
+    @Transactional(readOnly = true)
+    public List<JogadorDTO> buscarJogadorAutocomplete(String termo) {
+        if (termo == null || termo.trim().length() < 3) {
+            return Collections.emptyList();
+        }
+
+        Pageable limit = PageRequest.of(0, 5);
+
+        return jogadorRepository.buscarAutocomplete(termo.trim(), limit)
+                .stream()
+                .map(JogadorDTO::new)
+                .toList();
+    }
+
+    public List<JogadorResumoDTO> buscarJogadoresParaSelect(String termo) {
+        return jogadorRepository.findByNomeContainingIgnoreCaseOrDiscordContainingIgnoreCase(termo, termo)
+                .stream()
+                .map(j -> new JogadorResumoDTO(j.getId(), j.getNome(), j.getDiscord())) // DTO leve só com o necessário
+                .collect(Collectors.toList());
     }
 }

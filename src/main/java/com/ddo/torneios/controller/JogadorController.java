@@ -1,6 +1,7 @@
 package com.ddo.torneios.controller;
 
 import com.ddo.torneios.dto.JogadorDTO;
+import com.ddo.torneios.dto.JogadorResumoDTO;
 import com.ddo.torneios.dto.LoginResponseDTO;
 import com.ddo.torneios.dto.PaginacaoDTO;
 import com.ddo.torneios.model.Cargo;
@@ -208,5 +209,16 @@ public class JogadorController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
         return jogadorService.listarPorCargo(cargo, page, size);
+    }
+
+    @GetMapping("/busca-rapida")
+    public ResponseEntity<List<JogadorDTO>> buscarAutocomplete(@RequestParam String termo) {
+        var resultados = jogadorService.buscarJogadorAutocomplete(termo);
+        return ResponseEntity.ok(resultados);
+    }
+
+    @GetMapping("/search")
+    public ResponseEntity<List<JogadorResumoDTO>> searchJogadores(@RequestParam String termo) {
+        return ResponseEntity.ok(jogadorService.buscarJogadoresParaSelect(termo));
     }
 }

@@ -87,6 +87,12 @@ public class Partida {
 
     private Integer slotNaProxima;
 
+    @ColumnDefault("0.00")
+    private BigDecimal receitaMandante;
+
+    @ColumnDefault("0.00")
+    private BigDecimal receitaVisitante;
+
     public boolean houvePenaltis() {
         return penaltis != null &&
                 penaltis.getGolsMandante() != null &&

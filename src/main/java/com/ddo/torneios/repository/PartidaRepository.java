@@ -56,4 +56,11 @@ public interface PartidaRepository extends JpaRepository<Partida, String> {
             @Param("realizada") boolean realizada,
             Sort sort
     );
+
+    @Query("SELECT p FROM Partida p " +
+            "WHERE p.fase.id = :faseId " +
+            "AND (p.mandante.jogador.id = :jogadorId OR p.visitante.jogador.id = :jogadorId) " +
+            "ORDER BY p.dataHora DESC")
+    List<Partida> findPorFaseEJogador(@Param("faseId") String faseId,
+                                      @Param("jogadorId") String jogadorId);
 }

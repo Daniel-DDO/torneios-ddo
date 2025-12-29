@@ -32,6 +32,8 @@ public class ClassificacaoService {
     private JogadorRepository jogadorRepository;
     @Autowired
     private SimpMessagingTemplate messagingTemplate;
+    @Autowired
+    private EconomiaService economiaService;
 
     @Transactional
     public void registrarResultado(PartidaDTO dto) {
@@ -102,6 +104,8 @@ public class ClassificacaoService {
         jogadorClubeRepository.saveAll(List.of(jcMandante, jcVisitante));
         jogadorRepository.saveAll(List.of(jGlobalMandante, jGlobalVisitante));
         participacaoRepository.saveAll(List.of(pMandante, pVisitante));
+
+        economiaService.processarEconomiaPartida(partida);
 
         try {
             List<LinhaClassificacaoDTO> novaClassificacao = calcularClassificacao(fase);
