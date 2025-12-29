@@ -1,6 +1,6 @@
 package com.ddo.torneios.service;
 
-
+import com.ddo.torneios.dto.DadosPartidaDTO;
 import com.ddo.torneios.model.Partida;
 import com.ddo.torneios.model.ReportPartida;
 import com.ddo.torneios.repository.PartidaRepository;
@@ -8,12 +8,16 @@ import com.ddo.torneios.repository.ReportPartidaRepository;
 import com.ddo.torneios.request.JuizVirtualRequest;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.annotation.PostConstruct;
 import lombok.Data;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StreamUtils;
 import org.springframework.web.client.RestTemplate;
 
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 
 @Service
@@ -28,38 +32,48 @@ public class JuizVirtualService {
     @Value("${gemini.api.key}")
     private String apiKey;
 
+    @Value("classpath:regulamento_ddo.txt")
+    private Resource regulamentoResource;
+
+    private String regulamentoCache;
+
     private static final String API_URL_TEMPLATE = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=%s";
     private final RestTemplate restTemplate = new RestTemplate();
     private final ObjectMapper objectMapper = new ObjectMapper();
 
-    private static final String REGULAMENTO_TEXTO = """
-            REGULAMENTO DO TORNEIO:
-            1. Tolerância de atraso: 15 minutos. Após isso, é W.O.
-            2. Queda de conexão: Se ocorrer antes dos 10min de jogo, reinicia 0x0. Se depois, mantém placar e tempo restante.
-            3. Jogador não responde: Se um jogador estiver online no sistema mas não responder no chat por 10min, perde por W.O.
-            4. Duplo W.O: Se ambos falharem, sorteio define quem avança, mas ambos não pontuam ranking.
-            """;
+    @PostConstruct
+    public void init() {
+        try {
+            this.regulamentoCache = StreamUtils.copyToString(
+                    regulamentoResource.getInputStream(),
+                    StandardCharsets.UTF_8
+            );
+            System.out.println("Regulamento DDO carregado na memória: " + regulamentoCache.length() + " caracteres.");
+        } catch (Exception e) {
+            throw new RuntimeException("CRÍTICO: Falha ao carregar regulamento_ddo.txt", e);
+        }
+    }
 
-    public ReportPartida analisarProblema(String partidaId, String relatoAdmin) {
+    public ReportPartida analisarDisputa(String partidaId, DadosPartidaDTO dadosDTO) {
         Partida partida = partidaRepository.findById(partidaId)
                 .orElseThrow(() -> new RuntimeException("Partida não encontrada"));
 
-        String prompt = montarPrompt(relatoAdmin);
+        String promptFinal = montarPrompt(dadosDTO);
 
         JuizVirtualRequest request = new JuizVirtualRequest();
         request.setContents(List.of(
-                new JuizVirtualRequest.Content(List.of(new JuizVirtualRequest.Part(prompt)))
+                new JuizVirtualRequest.Content(List.of(new JuizVirtualRequest.Part(promptFinal)))
         ));
 
         try {
             String url = String.format(API_URL_TEMPLATE, apiKey);
             String responseJson = restTemplate.postForObject(url, request, String.class);
 
-            AnaliseIADTO analise = extrairAnaliseDaResposta(responseJson);
+            AnaliseIADTO analise = extrairResultado(responseJson);
 
             ReportPartida report = new ReportPartida();
             report.setPartida(partida);
-            report.setRelatoAdmin(relatoAdmin);
+            report.setRelatoAdmin(dadosDTO.getRelatoOcorrido());
             report.setAnaliseIA(analise.getExplicacao());
             report.setVereditoSugrido(analise.getVeredito());
             report.setNivelConfiabilidade(analise.getConfiabilidade());
@@ -67,39 +81,61 @@ public class JuizVirtualService {
             return reportPartidaRepository.save(report);
 
         } catch (Exception e) {
-            e.printStackTrace();
-            throw new RuntimeException("Erro ao consultar Juiz Virtual: " + e.getMessage());
+            e.printStackTrace(); // Logar erro real
+            throw new RuntimeException("Erro no Tribunal Virtual: " + e.getMessage());
         }
     }
 
-    private String montarPrompt(String relato) {
+    private String montarPrompt(DadosPartidaDTO dados) {
+        // Formata o prompt como se fosse um documento oficial
         return String.format("""
-                Você é o Juiz Supremo de um torneio. Analise o caso abaixo estritamente pelo regulamento.
-                
-                REGULAMENTO:
-                %s
-                
-                RELATO DO ADMIN:
-                "%s"
-                
-                Sua resposta deve ser EXCLUSIVAMENTE um JSON válido (sem markdown, sem ```json) com os campos:
-                {
-                    "veredito": "Resumo curto da decisão (ex: Vitória Jogador A)",
-                    "explicacao": "Explicação detalhada citando a regra usada",
-                    "confiabilidade": Inteiro de 0 a 100 indicando certeza
-                }
-                """, REGULAMENTO_TEXTO, relato);
+            ATUE COMO O JUIZ SUPREMO DA LIGA REAL DDO.
+            
+            1. CONTEXTO DA DISPUTA (AUTOS DO PROCESSO):
+            -----------------------------------------------------
+            MANDANTE:  %s (Jogando com: %s)
+            VISITANTE: %s (Jogando com: %s)
+            
+            RELATO DO OCORRIDO:
+            "%s"
+            -----------------------------------------------------
+
+            2. A LEI (REGULAMENTO OFICIAL VIGENTE - LEIA COM ATENÇÃO):
+            -----------------------------------------------------
+            %s
+            -----------------------------------------------------
+
+            3. SUA MISSÃO:
+            Com base APENAS no regulamento acima (ignore regras da FIFA se contradizerem o texto), julgue o caso.
+            - Se for caso de W.O. por atraso, verifique os 20 minutos (Art. 17).
+            - Se for queda de conexão, verifique se o placar é mantido (Art. 20).
+            - Se for uniforme igual, verifique a responsabilidade do mandante.
+
+            4. FORMATO DE RESPOSTA (JSON OBRIGATÓRIO):
+            {
+                "veredito": "Veredito curto (Ex: Vitória de [Nome] por W.O.)",
+                "explicacao": "Explicação técnica citando o Artigo X do regulamento.",
+                "confiabilidade": Inteiro de 0 a 100
+            }
+            """,
+                dados.getNomeMandante(), dados.getTimeMandante(),
+                dados.getNomeVisitante(), dados.getTimeVisitante(),
+                dados.getRelatoOcorrido(),
+                this.regulamentoCache
+        );
     }
 
-    private AnaliseIADTO extrairAnaliseDaResposta(String googleResponseJson) throws Exception {
-        JsonNode root = objectMapper.readTree(googleResponseJson);
+    private AnaliseIADTO extrairResultado(String jsonResponse) throws Exception {
+        JsonNode root = objectMapper.readTree(jsonResponse);
 
-        String textoDaIA = root.path("candidates").get(0)
-                .path("content")
-                .path("parts").get(0)
-                .path("text").asText();
+        if (!root.path("candidates").has(0)) {
+            throw new RuntimeException("A IA não retornou julgamento. Verifique filtros de segurança.");
+        }
 
-        String jsonLimpo = textoDaIA.replace("```json", "").replace("```", "").trim();
+        String texto = root.path("candidates").get(0)
+                .path("content").path("parts").get(0).path("text").asText();
+
+        String jsonLimpo = texto.replaceAll("```json", "").replaceAll("```", "").trim();
 
         return objectMapper.readValue(jsonLimpo, AnaliseIADTO.class);
     }

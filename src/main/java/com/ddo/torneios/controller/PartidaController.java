@@ -1,8 +1,11 @@
 package com.ddo.torneios.controller;
 
+import com.ddo.torneios.dto.DadosPartidaDTO;
 import com.ddo.torneios.dto.PartidaDTO;
 import com.ddo.torneios.model.ReportPartida;
 import com.ddo.torneios.repository.PartidaRepository;
+import com.ddo.torneios.repository.ReportPartidaRepository;
+import com.ddo.torneios.request.RelatoProblemaRequest;
 import com.ddo.torneios.service.ClassificacaoService;
 import com.ddo.torneios.service.JuizVirtualService;
 import com.ddo.torneios.service.PartidaService;
@@ -11,6 +14,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Optional;
 
 @RestController
 @RequestMapping("/partida")
@@ -27,6 +31,9 @@ public class PartidaController {
 
     @Autowired
     private JuizVirtualService juizVirtualService;
+
+    @Autowired
+    private ReportPartidaRepository reportPartidaRepository;
 
     @PostMapping("/registrar-resultado")
     public ResponseEntity<String> registrarResultado(@RequestBody PartidaDTO dto) {
@@ -83,9 +90,49 @@ public class PartidaController {
             @PathVariable String partidaId,
             @RequestBody RelatoProblemaRequest request) {
 
-        ReportPartida report = juizVirtualService.analisarProblema(partidaId, request.texto());
-        return ResponseEntity.ok(report);
+        Optional<ReportPartida> reportExistente = reportPartidaRepository.findByPartida_Id(partidaId);
+
+        if (reportExistente.isPresent()) {
+            return ResponseEntity.ok(reportExistente.get());
+        }
+
+        DadosPartidaDTO dadosDTO = DadosPartidaDTO.builder()
+                .nomeMandante(request.nomeMandante())
+                .timeMandante(request.timeMandante())
+                .nomeVisitante(request.nomeVisitante())
+                .timeVisitante(request.timeVisitante())
+                .relatoOcorrido(request.relato())
+                .build();
+
+        ReportPartida novoReport = juizVirtualService.analisarDisputa(partidaId, dadosDTO);
+
+        return ResponseEntity.ok(novoReport);
     }
 
-    public record RelatoProblemaRequest(String texto) {}
+    @PostMapping("/{partidaId}/reanalisar")
+    public ResponseEntity<ReportPartida> forcarReanalise(
+            @PathVariable String partidaId,
+            @RequestBody RelatoProblemaRequest request) {
+
+        reportPartidaRepository.findByPartida_Id(partidaId)
+                .ifPresent(reportPartidaRepository::delete);
+
+        DadosPartidaDTO dadosDTO = DadosPartidaDTO.builder()
+                .nomeMandante(request.nomeMandante())
+                .timeMandante(request.timeMandante())
+                .nomeVisitante(request.nomeVisitante())
+                .timeVisitante(request.timeVisitante())
+                .relatoOcorrido(request.relato())
+                .build();
+
+        ReportPartida novoReport = juizVirtualService.analisarDisputa(partidaId, dadosDTO);
+        return ResponseEntity.ok(novoReport);
+    }
+
+    @GetMapping("/{partidaId}/resultado")
+    public ResponseEntity<ReportPartida> consultarResultado(@PathVariable String partidaId) {
+        return reportPartidaRepository.findByPartida_Id(partidaId)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
+    }
 }
