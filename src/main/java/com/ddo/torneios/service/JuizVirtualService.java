@@ -50,7 +50,9 @@ public class JuizVirtualService {
             );
             System.out.println("Regulamento DDO carregado na memória: " + regulamentoCache.length() + " caracteres.");
         } catch (Exception e) {
-            throw new RuntimeException("CRÍTICO: Falha ao carregar regulamento_ddo.txt", e);
+
+            System.err.println("ALERTA: Arquivo 'regulamento_ddo.txt' não encontrado. O sistema iniciou sem as regras específicas.");
+            this.regulamentoCache = "ERRO: O regulamento oficial não pôde ser carregado. Julgue o caso baseando-se apenas no bom senso, fair play e justiça desportiva comum.";
         }
     }
 
@@ -81,7 +83,7 @@ public class JuizVirtualService {
             return reportPartidaRepository.save(report);
 
         } catch (Exception e) {
-            e.printStackTrace(); // Logar erro real
+            e.printStackTrace();
             throw new RuntimeException("Erro no Tribunal Virtual: " + e.getMessage());
         }
     }
