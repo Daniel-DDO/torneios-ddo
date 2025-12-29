@@ -1,0 +1,957 @@
+O presente Regulamento das Competições DDO é o instrumento oficial que orienta, organiza e disciplina todos os torneios realizados sob a chancela do DDO. Seu propósito é assegurar justiça, equidade, transparência e equilíbrio em todas as disputas, garantindo que cada participante, equipe e representante atue dentro de um ambiente íntegro e harmonioso.
+
+Todas as leis e regras de negócio que regem estas competições estão aqui definidas, constituindo a base legal e administrativa do torneio. Não há, portanto, pessoa, cargo ou entidade maior que este regulamento, que se sobrepõe a qualquer interesse individual ou coletivo quando se trata da condução justa e ordeira do campeonato.
+
+O cumprimento integral destas normas é dever de todos os envolvidos, e seu desconhecimento não será aceito como justificativa para condutas inadequadas ou infrações. Nos casos em que houver ambiguidades, incertezas ou situações não previstas neste documento, a interpretação e a decisão final caberão exclusivamente à Comissão Administrativa do torneio e ao atual Presidente, cujas deliberações terão caráter definitivo e inquestionável. Este documento é, portanto, mais do que um conjunto de regras: é a garantia de que cada partida seja disputada com respeito, espírito esportivo e igualdade de condições, preservando a essência e a credibilidade das Competições DDO.
+I – Disposições Gerais
+
+Artigo 1º — O presente regulamento estabelece os direitos, deveres e responsabilidades de todas as partes participantes e envolvidas na preparação, organização e execução das Competições DDO, abrangendo desde as fases qualificatórias até os play-offs. É de cumprimento obrigatório por todos os envolvidos, devendo suas disposições ser seguidas de forma fiel e integral. O descumprimento destas normas acarretará sanções e punições, podendo, em casos de reincidência ou gravidade, resultar na eliminação do participante ou equipe infratora.
+
+
+Artigo 2º — Nas competições DDO, somente é permitida a inscrição de equipes oficiais, regulares e ativas do jogo. Não serão aceitas equipes editadas, provenientes do modo Master Liga, seleções clássicas ou quaisquer outras variações que não façam parte da lista oficial de equipes disponíveis no jogo (patch) na sua forma original.
+
+
+Artigo 3º — Para garantir a integridade das competições do torneio (Liga Real DDO, Copa de Nações DDO, Supercopa Real DDO, Copa da Liga DDO ou qualquer torneio, inclusive torneio amistosos) aplicam-se os seguintes critérios:
+
+	Nenhum clube participante de uma competição DDO poderá, direta ou indiretamente:
+
+	deter, adquirir, ceder ou negociar títulos, ações, partidas, ou qualquer participação societária de outro clube inscrito em uma competição DDO;
+	possuir vínculo de associação ou filiação como membro de outro clube participante em uma competição DDO;
+	participar, a qualquer título, da gestão, administração, assessoria técnica ou de qualquer atividade que possa influenciar o desempenho desportivo de outro clube participante em uma competição DDO, exceto nos casos expressamente autorizados pela organização.
+Artigo 4º — Ao participar da competição, os jogadores concordam:
+
+	Participar da competição até a sua eliminação, colocando em campo, em todos os jogos, a sua formação mais competitiva e condizente com as condições técnicas e táticas disponíveis, evitando qualquer conduta que possa ser interpretada como desinteresse, manipulação de resultado ou prejuízo à integridade desportiva;
+
+	Organizar e disputar todas as partidas de acordo com o presente regulamento, cumprindo horários, prazos, formatos e demais determinações definidas pela organização, zelando pelo andamento regular da competição;
+
+	Cumprir integralmente todas as decisões emitidas pelo Comitê Executivo, pela administração da competição ou por qualquer outro órgão competente, desde que devidamente comunicadas por meio oficial, independentemente de concordância ou recurso posterior;
+
+	Informar imediatamente à administração das competições DDO qualquer processo, investigação ou procedimento disciplinar iniciado contra o clube e/ou seus jogadores, relacionado, direta ou indiretamente, à organização, manipulação ou influência de resultados de partidas, bem como qualquer outro ato que possa comprometer a lisura, a segurança ou a credibilidade da competição;
+
+	Cooperar com a organização em eventuais apurações, investigações internas ou externas, fornecendo todas as informações e documentos solicitados, inclusive nos casos não expressamente previstos neste regulamento, quando relacionados à integridade e regularidade da competição. Em caso de omissão, será considerado cumplicidade por partes dos envolvidos.
+
+	Os direitos de transmissão e utilização de imagens das partidas pertencem exclusivamente à equipe dos canais DDO. Caso a comissão administrativa do torneio solicite, é obrigatório que a partida seja transmitida ou gravada, desde que a realização da transmissão seja viável tecnicamente para os envolvidos. Em caso de recusa injustificada por parte do jogador ou equipe em atender a essa solicitação, poderão ser aplicadas sanções ou penalidades disciplinares, conforme avaliação da comissão administrativa. Este dispositivo aplica-se exclusivamente à equipe coordenadora do torneio, não podendo ser exigido por terceiros não autorizados.
+
+
+Artigo 5º — Responsabilidades dos jogadores do torneio:
+
+	Conduta geral: Os jogadores são responsáveis por manter bom comportamento, respeito mútuo e harmonia em todas as partidas. O clube mandante é responsável por garantir condições adequadas de conexão para o adversário, utilizando internet estável para a realização do jogo. Em caso de necessidade de PC neutro, cabe exclusivamente ao mandante procurar e viabilizar um host adequado para a partida.
+
+Se não for possível encontrar um PC neutro e a partida for tecnicamente viável no PC do adversário, o jogo deverá obrigatoriamente ser realizado nesse local, a fim de evitar prejuízos ao calendário da competição. Caso a má qualidade do host torne a partida inviável para o adversário (tanto em casa ou fora), e haja comprovação em vídeo, a partida poderá ser reagendada mediante aprovação da Comissão Administrativa ou realizada em PC neutro previamente autorizado.
+
+O clube mandante poderá ser responsabilizado por incidentes de qualquer natureza que comprometam o andamento regular do jogo, ficando sujeito a sanções disciplinares aplicadas pela organização.
+
+É obrigatório que a partida seja realizada no primeiro momento em que ambos os jogadores tenham disponibilidade, desde que haja host e tempo suficiente para a conclusão do confronto. Adiar a realização do jogo sem motivo justo não será permitido, pois a falta de host em datas futuras não será considerada justificativa válida para solicitar W.O.
+
+Assim, as partidas devem ocorrer o quanto antes, a fim de garantir o bom andamento da competição. A recusa prévia sem justificativa será entendida como “cera de jogo”, ou seja, uma tentativa de atrasar a partida de forma intencional. Nesse caso, poderão ser aplicadas sanções como perda de pontos e/ou suspensão de rodadas, de acordo com a avaliação da organização.
+
+	Conduta do visitante: As equipes visitantes comprometem-se a não criar situações fraudulentas ou adotar condutas para obter vantagem indevida no torneio, como, por exemplo, simular problemas, fazer “cera” ou realizar pausas excessivas. Tais condutas poderão resultar em penalização, sujeitando o infrator às penalidades de Antijogo previstas no Artigo 17.
+
+	Princípios de fair play nas Competições DDO:
+
+	As decisões de fair play (como anulação de gols ou devolução de posse de bola após travamentos) são de responsabilidade exclusiva e soberana dos jogadores envolvidos na partida. Terceiros não possuem poder de interferência. O cumprimento do fair play é facultativo, exceto quando houver comprovação por vídeo de queda de conexão, situação em que a organização poderá intervir.
+	Se a partida apresentar travamentos que, mesmo não sendo extremos, prejudiquem o jogo, o mandante poderá, por iniciativa própria, propor a realização do jogo em um PC neutro, com concordância das partes.
+
+	Penalidades por descumprimento do fair play: A prática de fair play é uma responsabilidade individual dos jogadores e baseia-se no bom senso e na ética durante as partidas. A comissão organizadora não aplicará penalidades relacionadas a comportamentos de fair play, pois tais aspectos dependem da conduta voluntária dos participantes. Questões relacionadas a problemas técnicos, como conexão ou desempenho, são tratadas exclusivamente conforme previsto no Artigo 20 deste regulamento.
+
+	Prazos para contestação: Qualquer problema ocorrido durante as partidas deve ser comunicado à organização no prazo máximo de 24 horas após o término do jogo. Reclamações feitas fora desse prazo não serão aceitas, independentemente da fase da competição, inclusive na final.
+
+
+
+
+II – Sistemas da Competição
+
+Artigo 6º — Todas as partidas das competições DDO devem ser disputadas em estrita conformidade com as Leis do Jogo oficiais. Cada partida terá duração exclusivamente 12 minutos, conforme as regras estabelecidas, utilizando o DDO PATCH.
+
+Será passível de punição disciplinar, incluindo possível eliminação da competição, qualquer jogador que utilize patches diferentes dos autorizados para a realização da partida.
+
+
+Artigo 7º — As etapas da competição são as seguintes:
+
+	Fase de liga (oito jornadas, 4 de mandante e 4 como visitante);
+	Oitavas de final;
+	Quartas de final;
+	Semifinal;
+	Final.
+
+
+Estilo de fase de liga:
+
+Para fins de sorteio, os confrontos da fase de liga serão definidos por meio de sorteio semiautomático, realizado através de programa específico desenvolvido para essa finalidade. Conforme as regras de negócio, na fase de liga, cada clube enfrentará um mesmo adversário apenas uma vez, considerando o adversário e não o time pelo qual o jogador esteja atuando.
+
+A fase de liga contará com 8 jornadas para cada equipe, sendo 4 partidas como mandante e 4 como visitante. Durante essas oito partidas, cada jogador competirá contra adversários da mesma divisão, enfrentando 8 jogadores diferentes, conforme definido pelo sorteio semiautomático. A pontuação será atribuída da seguinte forma:
+
+	Vitória: 3 pontos
+	Empate: 1 ponto
+	Derrota: 0 pontos
+
+No ranking geral da primeira divisão (Liga Real DDO – Divisão do Rei), as equipes classificadas do 1º ao 16º lugar avançarão para a fase de mata-mata. As 8 primeiras posições terão o benefício de jogar a partida de volta em seu próprio PC. As equipes classificadas do 18º ao 20º lugar serão rebaixadas para a segunda divisão na próxima edição.
+
+Nas divisões inferiores — Divisão Prata e Divisão Bronze — os 8 primeiros colocados na fase de liga avançarão para a fase de mata-mata da respectiva divisão e os 3 primeiros serão promovidos para a divisão superior na edição seguinte, conforme aplicável. Da mesma maneira, os últimos 3 serão rebaixados.
+
+Critérios de desempate da fase de liga (em ordem):
+
+	Pontos (descendente)
+	Vitórias (descendente)
+	Saldo de gols (descendente)
+	Gols marcados (descendente)
+	Cartões vermelhos (ascendente)
+	Cartões amarelos (ascendente)
+
+Descendente é quando se tem mais. Ascendente é quando se tem menos.
+
+
+Fase eliminatória:
+
+Desde a época em que a competição era denominada Copa DDO de Clubes e posteriormente Copa dos Campeões DDO, a realização do sorteio fica sob a responsabilidade exclusiva da comissão do torneio.
+
+As partidas das oitavas de final poderão ser definidas por meio de sorteio ou chaveamento. Os oito melhores classificados da fase de liga (posições 1ª a 8ª) serão colocados no POTE A, enquanto os classificados da 9ª à 16ª posição comporão o POTE B. Os jogadores do POTE A terão a vantagem de realizar o jogo de volta em seu próprio PC.
+
+No sorteio das oitavas de final, não há mais restrições quanto a confrontos entre clubes do mesmo país, como ocorria anteriormente. O sorteio obedecerá ao critério de enfrentamento por blocos:
+
+	Os classificados do 1º ao 8º lugar enfrentarão, por sorteio, os classificados do 9º ao 16º lugar;
+
+Todos os confrontos serão definidos por sorteio, respeitando essa divisão por blocos. Os clubes rebaixados não participarão de partidas até a próxima edição da competição.
+
+Diferentemente das edições anteriores, os jogadores eliminados na fase de mata-mata da primeira divisão não serão rebaixados para a segunda ou terceira divisão. Os eliminados nas oitavas e nas quartas de final da primeira divisão serão remanejados para a Copa da Liga DDO, garantindo continuidade em competições oficiais.
+
+O sorteio para as quartas de final poderá ser realizado de forma aleatória ou mediante a criação do chaveamento denominado ROAD TO FINISH. Os jogadores com melhor pontuação na fase de liga serão alocados no POTE A, enquanto os demais ficarão no POTE B. Após a definição dos potes, será realizado o sorteio para determinar os confrontos, que ocorrerão da mesma forma que nas oitavas de final. Os jogadores do POTE A terão o benefício de realizar o jogo de volta em seu próprio PC, assim como previsto nas oitavas. Opcionalmente, o sorteio poderá contemplar a restrição de posicionar o 1º e o 2º colocados em lados opostos da chave, garantindo que um eventual confronto entre eles só ocorra na final. Caso o 1º ou o 2º colocado já tenha sido eliminado, essa restrição deixará de ser aplicada.
+
+Caso não tenha sido previamente definido um chaveamento, o sorteio para as semifinais será realizado de forma aleatória entre as quatro equipes classificadas. No sorteio, o primeiro clube sorteado será designado como mandante, enquanto o segundo será o visitante. O clube visitante terá o benefício de realizar o jogo de volta em seu próprio PC. O formato da semifinal poderá também ser definido por chaveamento, que será aplicado desde as quartas de final até a final, conforme decisão do atual presidente das Competições DDO.
+
+A final ocorre em um PC neutro, transmitida em live, com jogo de duração de 20 minutos no modo copa Konami, para maior entretenimento dos jogadores e dos espectadores.
+
+
+Sobre a Copa da Liga DDO:
+
+A Copa da Liga DDO será disputada exclusivamente pelos jogadores eliminados nas oitavas e nas quartas de final da Liga Real DDO – Divisão do Rei. 
+
+Nenhum jogador poderá participar simultaneamente da fase de mata-mata da Liga Real DDO – Divisão do Rei e da Copa da Liga DDO.
+
+A estrutura da competição seguirá o seguinte formato:
+
+	Primeira Fase (Play-offs) – Participam os 8 jogadores eliminados nas oitavas de final da Liga Real DDO – Divisão do Rei.
+
+	Os confrontos serão definidos por sorteio.
+	Os jogos serão disputados em partidas de ida e volta.
+	Os vencedores terão o direito de jogar a partida de volta em seu próprio PC.
+
+	Quartas de Final – Entram nesta fase os 4 vencedores da Primeira Fase, que enfrentarão os 4 jogadores eliminados nas quartas de final da Liga Real DDO – Divisão do Rei.
+
+	Os eliminados nas quartas da Liga Real DDO jogarão a ida em seu PC, enquanto a volta ocorrerá no PC do adversário oriundo da primeira fase da Copa da Liga.
+	É proibido que haja confrontos entre dois jogadores vindos das quartas da Liga Real DDO, bem como entre dois jogadores oriundos da Primeira Fase da Copa da Liga.
+
+	Definição até a Final – A partir desta fase, a competição poderá seguir com chaveamento fixo ROAD TO FINISH até a final, ou permanecer com sorteios a cada rodada, conforme decisão do presidente das competições DDO em conjunto com a comissão administrativa.
+
+	Final – Disputada em PC neutro, com transmissão ao vivo, duração de 15 minutos no modo Copa Konami, visando maior entretenimento para jogadores e espectadores.
+
+
+Sobre as Divisões Inferiores:
+
+Nas divisões inferiores, como a divisão prata e a divisão bronze, o sistema de promoção e rebaixamento seguirá o modelo estabelecido, com quatro equipes promovidas para a divisão superior e quatro rebaixadas para a divisão inferior na edição seguinte.
+
+Ao final da fase de liga, os oito melhores classificados de cada divisão (podendo esse número chegar a 16, conforme decisão administrativa) avançarão para a fase de mata-mata da respectiva divisão. A partir dessa fase eliminatória, a competição poderá adotar o sistema de chaveamento fixo (nas oitavas ou quartas) denominado ROAD TO FINISH até a final, ou optar pela definição dos confrontos por sorteio, conforme decisão da comissão administrativa e do presidente das competições DDO.
+
+A final será disputada em PC neutro, com transmissão ao vivo, e terá duração de 15 minutos, utilizando o modo Copa Konami, com o objetivo de proporcionar maior entretenimento a jogadores e espectadores.
+
+
+Sobre a Supercopa Real:
+
+A Supercopa Real será disputada pelos finalistas da Liga Real DDO – Divisão do Rei e da Copa da Liga DDO, totalizando quatro participantes.
+
+As semifinais terão partidas com duração de 12 minutos, e a final será realizada em jogo único de 15 minutos, no modo Copa Konami, com transmissão ao vivo para maior engajamento de jogadores e espectadores. Em caso de ausência de um ou mais participantes titulares, serão chamados suplentes seguindo a ordem de prioridade abaixo:
+
+	Suplente de 1ª ordem: Jogador eliminado pelo ausente na fase anterior. Por exemplo, se um finalista da Liga Real DDO não puder participar, o suplente será o jogador que ele eliminou na semifinal.
+	Suplente de 2ª ordem: Caso o suplente direto também esteja indisponível, será convocado o jogador eliminado na outra semifinal (contra-chave), desde que disponível e com desempenho satisfatório.
+	Suplente de 3ª ordem: Se os dois suplentes anteriores não puderem participar, será escolhido um jogador eliminado nas quartas de final da mesma competição (Liga Real DDO ou Copa da Liga DDO), priorizando aquele com melhor desempenho individual ou com placar mais apertado na eliminação.
+
+Observação: essa regra dos suplentes serve para qualquer torneio/competição realizada. Exemplo: Liga Real DDO, Copa das Nações DDO, Copa Real DDO...
+
+Essa regra de suplência aplica-se tanto aos ausentes oriundos da Liga Real DDO quanto da Copa da Liga DDO.
+
+Todos os jogadores classificados para a Supercopa Real deverão confirmar sua participação junto à comissão administrativa no prazo máximo de 48 horas após a divulgação dos finalistas. Caso algum jogador não confirme sua presença dentro desse prazo, será automaticamente considerado ausente, e a substituição será realizada conforme a ordem de suplência estabelecida nesta regra. A não confirmação dentro do prazo poderá resultar em sanções disciplinares, conforme avaliação da comissão administrativa, visando garantir a organização e o bom andamento da competição.
+
+
+Sobre a Taça Real de Divisões:
+
+A Taça Real de Divisões será disputada pelo campeão da Liga Real DDO – Divisão do Rei e o campeão da Liga Real DDO – Divisão Prata. O jogo será feito no modo Copa Konami com o tempo de 12 minutos e transmitido ao vivo.
+
+
+Sobre a Copa Real DDO:
+
+A Copa Real DDO é disputada por todos os jogadores inscritos na edição vigente da Liga Real DDO, independentemente de sua divisão. A competição é organizada integralmente em sistema de mata-mata, com confrontos de ida e volta, respeitando as configurações de tempo previstas neste regulamento.
+1. Critérios de Chaveamento:
+
+	Cabeças de Chave: Os 8 melhores jogadores da edição anterior (fase de liga) garantem vaga direta nas oitavas de final.
+	Fases Preliminares: Os demais competidores iniciam a disputa em fases anteriores (16 avos ou playoffs qualificatórios).
+	Sorteio: A partir das oitavas de final, o chaveamento é definido de forma aleatória, com a restrição de que os 8 cabeças de chave não podem se enfrentar diretamente nesta etapa.
+
+2. A Grande Final: A decisão será disputada no modo Copa Konami, com transmissão ao vivo. A partida terá duração de 20 minutos, realizada em PC neutro e com condições climáticas/físicas aleatórias.
+
+
+Artigo 8º — O padrão das partidas fica a critério do MANDANTE, podendo escolher os critérios, respeitando as seguintes colocações:
+
+	Seguir o artigo 22.
+
+	A duração de cada jogo deve ser de 12 minutos.
+
+	A condição física dos jogadores pode ser configurada como aleatória, padrão, alta ou excelente, conforme preferência do mandante (nunca para baixo).
+
+	A escolha da câmera de jogo será livre, desde que não prejudique de forma significativa a jogabilidade do visitante, evitando configurações extremamente diferentes ou que dificultem o desempenho adversário.
+
+	A velocidade de jogo deve ser a padrão (velocidade 1), salvo acordo entre as partes ou ausência de problemas para o jogador visitante em utilizar outra velocidade.
+
+	O mandante poderá definir estádio, horário (dia ou noite), estação do ano (inverno ou verão) e condições climáticas (chuva ou tempo seco), respeitando as configurações oficiais do patch utilizado.
+
+	É proibido o uso de gameplays, patches ou quaisquer recursos modificativos que não sejam oficiais para a competição, sob pena de penalizações que podem incluir perda de gols, pontos, suspensões ou outras sanções disciplinares.
+
+	O mandante deverá comunicar previamente ao visitante todas as configurações escolhidas para a partida, garantindo transparência e tempo suficiente para que o visitante se ajuste às condições impostas.
+
+	A não comunicação prévia das configurações de partida por parte do mandante será considerada falta grave, sujeitando-o a penalizações que podem incluir advertências, perda de pontos ou outras sanções definidas pela comissão administrativa.
+
+	Caso o visitante identifique configurações inadequadas, prejudiciais ou que descumpram as regras do torneio, deverá comunicar imediatamente à comissão administrativa, que avaliará a situação e poderá determinar a repetição/anulação da partida ou outras medidas cabíveis.
+
+	Em situações de desacordo entre mandante e visitante quanto às configurações, a decisão final caberá à comissão administrativa, que deverá agir com imparcialidade para garantir a lisura da competição.
+
+	O mandante não poderá alterar as configurações durante a partida, salvo autorização expressa do visitante e da comissão administrativa.
+
+	Configurações consideradas abusivas, que causem desequilíbrio ou prejudiquem claramente a disputa, serão passíveis de revisão e punição conforme análise da comissão administrativa.
+
+
+Artigo 9º — Sobre a repescagem, se houver:
+
+	A repescagem poderá ser realizada exclusivamente para suprir a ausência de times na fase seguinte do campeonato, utilizando apenas os jogadores eliminados na fase imediatamente anterior. Por exemplo, se houver vaga disponível nas quartas de final, a repescagem ocorrerá apenas entre os times eliminados nas oitavas de final, e assim sucessivamente para as fases seguintes.
+
+	As partidas de repescagem terão duração reduzida, de 9 minutos, com condição física dos jogadores configurada como aleatória, sem prorrogação, mas com disputa por pênaltis ativada em caso de empate ao final do tempo regulamentar.
+
+	O tempo exato da partida de repescagem será definido pela comissão administrativa do torneio, que organizará e supervisionará todos os jogos dessa fase.
+
+	Os jogadores interessados em participar da repescagem deverão manifestar sua intenção formalmente, comunicando ao atual presidente do torneio dentro do prazo estipulado pela comissão administrativa.
+
+	A vaga conquistada na repescagem será ocupada pelo vencedor, que assumirá o status de suplente para a fase seguinte, podendo ser convocado para substituir algum time desistente ou ausente.
+
+	Em caso de desistência ou ausência de jogadores classificados para a repescagem, a comissão administrativa poderá convocar jogadores eliminados em fases anteriores, respeitando a ordem de eliminação e desempenho, para garantir a completude da repescagem.
+
+	A comissão administrativa se reserva o direito de alterar o formato e as regras da repescagem, mediante justificativa clara e comunicação prévia a todos os envolvidos, visando preservar a justiça e o equilíbrio da competição.
+
+
+Artigo 10 — Sobre o calendário:
+
+Todos os jogos devem ser realizados estritamente dentro do calendário estabelecido pela comissão administrativa. Caso não seja possível realizar a partida dentro do prazo previsto, o jogador ou equipe responsável deverá comunicar a situação com antecedência à comissão administrativa, por meio do chat de chamados oficial do torneio, solicitando autorização para o adiamento do jogo.
+
+A realização da partida fora do prazo somente será permitida mediante aprovação expressa da comissão administrativa, sendo esta exceção devidamente registrada e formalizada. Em partidas eliminatórias, caso não haja registro de resultado até o término do prazo estipulado, ou se não for apresentada justificativa válida e aceita pela comissão administrativa, a ausência poderá resultar na abertura de vaga para repescagem, conforme previsto no Artigo 9º.
+
+
+Artigo 11 — Sobre o antidoping:
+
+	Recomenda-se que nenhum jogador participe das partidas sob efeito de substâncias que possam alterar seu desempenho físico ou mental.
+
+	Caso seja constatado ou comprovado que um jogador participou da partida sob influência de substâncias proibidas ou que comprometam sua conduta, poderão ser aplicadas sanções previstas neste regulamento, incluindo penalizações disciplinares e outras medidas cabíveis pela comissão administrativa.
+
+	A comissão administrativa poderá, a seu critério, estabelecer procedimentos para fiscalização e controle relacionados ao uso de substâncias, visando garantir a integridade e a justiça na competição.
+
+
+Artigo 12 — Solicitação e regulamentação do W.O.
+
+O W.O. (Walkover) será aceito apenas em situações excepcionais e devidamente comprovadas, quando o adversário não responder aos chamados para a partida ou demonstrar desinteresse em realizá-la.
+
+A solicitação de W.O. deve seguir os seguintes critérios obrigatórios:
+
+	Provas obrigatórias:
+O jogador que solicitar o W.O. deverá apresentar evidências claras e verificáveis, como prints de mensagens enviadas, registros dos horários dos chamados e tentativas de contato realizadas, exclusivamente pelo chat de chamados oficial do torneio, durante o prazo oficial da rodada.
+
+	Obrigação de resposta:
+O adversário tem a obrigação de responder às tentativas de contato no prazo máximo de 48 horas após a liberação da rodada. A ausência de resposta dentro desse prazo poderá ser considerada falta grave e servirá de base para a aceitação do pedido de W.O. pelo solicitante.
+
+	Prazos para solicitação:
+A solicitação de W.O. deverá ser feita obrigatoriamente no último dia do prazo da rodada, garantindo tempo hábil para avaliação pela comissão administrativa. Pedidos realizados fora desse prazo não serão analisados.
+
+	Tentativas de negociação:
+Antes de solicitar o W.O., o jogador deve comprovar que tentou negociar de forma razoável um horário para a partida, demonstrando flexibilidade dentro do período da rodada.
+
+	Penalização automática:
+Jogadores que não comparecerem para disputar suas partidas dentro do prazo e/ou não responderem aos chamados serão penalizados automaticamente na tabela de classificação com perda de pontos, o que poderá levar à eliminação ou rebaixamento precoce do torneio, conforme regras específicas de pontuação e eliminação.
+
+	Avaliação final:
+A comissão administrativa é a responsável pela decisão final quanto à aceitação ou rejeição do pedido de W.O., considerando as provas apresentadas e o histórico de conduta dos envolvidos.
+
+	Irrevogabilidade:
+O W.O. concedido não poderá ser revogado, salvo em casos excepcionais, como a substituição do jogador por outro representante da mesma equipe, devidamente autorizado pela comissão administrativa.
+
+	Na fase eliminatória:
+O W.O. concedido em qualquer partida da fase eliminatória (mata-mata) em qualquer das partidas (ida ou volta) a classificação direta do seu adversário.
+
+
+
+Artigo 13 — Irrevogabilidade do placar:
+
+Em nenhuma hipótese a partida poderá ser reiniciada após seu término sem um motivo excepcional e autorização expressa da comissão administrativa, sob pena de expulsão do torneio. Independentemente do placar, mesmo que apresente uma diferença de quatro ou mais gols (considerada excessiva) podendo ser avaliado como handicap, as partidas não poderão ser refeitas ou reavaliadas.
+
+
+Artigo 14 — Sobre o tempo extra (prorrogação e pênaltis):
+
+	A prorrogação deverá ser realizada preferencialmente no PC do jogo de volta. Para partidas de maior relevância, como semifinais, recomenda-se a utilização de PC neutro, porém a prorrogação poderá ocorrer no PC do jogo de volta por lei maior deste regulamento.
+
+	Caso o jogo de ida termine empatado, a partida de volta poderá iniciar já com as configurações de prorrogação e pênaltis ativados, visando agilizar o desfecho do confronto.
+
+	Se o jogo de ida não terminou empatado, mas o placar agregado após o jogo de volta estiver empatado, a prorrogação terá duração de 5 minutos (nova partida), com a condição física dos jogadores definida pelo mandante do jogo da volta. Apenas os pênaltis deverão estar ativados.
+
+	Se houver expulsões no jogo de volta, a prorrogação terá duração de 7 minutos. O adversário do jogador expulso poderá escolher uma das seguintes opções:
+
+	Iniciar a prorrogação com vantagem de 1 a 0 no placar (base na quantidade de expulsos, se fossem 2, seria 2 a 0);
+	Exigir que o jogador expulso provoque uma nova expulsão nos primeiros minutos da prorrogação (base na quantidade de expulsos, se forem 2, também devem ser os mesmos jogadores). 
+
+Caso a expulsão não ocorra rapidamente, o adversário poderá solicitar à comissão administrativa a aplicação de punição, que pode incluir a perda automática da prorrogação pelo infrator. É proibida qualquer tentativa de burlar esta regra, sob pena de sanções disciplinares, como a eliminação direta do torneio atual. 
+
+	A disputa de pênaltis é definitiva e não poderá ser refeita em nenhuma hipótese, salvo se houver comprovação clara e inequívoca de problema técnico durante as cobranças, tais como queda de conexão, travamento do jogo ou falha na exibição, a ser avaliada e decidida pela comissão administrativa.
+
+	A prorrogação deverá iniciar em até 5 minutos após o término do tempo normal, para garantir o andamento fluido da competição. Qualquer atraso deverá ser comunicado e justificado previamente à comissão administrativa.
+
+	As condições de jogo (clima, estádio, horário, entre outros) deverão ser mantidas as mesmas da partida em tempo normal durante a prorrogação, a fim de preservar a equidade entre os times.
+
+	A comissão administrativa será responsável pelo acompanhamento e registro das expulsões e demais incidentes durante a prorrogação, garantindo o cumprimento rigoroso das regras.
+
+III – Títulos
+
+Artigo 15 — Todos os títulos e seus valores:
+
+Os títulos previstos neste regulamento possuem uma valoração percentual que varia de 0% a 100%, sendo 0% referente a torneios não oficiais e 100% correspondente ao torneio principal, contemplando também os níveis intermediários entre esses extremos.
+
+	Títulos gerais (campeões):
+
+Competição	Valor (credibilidade)
+Liga Real DDO – Divisão do Rei	100%
+Liga Real DDO – Divisão Prata	20%
+Liga Real DDO – Divisão Bronze	10%
+Copa Real DDO	50%
+Copa da Liga DDO	35%
+Supercopa Real DDO	20%
+Taça Real de Divisões DDO	15%
+Copa das Nações DDO	80%
+DDO Masters Cup	30%
+Copa Treinadores DDO	50%
+Duelo das Lendas DDO	0%
+
+	Títulos da Liga Real DDO – Divisão do Rei:
+
+Competição	Valor (credibilidade)
+Taça do Rei da Liga	100%
+Troféu do Rei da Liga	35%
+
+O vencedor da Taça do Rei da Liga é considerado o campeão da competição. Já o vencedor do Troféu do Rei da Liga corresponde ao jogador ou equipe que conquistar o 1º lugar na fase de liga.
+
+
+Artigo 16 — Sobre premiação:
+
+	O campeão do torneio terá direito a um prêmio em valor líquido, cujo montante será estipulado no início da edição vigente da Liga Real DDO.
+
+	A premiação poderá ser cancelada para o eventual vencedor em casos comprovados de má conduta durante o torneio, manipulação de resultados, coação a outros participantes ou qualquer outra infração às regras estabelecidas neste regulamento.
+
+	O prêmio também será indeferido caso o vencedor tenha deixado de participar de partidas obrigatórias sem aviso prévio, por exemplo, não ter cumprido o número mínimo de jogos estipulado para a fase classificatória.
+
+	O título conquistado por um jogador não poderá ser retirado ou revogado em nenhuma hipótese. Contudo, em caso de violação das regras ou manipulação do torneio, o jogador poderá ser punido com suspensão de 1 a 3 edições do torneio, conforme a gravidade do caso, podendo, em situações excepcionais, ser banido permanentemente.
+
+	Caso o campeão opte por não receber a premiação, o valor correspondente será retido pela comissão administrativa e destinado a futuras edições do torneio.
+
+O contato para o recebimento da premiação será realizado exclusivamente através do perfil de inscrição oficial do vencedor. Não serão aceitas solicitações ou comunicações provenientes de perfis distintos, mesmo que aleguem ser a mesma pessoa.
+ 
+IV – Punições, Suspensões e Outros
+
+Artigo 17 — Punições:
+
+As punições deste regulamento são taxativas e automáticas. Comprovada a infração via prova de imagem ou vídeo, a penalidade será aplicada imediatamente, sem necessidade de votação ou interpretação subjetiva da administração.
+
+1. Infrações Gerais
+
+	Atraso (W.O. Técnico): O não comparecimento ou início da partida até 20 minutos após o horário agendado entre os jogadores (com print comprovando o acerto e concordância entre ambos).
+
+Punição: W.O. (3x0) automático a favor do adversário presente. Não serão aceitas justificativas pós-prazo. 
+
+Observação: Apenas com comprovação robusta (vídeo/foto) serão avaliadas exceções como quedas de energia ou falhas graves de provedor para evitar a punição (o jogo deverá ser remarcado).
+
+	Identificação (nickname): Jogador mudou o nickname no discord, sendo diferente do cadastro oficial, impedindo a identificação e ele não foi encontrado pelo adversário ou pela comissão administrativa.
+
+Punição: Se o jogador for encontrado, levará uma advertência moderada. Caso não seja, então será W.O. (3x0) na partida. Todavia, se esse jogador ficar trocando de nickname de forma reincidente, será W.O. direto para a partida da rodada vigente.
+
+	Ofensas leves e tumulto: Desrespeito moderado, provocações no chat geral ou criar tumulto.
+
+Punição: Perda de 3 pontos na tabela de classificação (Liga) ou Advertência Grave (Mata-mata).
+
+	Ofensas graves e preconceito: Racismo, homofobia, xenofobia ou ameaças reais à integridade física.
+
+Punição: Banimento vitalício dos Torneios DDO.
+
+	Denúncia falsa: Forjar provas ou editar vídeos para prejudicar um adversário.
+
+Punição: Expulsão imediata da edição atual do torneio.
+
+	Critério de W.O. por agendamento (regra da procura): Caso a partida não seja realizada até o prazo final da rodada, o vencedor do W.O. será definido pela análise do histórico de chat (considerando apenas o chat do torneio (respectivo) no discord ou PV desde que com prints datados). Combinações verbais em calls ou em redes não oficiais não serão consideradas.
+
+	Quem procurou primeiro: O jogador que sugeriu horários válidos no início do prazo tem prioridade sobre quem apareceu apenas no final.
+
+	Vácuo/sumiço: Se o Jogador A chamou, o Jogador B respondeu e depois o Jogador A sumiu por mais de 24h, a prioridade passa para o Jogador B.
+
+	Regra do "último dia": Aparecer apenas no último dia do prazo para tentar jogar não garante o W.O. e nem obriga o adversário (que procurou antes) a estar disponível. Se o adversário procurou durante a semana e você não podia, e no último dia você pode e ele não, o W.O. é dele.
+
+Punição: W.O. (3x0) contra o jogador que demonstrou menos interesse ou dificultou o agendamento. Se ambos foram omissos, W.O. duplo (0 pts para ambos).
+
+2. Infrações Técnicas
+
+	Uso de Edits/Option file incorreto: Jogar com elenco desatualizado, uniformes errados ou qualquer arquivo diferente do oficial da liga (mesmo que sem má-fé).
+
+Punição: Derrota por W.O. (3x0) na partida específica. O resultado de campo é anulado.
+
+	Modificação de atributos: Alteração proposital de stats de jogadores, height (altura), habilidades ou uso de softwares externos.
+
+Punição: Expulsão imediata do torneio e banimento por 2 temporadas.
+
+
+*Observação: caso a modificação seja propositalmente forjada — por exemplo, manter o overall inalterado, mas alterar atributos específicos dos jogadores para obter vantagem (como pegar um jogador de overall 85 e manter o 85, porém aumentar a velocidade) — a infração resultará em expulsão imediata e sem possibilidade de justificativa. Essa conduta será tratada como ato de má-fé contra a administração e contra o adversário.
+
+3. Pausas Indevidas
+
+	Pausas com bola em jogo: Pausar em qualquer momento no jogo, enquanto a bola está rolando, independentemente da ocasião do jogo, exceto as ocasiões em que a bola claramente já estava saindo.
+
+Punição na primeira ocasião: Advertência e sinalização para o jogador infrator. Porém, caso a primeira pausa ocorra em lance manifesto de gol ou ataque promissor, será aplicada a perda de ponto (na liga) ou gol mandatório (no mata-mata) imediatamente.
+
+Punição na Liga: A partir da segunda pausa, é perda de 1 ponto (por cada pausa) na tabela (o placar do jogo é mantido, a punição é na classificação).
+
+Punição no Mata-Mata: A partir da segunda pausa, é gol mandatório. O infrator deve iniciar o próximo tempo (ou partida de volta) cedendo um gol para o adversário. Se recusar, W.O.
+
+	Pausas para "esfriar o jogo": Pausar repetidamente (+3) sem fazer alterações táticas (apenas entrar e sair do menu), ou para exibir replays sem necessidade, como mostrar o gramado bonito, o cabelo de um jogador ou coisa semelhante.
+
+Punição na Liga: Perda de 2 pontos na tabela (o placar do jogo é mantido, a punição é na classificação).
+
+Punição no Mata-Mata: Gol mandatório. O infrator deve iniciar o próximo tempo (ou partida de volta) fazendo um gol contra proposital. Se recusar, W.O.
+
+Observação: Pausas acidentais só serão relevadas se a bola já estivesse saindo de campo (ex: chute pra fora). Pausa por "queda de pilha/controle" é responsabilidade do jogador e será punido se a bola estiver em jogo.
+
+Em casos de jogos não transmitidos, a solicitação de recurso será aceita principalmente com vídeos e têm limite para abertura do recurso/chamado de até 24h após o término da partida. Prints e imagens também valem para a investigação, mas é mais difícil de tomar o veredito certeiro.
+
+4. Antijogo
+
+	Fazer faltas desnecessárias com intenção clara de provocar expulsões para perder por W.O.
+
+Prova exigida: Vídeo contínuo do lance.
+Punição: Derrota por W.O. pelo placar que estava, mais a suspensão do jogador por 1 partida.
+
+	Manipulação de Resultado: Combinar empate, entregar gols (exceto na regra de gol mandatório) ou deixar o adversário ganhar para prejudicar terceiros.
+
+Punição: Expulsão imediata dos envolvidos da atual edição do torneio, sendo avaliado o banimento permanente.
+
+	Conduzir a bola com o goleiro fora da área defensiva, sem finalidade tática clara, em situação de vantagem igual ou superior a 3 gols nos últimos 20 minutos de jogo*.
+
+Prova exigida: Vídeo contínuo do lance.
+Punição: Advertência gravíssima
+
+	Forçar a queda de conexão de forma proposital ou alegar falsamente problemas técnicos para anular lances ou gols ou sair da partida propositalmente por estar perdendo.
+
+Punição: Derrota por W.O. + Perda de 3 pontos adicionais na tabela.
+Reincidência gera expulsão. Na fase de mata-mata é eliminação direta.
+
+*Observação: embaixadinhas ou dribles desnecessários, mesmo dentro da área defensiva (seja no final do jogo ou não), quando realizados com a clara intenção de provocar ou humilhar o adversário, serão considerados antijogo e punidos a mesma regra de 'Pausas para esfriar o jogo' (perda de 2 pontos ou gol mandatório), podendo levar à expulsão em casos de reincidência ou má-fé evidente.
+
+5. Decisão e Aplicação
+
+	Em finais e partidas decisivas, a análise será mais criteriosa, e a aplicação da punição dependerá do parecer da comissão após revisão via VAR.
+	Se houver múltiplas infrações na mesma partida, as penalidades poderão ser cumulativas.
+	Casos não previstos serão avaliados pela comissão e poderão resultar em penalidade igual ou superior às previstas.
+	Se a infração gerar prejuízo claro para uma das partes, a partida poderá ser refeita.
+6. Sobre as advertências
+
+	Advertência moderada: é simples e apenas de alerta. 4 moderadas acumuladas viram 1 grave.
+	Advertência grave: é de alerta, gera uma punição conforme este regulamento.
+	Advertência gravíssima: é de último caso, gerando uma suspensão.
+	Casos omissos serão decididos pela comissão, mas sempre buscando a analogia com as punições listadas acima, vedada a criação de regras novas durante a competição que beneficiem infratores.
+
+
+Artigo 18 — Suspensões e expulsões:
+
+1. Suspensões: Um jogador poderá ser suspenso de uma ou mais partidas (ou por tempo determinado) quando:
+
+	Acumular duas advertências por condutas irregulares, incluindo antijogo, na mesma edição do torneio.
+	Praticar antijogo, seja ele reincidente ou grave, que prejudique a integridade, a competitividade ou o andamento da competição.
+	Utilizar edits, configurações ou arquivos irregulares que, mesmo não causando impacto grave no jogo, infrinjam as regras do torneio.
+	Abusar de pausas, desconexões ou outras atitudes que retardem ou interrompam repetidamente as partidas sem justificativa válida.
+	Apresentar comportamento inadequado recorrente, como desrespeito a adversários ou membros da comissão, em múltiplas ocasiões.
+
+Aplicação da Suspensão:
+
+Duração:
+	A duração da suspensão será determinada pela comissão administrativa, conforme a gravidade da infração, podendo variar de 1 a 3 partidas oficiais.
+
+Consequências para o jogador suspenso:
+	As partidas que o jogador deveria disputar durante a suspensão serão consideradas W.O. para o adversário, com placar padrão de 3 a 0.
+	Em fases eliminatórias, o adversário avançará automaticamente para a próxima etapa.
+	O jogador suspenso não receberá pontos pelas partidas não disputadas e o saldo de gols será afetado negativamente.
+
+Reincidência durante a suspensão:
+	Qualquer tentativa de descumprir a suspensão ou interferir nas partidas durante o período acarretará expulsão imediata do torneio.
+
+2. Expulsões: A expulsão do torneio ocorrerá nos seguintes casos:
+
+	Conduta hostil grave:
+	Ameaçar, xingar de forma excessiva, humilhar ou coagir o adversário, um membro da comissão ou qualquer participante.
+
+	Manipulação intencional de jogo ou resultado
+	Utilizar softwares externos, artifícios, bugs explorados propositalmente ou qualquer método para prejudicar o adversário ou alterar o resultado.
+	Alterar placares, inventar resultados ou apresentar provas forjadas.
+
+	Alterações ilegais na gameplay ou no jogo
+	Uso de qualquer gameplay não oficial do DDO PES.
+	Modificação de overs, características dos jogadores, edit modificado ou uso de CPKs que alterem física, atributos ou dinâmica do jogo.
+	Mudanças que afetem o desempenho do jogo por configurações externas, incluindo V-Sync, frame limiters, ajustes forçados de física ou semelhantes.
+	Inclusão de menus, placares, estádios ou quaisquer outros elementos modificados que não façam parte da versão oficial do DDO PES.
+
+	Conduta anti-desportiva grave
+	Gestos, palavras ou ações ofensivas, discriminatórias ou humilhantes contra adversários ou a comissão, independentemente do momento da partida.
+
+	Reincidência grave
+	Receber três punições (de qualquer tipo) na mesma edição do torneio.
+
+	Casos especiais
+	Situações não listadas aqui, mas que, após análise da comissão, sejam consideradas graves o suficiente para inviabilizar a permanência do jogador na competição.
+
+
+Artigo 19 — Sobre o abandono e desistência de partidas:
+
+	Considera-se abandono de partida o ato do jogador que interrompe o jogo sem avisar previamente o adversário e a comissão organizadora por meio oficial (exemplo: mensagem no Discord ou canal oficial do torneio).
+
+	Se o abandono ocorrer após o início da partida, o jogador será penalizado com:
+
+	Perda automática da partida por W.O., com placar de 3 a 0 para o adversário, ou mais, conforme o inciso VII deste mesmo artigo.
+	Perda de até 2 pontos na classificação durante a fase inicial do campeonato.
+	Em fase eliminatória, o abandono implicará derrota imediata e suspensão de 10 a 30 dias de todos os torneios oficiais ou amistosos organizados pela comissão, incluindo eventos futuros.
+
+	Caso o abandono ocorra antes do início da partida, após ter sido marcado um horário previamente, será concedido um prazo máximo de 20 minutos para o jogador retornar. Se não o fizer, o adversário poderá solicitar vitória por W.O.
+
+	O jogador poderá apresentar recurso para justificar o abandono, desde que comprove motivo relevante, como queda de energia, urgência médica ou outras situações de força maior.
+
+	Havendo comprovação válida, a partida poderá ser remarcada ou continuada conforme previsto no Artigo 20.
+
+	Reincidências em abandono de partidas poderão resultar em expulsão direta do torneio, além de suspensão por 1 a 3 edições subsequentes (ou 30 a 90 dias), conforme decisão da comissão organizadora, referente a todas as competições.
+
+	Quando a desistência ocorrer com a partida em andamento e o placar já estiver favorável ao adversário, o resultado final será definido da seguinte forma:
+
+	Todos os gols do jogador desistente serão desconsiderados (anulados).
+	Se o placar for inferior a 3 a 0, o resultado será W.O. de 3 a 0.
+	Se o placar for igual ou superior a 3 a 0 (considerando o placar sem os gols do desistente), manter-se-á o placar registrado no momento da desistência, sem considerar os gols do desistente.
+	Se a partida tiver ultrapassado os 40 minutos de jogo, serão adicionados 2,5 gols ao placar do adversário que permaneceu em campo, arredondando o resultado final para o número inteiro ímpar mais próximo, além do placar obtido pelo adversário até o momento da desistência, considerando a exclusão dos gols do desistente.
+
+
+Artigo 20 — Procedimento para problemas técnicos com partidas em andamento:
+
+	Identificação do problema: caso um jogador enfrente problemas técnicos que prejudiquem o andamento do jogo, tais como delay extremo, ping elevado, desconexão parcial, ou interferências externas, ele deverá pausar a partida imediatamente e informar o adversário e a comissão organizadora.
+
+	Condições para comprovação: para que o problema técnico seja considerado válido, o jogador deverá apresentar, obrigatoriamente, pelo menos uma das seguintes comprovações:
+
+	Gravações de vídeo ou prints que demonstrem claramente a ocorrência do problema, enviados à comissão em até 24 horas após o término ou interrupção da partida.
+	Declarações confirmadas por pelo menos duas testemunhas confiáveis, tais como espectadores oficiais, árbitros ou membros da comissão.
+
+	Diretrizes para continuação ou reinício da partida: A partida não será reiniciada integralmente em nenhuma circunstância sem avaliação da comissão. O jogador com problema técnico deve tentar continuar a partida sempre que possível. Caso seja impossível, a comissão será acionada para análise, e as seguintes diretrizes serão aplicadas:
+
+	Interrupção antes dos 20 minutos iniciais (até 20:00):
+	A partida será reiniciada do minuto 0, mantendo as condições de jogo ocorridas até a interrupção (expulsões, cartões, alterações táticas, etc.).
+	O placar será MANTIDO, e o jogo começará como uma nova partida com as mesmas circunstâncias táticas.
+
+	Interrupção após os 20 minutos iniciais (a partir de 20:01):
+	A partida será retomada a partir de 10 minutos antes do momento da interrupção (por exemplo, se a interrupção ocorrer aos 82:15, o reinício será aos 72:15).
+	As condições do jogo, incluindo placar, expulsões, gols e eventos ocorridos até o momento da interrupção, serão mantidas.
+	O tempo restante da partida será jogado a partir do momento estabelecido, com o placar vigente.
+
+	Todos os problemas técnicos devem ser comunicados imediatamente a um membro da comissão organizadora pelo canal oficial, preferencialmente com registro escrito ou em chat oficial do torneio.
+
+	O prazo máximo para envio de provas (vídeos, prints, testemunhos) é de 24 horas após a partida. Provas enviadas fora desse prazo poderão ser desconsideradas.
+
+	Em situações onde o adversário também apresente problemas técnicos, a comissão avaliará o caso para garantir a equidade na decisão, podendo recomendar reinício, continuação ou outras medidas.
+
+	É proibido o uso de pausas repetidas ou abuso do sistema de pausa para simular problemas técnicos ou retardar o jogo.
+
+	A comissão administrativa terá a decisão final, podendo:
+	Validar o resultado atual da partida.
+	Aplicar sanções a jogadores que agirem de má-fé.
+	Declarar resultado parcial, W.O., ou determinar reinício parcial/conforme previsto.
+
+	Tentativas comprovadas de manipulação, abuso de pausas, ou apresentação de provas falsas resultarão em penalizações severas, incluindo perda de pontos, suspensão ou expulsão do torneio.
+
+	É permitido o uso de softwares ou ferramentas externas para gravação de partidas e captura de evidências, desde que não interfiram na jogabilidade ou na integridade do jogo.
+
+	A partida somente poderá ser reiniciada do zero em casos excepcionais e devidamente comprovados, como travamentos excessivos, ping extremamente alto igual ou superior a 100 ms, conexão instável ou outras adversidades técnicas graves que comprometam significativamente a jogabilidade. O reinício será realizado com o placar zerado, sem considerar cartões, expulsões, gols ou qualquer outro evento ocorrido na partida original. Essa regra será aplicada de forma rigorosa e restrita, apenas em situações extremas que prejudiquem claramente o desempenho e a competitividade do jogo. A solicitação para reinício deverá ser feita formalmente no chat oficial de chamados em até 2 horas após o término da partida, acompanhada de provas concretas, como vídeos, prints ou relatos de testemunhas confiáveis. A comissão administrativa avaliará a solicitação e decidirá pela aprovação ou não do reinício, considerando a gravidade e as evidências apresentadas.
+
+
+Artigo 21 — Sobre a ausência do jogador:
+
+	Caso um jogador deixe de participar de duas partidas consecutivas sem apresentar justificativa válida dentro do prazo estabelecido, resultando em W.O. em ambas, ele poderá ser automaticamente desclassificado do torneio. A desclassificação implica a perda da vaga, que poderá ser ocupada por um suplente aprovado, preferencialmente de uma divisão inferior, que manifeste interesse formal e cumpra os critérios da comissão organizadora.
+
+	Todas as justificativas e comunicações relativas a ausências devem ser registradas exclusivamente no chat oficial de chamados do torneio, conforme Artigo 28.
+
+	Mensagens enviadas por canais privados, seja para administradores, árbitros ou o presidente, não serão consideradas válidas nem avaliadas.
+	As justificativas devem ser enviadas dentro do prazo da rodada liberada.
+	Apenas casos registrados no chat de chamados dentro do prazo serão avaliados para possíveis exceções ou remarcações.
+
+	São consideradas justificativas plausíveis:
+
+	Problemas de saúde comprovados (atestado médico ou similar).
+	Problemas técnicos comprovados que impeçam a participação (ex: falha de internet com comprovação).
+	Falecimento de familiares ou parentes.
+	Compromissos acadêmicos, profissionais ou pessoais relevantes, devidamente informados antecipadamente ou justificados posteriormente dentro do prazo.
+	Outros casos excepcionais reconhecidos pela comissão, mediante análise documental ou de provas.
+
+	Remarcações fora do prazo oficial só serão permitidas com autorização expressa da comissão, mediante justificativa válida e devidamente comprovada, respeitando o calendário e o andamento do torneio.
+
+	Penalizações para ausências não justificadas:
+
+	Após a primeira partida faltada sem justificativa, o jogador receberá uma advertência formal registrada.
+	Na segunda falta consecutiva sem justificativa, poderá haver a desclassificação automática, conforme item I.
+	Reincidências em edições seguintes poderão resultar em suspensão de uma ou mais edições, a critério da comissão.
+
+
+Artigo 22 — Sobre o padrão da competição:
+
+	Atualmente, o padrão da competição é:
+
+	Câmera dinâmica ampla.
+	Velocidade de jogo 1.
+	Minimapa sendo exibido com 100% de opacidade.
+	6 substituições ativadas
+
+	Em caso de concordância de ambos jogadores, eles podem mudar a câmera, velocidade do jogo, exibição do minimapa e a quantidade de substituições.
+
+
+Artigo 23 — Cartões amarelos, vermelhos e suspensão dos jogadores:
+
+	Acúmulo e suspensões por cartões amarelos: O jogador que receber um cartão amarelo ficará pendurado para as próximas partidas. Caso acumule mais dois cartões amarelos durante esse período, será suspenso automaticamente para a próxima partida. Se não receber mais cartões amarelos nas partidas seguintes, os cartões acumulados continuarão válidos durante a competição. Os cartões só serão zerados em caso de suspensão ou na fase de semifinais.
+
+	Cartão vermelho oriundo de 2 amarelos: Caso o jogador receba cartão vermelho decorrente do segundo cartão amarelo em uma partida, a suspensão será de uma partida e valerá para a próxima partida da competição, independentemente da fase.
+
+	Cartão vermelho direto: O jogador que receber cartão vermelho direto será suspenso por duas partidas consecutivas e poderá retornar somente a partir da terceira partida após o cumprimento da suspensão, em qualquer fase da competição.
+
+	Suspensões progressivas: O jogador será suspenso automaticamente ao atingir o terceiro cartão amarelo. As suspensões seguintes ocorrerão a cada dois cartões amarelos adicionais (quinto, sétimo, nono etc.). A cada suspensão, os cartões daquele jogador (suspenso) será zerado.
+
+	Continuidade das suspensões em caso de eliminação: Suspensões e cartões acumulados permanecem válidos caso o time seja remanejado para a Copa da Liga DDO.
+
+	Cumprimento de suspensões: As suspensões só serão consideradas cumpridas em partidas efetivamente disputadas, não em partidas decididas por W.O. Caso o calendário sofra alterações e as rodadas ocorram fora da ordem original, a suspensão valerá para as próximas partidas efetivamente disputadas pelo jogador, independentemente da ordem cronológica. O jogador suspenso não poderá entrar em campo em hipótese alguma até o cumprimento total da suspensão.
+
+	Registro e comunicação dos cartões: A contagem e o registro dos cartões devem ser feitos em uma única mensagem no chat oficial de cartões, onde o jogador deverá informar quantos cartões possui e quais jogadores da sua equipe receberam advertências. Esta será a referência oficial para controle das suspensões.
+
+	Penalidades por escalação irregular:
+
+Jogador suspenso não pode ser escalado em nenhuma partida, seja em fase de liga ou mata-mata. Caso isso ocorra, a equipe infratora estará sujeita às penalidades descritas a seguir.
+
+	Na fase de liga, se a equipe escalar jogador suspenso, a partida será anulada e o adversário receberá vitória por W.O. (3x0). Além disso, a equipe infratora perderá até 3 pontos no campeonato e o jogador suspenso terá sua suspensão estendida em uma partida.
+
+	Na fase de mata-mata:
+
+	Se o jogador suspenso for escalado no jogo de ida, a partida será anulada e o adversário receberá vitória por W.O. (3x0). O jogo de volta poderá ser disputado normalmente, mas o resultado do jogo de ida valerá para o placar agregado.
+	Se o jogador suspenso for escalado no jogo de volta, a equipe infratora perderá o jogo por W.O. (3x0). Independentemente do resultado real, a equipe adversária avançará para a próxima fase, desconsiderando o placar verdadeiro.
+
+	Se o jogador suspenso, escalado irregularmente, receber cartões (amarelo ou vermelho) durante a partida, esses cartões não serão contabilizados para cumprimento de suspensão, mas a equipe sofrerá uma punição adicional automática, como acréscimo de uma partida de suspensão para esse jogador, além da aplicação da punição pelo uso indevido na partida. Caso o cartão seja vermelho direto, a equipe poderá sofrer penalização extra conforme avaliação da comissão, incluindo possível suspensão do jogador por tempo maior ou até suspensão/expulsão da equipe da competição em caso de reincidência.
+
+	Caso a equipe infratora reincida na escalação de jogador suspenso na mesma edição do torneio, poderá ser eliminada da competição ou receber penalizações mais severas conforme decisão da comissão administrativa.
+
+	Registro obrigatório de cartões e conduta antidesportiva: É obrigatório que o jogador mandante permita o registro (print) dos cartões recebidos durante a partida, imediatamente após o seu término. Caso o registro não seja realizado por recusa do mandante, por retirada imediata do visitante da sessão Parsec ou por qualquer outra forma de obstrução, tal conduta será considerada tentativa de vantagem indevida e resultará em suspensão ou expulsão do torneio, conforme a gravidade. Se for constatada cumplicidade entre os jogadores para omitir ou falsificar a informação, todos os envolvidos estarão sujeitos a punições.
+Em situações assim, o jogador prejudicado deve abrir chamado no chat de chamados, informando o ocorrido e relatando que não foi autorizado a registrar os cartões.
+
+
+Artigo 24 — Recusa de realização de partida:
+
+	Situações que justificam a recusa:
+
+	Travamentos severos que comprometam o desempenho normal da partida.
+	Problemas visíveis de desempenho no PC do adversário, como baixa taxa de FPS ou carregamentos excessivamente longos.
+	Ping médio superior a 100 ms, possibilitando ao jogador solicitar troca de host, reagendamento ou outra solução técnica viável.
+	Quedas frequentes de conexão ou instabilidade extrema.
+	Delay excessivo nos comandos, comprovadamente causado pela máquina do adversário.
+	Hardware inadequado no PC adversário, causando prejuízo comprovado à jogabilidade.
+	Adversário que não deixa verificar o time, com falta de transparência.
+
+	Procedimentos em caso de recusa:
+
+	A solicitação de recusa deve ser formalizada imediatamente no chat oficial de chamados, acompanhada de provas (prints, vídeos ou testemunhas).
+	Realizar teste de conexão entre os jogadores para identificar o host ideal.
+	Aguardar a estabilização da conexão, que deve ocorrer em prazo máximo de 15 minutos a partir da solicitação.
+	Caso não seja possível normalizar a conexão, as partes devem buscar acordo para reagendamento, jogo no PC do mandante ou em local neutro que garanta condições justas.
+
+	Penalidades por recusa injustificada:
+
+	Recusa injustificada poderá resultar em W.O. imediato, perda do mando de campo, ou outras sanções aplicadas pela comissão organizadora.
+	Se a recusa causar atrasos excessivos, tumulto ou prejuízo à competição, a punição será agravada.
+	Reincidência em recusas injustificadas pode levar à eliminação do torneio.
+	Forjar ou exagerar justificativas para evitar a partida será considerado conduta antidesportiva, passível de suspensão ou expulsão, conforme gravidade.
+	Em fases decisivas (mata-mata), as punições por recusa injustificada serão mais severas, podendo incluir eliminação direta e/ou perda de mando.
+
+	Regra do mandante:
+
+O mandante tem prioridade para realizar a partida em seu PC. No entanto, se for comprovada instabilidade significativa no PC do mandante (através de vídeo, prints ou testemunhas), deve-se buscar solução em comum acordo, tais como reagendamento, ajustes técnicos (ex.: configurações do Parsec ou troca de rede) ou uso de PC neutro indicado pelo mandante, desde que garanta condições justas para ambos.
+
+
+Artigo 25 — Sobre lances polêmicos e denúncias formais:
+
+	Revisão de lances polêmicos:
+
+	Em casos de lances polêmicos (ex.: gols em impedimento, erros evidentes da mecânica do jogo ou situações irregulares que influenciem diretamente o resultado), o jogador poderá solicitar à comissão a revisão do lance em até 30 minutos após o término da partida.
+	Sempre que possível, o aviso deve ser feito imediatamente após o lance, informando o adversário e apresentando o replay do jogo.
+	O jogador terá até 1 hora após o término da partida para enviar todas as provas (prints, vídeos ou gravação completa) para análise.
+
+	Procedimento de revisão:
+
+	A comissão analisará as provas apresentadas e, se considerar necessário, revisará a gravação completa da partida.
+	Caso seja constatada influência grave do lance no resultado, a comissão poderá determinar a repetição parcial ou total da partida, ou aplicar outras medidas cabíveis.
+
+	Denúncias formais para investigações:
+
+	Denúncias sobre condutas irregulares, manipulação de resultados, trapaças, uso de recursos ilícitos ou qualquer atitude antidesportiva devem ser feitas de forma privada e sigilosa diretamente ao presidente ou a um diretor do torneio.
+	A denúncia deve conter informações detalhadas e provas concretas (prints, vídeos, depoimentos).
+	O conteúdo da denúncia e a identidade do denunciante serão mantidos em sigilo durante toda a investigação.
+	A comissão poderá abrir investigação interna, ouvir as partes envolvidas e requisitar informações adicionais antes de decidir sobre penalidades.
+
+	Denúncias infundadas ou de má-fé:
+
+	Denúncias sem fundamentos claros, sem provas ou que visem prejudicar injustamente outro participante serão tratadas como conduta antidesportiva.
+	O autor de denúncia de má-fé poderá receber penalização equivalente a até 2 pontos/gols negativos, suspensão ou, em casos graves, eliminação do torneio.
+	Em caso de reincidência, a punição será automaticamente agravada, podendo chegar à suspensão definitiva da competição.
+
+
+Artigo 26 — Sobre a arbitragem de vídeo:
+
+	Implementação: A Liga Real DDO contará com um sistema de Arbitragem de Vídeo (VAR DDO), conduzido por um árbitro de vídeo designado para cada partida, com o objetivo de assegurar o cumprimento do regulamento e corrigir falhas do jogo.
+
+	Atribuições do árbitro de vídeo:
+
+	Solicitar pausas durante a partida para comunicar decisões ou esclarecer dúvidas sobre o regulamento;
+	Informar os jogadores sobre infrações, aplicação de regras e ocorrências relevantes durante o jogo;
+	Receber, analisar e decidir sobre pedidos de revisão de jogadas, aceitando-os ou recusando-os com base no regulamento;
+	Corrigir falhas técnicas do jogo, anulando gols inválidos (ex.: bola atravessando a trave e computada erroneamente) ou validando gols legítimos incorretamente anulados;
+	Aplicar penalidades e advertências em caso de descumprimento das regras do torneio, conduta antidesportiva ou comportamento inadequado;
+	Revisar obrigatoriamente todos os lances de pênalti em partidas transmitidas ao vivo, independentemente de solicitação dos jogadores.
+
+	Procedimento para pausas solicitadas:
+
+	Quando o árbitro de vídeo solicitar pausa, o jogador em posse da bola deverá imediatamente jogá-la para fora do campo e só então pausar o jogo.
+	O descumprimento deste procedimento poderá acarretar penalidades progressivas conforme definido no item IV.
+
+	Penalidades progressivas por descumprimento:
+
+	Primeira infração: Advertência verbal e instrução para respeitar as ordens do árbitro de vídeo;
+	Segunda infração: Perda da posse de bola, entregando-a ao adversário para reinício com tiro de meta ou lateral;
+	Terceira infração: Anulação de gol indevido ou marcação de pênalti contra, caso o descumprimento ocorra em momento decisivo;
+	Quarta infração: Derrota automática por W.O. e possível suspensão na próxima partida.
+
+	Revisão de gols e pênaltis:
+
+	Jogadores podem solicitar a revisão de gols que foram incorretamente invalidados pelo jogo ou contabilizados indevidamente devido a bugs ou falhas técnicas.
+	O árbitro de vídeo avaliará a jogada e corrigirá a decisão conforme o regulamento.
+	Todos os lances de pênalti em partidas transmitidas ao vivo serão automaticamente revisados pelo árbitro de vídeo, sem necessidade de solicitação.
+
+	Limitações da arbitragem de vídeo:
+
+	O árbitro de vídeo não possui autoridade para interferir nas decisões do árbitro de campo do PES 2017, como a aplicação de cartões amarelos ou vermelhos.
+	No entanto, poderá recomendar punições disciplinares dentro do torneio com base no comportamento dos jogadores.
+
+	Conduta dos jogadores em relação à arbitragem:
+
+	Jogadores não têm direito de reclamar, contestar ou gerar discussões sobre decisões do árbitro de vídeo durante a partida.
+	Caso queiram solicitar análise, devem fazê-lo de forma objetiva e respeitosa, utilizando frases como:
+	“Solicito a revisão da jogada, acho que foi pênalti” ou “Solicito a revisão do gol”.
+	Qualquer desrespeito, reclamação acalorada ou tentativa de pressionar a arbitragem será tratado como conduta antidesportiva, passível de punição.
+
+	Sanções pelo desrespeito à arbitragem de vídeo: O descumprimento das decisões do árbitro de vídeo poderá acarretar sanções proporcionais à gravidade, que incluem advertências, penalidades durante a partida e, em casos graves, desclassificação do torneio.
+
+	Condição obrigatória durante partidas com arbitragem de vídeo: É obrigatório que ambos os jogadores estejam atentos e escutando as orientações do árbitro de vídeo durante toda a partida. No caso de algum jogador não estiver escutando, é passível de punição.
+
+
+Artigo 27 — Sobre a conduta tóxica, mentiras forjadas e manipulação emocional:
+
+Será considerada conduta antidesportiva grave qualquer tentativa deliberada de desequilibrar emocionalmente outro participante, por meio de comentários maliciosos, mentiras, provocações excessivas ou qualquer forma de pressão psicológica injusta, antes, durante ou após as partidas do torneio.
+
+Exemplos de condutas que se enquadram neste artigo:
+	Menosprezar diretamente um jogador, com frases como “você vai tomar goleada”, “já perdeu mesmo”, inclusive quando feitas de forma reversa, com o intuito de desestabilizar psicologicamente o adversário.
+	Criar ou disseminar informações falsas sobre adversários, elencos ou resultados.
+	Estimular atitudes negativas ou desmotivadoras, como “você não sabe jogar” ou “vai abandonar igual sempre”.
+	Fazer provocações públicas insistentes ou fora do contexto competitivo.
+	Criar teorias conspiratórias ou insinuações destinadas exclusivamente a abalar o foco e a concentração do oponente.
+
+Esta regra se aplica a todos os participantes do evento, incluindo jogadores, narradores, comentaristas, membros das equipes técnicas e qualquer pessoa oficialmente envolvida no torneio, mesmo que indiretamente. Aplica-se também a interações dentro e fora das transmissões, abrangendo mensagens em grupos, redes sociais e comunicações privadas, desde que relacionadas ao torneio.
+
+
+Artigo 28 — Sobre o chamado e justificativas
+
+	É de inteira, exclusiva e intransferível responsabilidade dos jogadores o agendamento, comparecimento e registro oficial de suas partidas, dentro dos prazos estabelecidos no calendário oficial do torneio.
+
+	Justificativas de ausência ou impossibilidade deverão ser formalizadas exclusivamente por meio da abertura de chamado no canal específico destinado a esse fim (chat de chamados), até, no máximo, 2 horas antes do término do prazo da rodada.
+
+	Justificativas apresentadas fora do prazo serão automaticamente indeferidas, salvo em casos extremos e devidamente comprovados, a critério exclusivo da organização. A análise das justificativas será feita com rigor técnico, imparcialidade e critérios elevados. Relatos genéricos de problemas de agenda, indisposição ou imprevistos não garantem aprovação.
+
+	Tentativas de falsificação de provas, adulteração de prints ou uso de argumentos fraudulentos serão consideradas faltas gravíssimas, com eliminação imediata do torneio e possível bloqueio do jogador em futuras edições.
+
+	O não comparecimento a uma partida, sem justificativa válida ou com justificativa indeferida, acarretará advertência formal ao jogador. A acumulação de duas ou mais advertências, independentemente da fase do torneio, poderá resultar em eliminação sumária e irrecorrível, conforme avaliação da reincidência e comprometimento com a competição.
+
+	Partidas não realizadas, não registradas ou não justificadas dentro do prazo serão consideradas automaticamente ANULADAS, sem direito a remarcação, reaplicação ou qualquer exceção.
+
+	A responsabilidade pelo registro do resultado é exclusiva dos jogadores, devendo ser feito por meio do envio de print ou vídeo válido no canal designado para esse fim. A ausência de registro, mesmo que a partida tenha sido realizada, será tratada como partida não ocorrida, sujeita às penalidades previstas neste artigo.
+
+	Em nenhuma hipótese será aceita a realização ou remarcação de partidas fora do prazo oficial sem autorização expressa e pública da organização, registrada no chat de chamados. Solicitações feitas por mensagens privadas ou canais alternativos serão consideradas nulas.
+
+	Em caso de divergência entre as partes quanto à realização, horário ou resultado da partida, prevalecerá o que estiver registrado no chat oficial, acompanhado de comprovação documental (prints, vídeos ou gravações). Na ausência de comprovação, será dada razão à parte que apresentar evidência mais consistente, segundo avaliação da organização.
+
+	O descumprimento reiterado ou doloso destas normas poderá ser enquadrado como “conduta anticompetitiva”, sujeitando o jogador à eliminação do torneio e ao banimento preventivo em futuras competições organizadas pela equipe do torneio.
+
+
+Artigo 29 — Responsabilidades de cada jogador:
+
+	Ao se inscrever em qualquer competição oficial DDO, o jogador obriga-se a cumprir integralmente este regulamento.
+
+	É responsabilidade exclusiva de cada jogador manter-se informado sobre a situação disciplinar de seus companheiros de equipe, especialmente quanto a suspensões ou pendências que impeçam sua participação nas rodadas seguintes.
+
+	O adversário não tem qualquer obrigação de informar ou lembrar sobre a participação de jogadores suspensos na partida. Caso o jogo ocorra com jogador suspenso, a parte prejudicada poderá solicitar anulação por W.O. fundamentada em negligência da equipe infratora.
+
+	O registro do resultado da partida deverá seguir rigorosamente o padrão estabelecido pela organização no início da competição. A negligência no envio do resultado, especialmente após o prazo limite, implicará no não reconhecimento oficial da partida.
+
+	Todos os participantes devem atuar com integridade e transparência, comprometendo-se a informar com veracidade qualquer ocorrência relevante durante o torneio. A omissão deliberada de informações poderá ser interpretada como cumplicidade e sujeitará o jogador a sanções disciplinares, incluindo punições ou suspensões.
+
+	Os jogadores devem respeitar integralmente as normas de conduta, abstendo-se de atitudes antidesportivas, agressões verbais ou qualquer comportamento que comprometa o espírito competitivo e o respeito mútuo.
+
+	Qualquer irregularidade ou situação anômala identificada durante ou após as partidas deverá ser comunicada à organização no prazo máximo de 24 horas, para avaliação e tomada de providências cabíveis.
+
+	A reincidência em infrações graves ou a persistência em condutas inadequadas poderá acarretar penalidades progressivas, incluindo advertências, eliminação do torneio e banimento de futuras competições organizadas pela comissão administrativa das competições DDO.
+
+
+Artigo 30 — Modelo de postagem de resultado final:
+
+	É responsabilidade exclusiva do mandante registrar o resultado da partida, detalhando ocorrências importantes (cartões, imprevistos, etc.) dentro do prazo regulamentar, conforme o padrão estabelecido.
+
+	Todas as partidas devem ser obrigatoriamente registradas em até 40 minutos após o seu término; caso a partida seja realizada e não seja devidamente registrada dentro desse prazo, ela poderá ser considerada como “não realizada”, sujeitando os jogadores envolvidos a sanções que incluem iniciar a próxima fase com desvantagem no placar (0–1 ou 0–2), perda de pontos na classificação, advertência formal e, em casos reincidentes (2ª vez em diante), eliminação imediata do torneio. Essas sanções também valem para omissão de informações da(s) partida(s) realizada(s).
+
+	O registro deve conter:
+
+	Print do resultado final da partida com estatísticas ou eventos relevantes;
+	Texto simples seguindo o modelo abaixo (exemplo): 
+
+ 
+Liga Real DDO – Rodada 1  
+@mandante WHU 3x4 FIO @visitante  
+
+Cartões:  
+Amarelos:  Todibo (WHU).
+Vermelhos:  Nenhum.
+
+	No chat específico para cartões, o jogador deve informar os seus atletas que receberam advertências, indicando a quantidade de cartões acumulados, conforme o exemplo abaixo:
+
+Real Madrid – @seuarroba
+Amarelados:
+	Mbappé (2)
+	Tchouaméni (1)
+	Rüdiger (2)
+
+Suspensos:
+	Militão (1/2) – cumpriu 1 partida, falta 1 para completar a suspensão*
+	Endrick (0/1) – não cumpriu nenhuma partida da suspensão; falta 1*
+
+*A parte escrita em vermelha não precisa colocar, apenas é para entendimento.
+
+
+Artigo 31 — Sobre recurso, direito a reclamações e penalidades:
+
+	Direito de contestação: Todo jogador tem o direito de apresentar reclamação formal à comissão organizadora caso se sinta injustamente penalizado ou deseje solicitar a revisão, redução ou anulação de uma punição aplicada, com fundamento neste regulamento.
+
+	Procedimento:
+
+	A reclamação deverá ser protocolada em até 24 horas após a comunicação oficial da penalidade. 
+	O jogador deve apresentar justificativa clara, indicando os artigos específicos do regulamento que amparam sua defesa, e anexar, sempre que possível, evidências (prints, vídeos, etc.). 
+	A comissão organizadora poderá solicitar informações adicionais ou esclarecimentos antes de emitir seu parecer final.
+
+	Julgamento e decisão:
+
+	A comissão avaliará a reclamação considerando:
+	O conteúdo e a interpretação do regulamento;
+	A natureza e a gravidade da infração;
+	A conduta geral do jogador durante o torneio;
+	Precedentes e decisões anteriores em casos semelhantes.
+
+	A comissão poderá decidir por:
+	Manutenção integral da penalidade;
+	Redução da punição;
+	Cancelamento da penalidade, caso haja erro claro ou justificativa legítima.
+
+	A decisão da comissão será soberana, definitiva e deverá ser respeitada por todas as partes envolvidas.
+
+	Conduta durante o processo: Reclamações ofensivas, desrespeitosas ou infundadas poderão resultar em punições adicionais, a critério da comissão organizadora.
+
+
+Artigo 32 — Sobre o tempo e a recomendação de partidas-teste:
+
+	As partidas-teste têm como finalidade avaliar latência, ping, delay, travamentos e a qualidade geral da conexão antes da disputa oficial.
+
+	O teste deverá ter duração máxima equivalente a 20 minutos no tempo de jogo ou 5 minutos em tempo real, utilizando times aleatórios, evitando qualquer confusão ou mal-entendido.
+
+	A realização da partida-teste é opcional. Contudo, o jogador que optar por iniciar a partida oficial sem realizar o teste aceita, de forma irrevogável, todos os riscos e consequências de problemas técnicos que possam ocorrer, não sendo aceitas reclamações, pedidos de reinício ou qualquer tipo de contestação após o início do jogo, exceto casos previstos no artigo 20 (procedimento para problemas técnicos com partidas em andamento).
+
+
+Artigo 34 — Sobre partidas não realizadas por completo em situações extremas:
+
+Caso uma partida não possa ser concluída dentro do prazo estipulado, por ausência de host viável, impossibilidade técnica ou qualquer outra condição que torne a jogabilidade impraticável, será adotada uma disputa de pênaltis para definir o vencedor.
+
+Este procedimento tem caráter excepcional e rigoroso, devendo ser aplicado apenas em última instância, quando não houver mais nenhuma alternativa ou solução razoável disponível. Somente a comissão administrativa do torneio pode avaliar e autorizar a situação.
+
+
+Artigo 35 — Sobre a substituição de jogadores durante a competição:
+
+	Cada jogador inscrito deve disputar integralmente suas partidas com a conta e equipe registradas no início da competição. É vedado que outra pessoa jogue em nome do inscrito (“conta laranja”), sob pena de eliminação imediata.
+
+	Em caso de desistência ou abandono, a vaga será preenchida da seguinte forma:
+
+	Antes do início da competição: convocação de jogador da lista de espera ou, se aplicável, do último rebaixado.
+	Durante a fase de liga: convocação do melhor classificado da divisão imediatamente inferior na edição anterior.
+	Durante a fase eliminatória: não haverá substituição; o adversário avança por W.O.
+
+	Qualquer substituição deve ser formalmente comunicada no chat de notícias do torneio e/ou regras e aprovada pela Comissão Organizadora.
+
+	Após o início das fases eliminatórias, nenhuma substituição será aceita em hipótese alguma.
+
+
+Artigo 36 — Tempo máximo para ajustes no plano de jogo (início da partida):
+
+	Cada jogador dispõe de, no máximo, 2 (dois) minutos para realizar alterações em seu plano de jogo antes do início da partida.
+
+	O jogador mandante poderá, se desejar, cronometrar o tempo. Caso o limite seja atingido ou ultrapassado, deverá informar imediatamente ao adversário sobre o término do prazo.
+
+	Se o adversário ignorar o aviso, demorar além do tempo permitido ou continuar realizando ajustes de forma indevida, a conduta será considerada como “cera de jogo”, sujeita a sanção disciplinar.
+
+	As penalidades aplicáveis seguem as diretrizes do Artigo 17.
+
+	O jogador que constatar a infração deverá registrar prova por meio de captura de tela (print), demonstrando o cronômetro e a tela do plano de jogo, encaminhando o material à comissão organizadora para aplicação da penalidade.
+
+	O direito de cronometrar e denunciar aplica-se igualmente ao visitante, caso perceba demora excessiva do mandante.
+
+	Também será enquadrada como “cera de jogo” a prática de ajustar táticas baseando-se nas alterações previamente realizadas pelo adversário.
+
+	O objetivo deste artigo é assegurar a agilidade e fluidez dos jogos, evitando atrasos desnecessários e condutas antidesportivas.
+
+
+
+Artigo 37 — Pausas: 
+
+É estritamente proibido pausar a partida quando a posse de bola estiver rolando ou em disputa (bola viva). O pause só é permitido quando a bola estiver parada (lateral, tiro de meta, falta) ou sob posse clara do próprio jogador em seu campo de defesa. Punição: O infrator perde a posse da bola no reinício ou, em caso de reincidência, perde a partida por W.O. administrativo.
+
+
+Artigo 38 — Uniformes: 
+
+A escolha do uniforme principal é prerrogativa exclusiva do MANDANTE, que tem a liberdade de atuar com qualquer um de seus kits (Uniforme 1, 2, 3 ou Especial).
+
+	§ 1º Responsabilidade do Visitante: Cabe ao VISITANTE selecionar um uniforme que apresente contraste visual claro em relação à escolha do mandante (ex: escuro vs. claro), visando a jogabilidade e a transmissão. O visitante tem o direito de sugerir ou solicitar a troca de kit ao mandante, mas a decisão final permanece com o dono da casa.
+
+	§ 2º Identidade Visual: O mandante não está obrigado a jogar estritamente com seu "Uniforme 1", desde que comunique sua escolha ao adversário.
+
+	§ 3º Conflito de Cores: Caso a partida inicie com uniformes idênticos ou que dificultem a distinção, o jogo deve ser interrompido imediatamente (dentro dos 5 primeiros minutos de partida) para o ajuste das cores.
+
+	§ 4º Aceitação de Risco: Caso os jogadores optem por prosseguir com a partida apesar do conflito de cores, ambos assumem o risco. O resultado será mantido integralmente, não cabendo reclamações ou pedidos de anulação à organização.
+
+
+
+
+Este regulamento foi aprovado pela Comissão Organizadora e entra em vigor a partir da data abaixo, sendo de observância obrigatória para todos os participantes da Liga Real DDO e demais competições.
+________________________________________
+Daniel DDO
+Presidente das Competições Oficiais
+Torneios DDO
+Data: 29 de dezembro 
