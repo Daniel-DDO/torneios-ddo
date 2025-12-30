@@ -14,6 +14,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.LocalDateTime;
 import java.util.*;
 
 @Slf4j
@@ -34,6 +35,8 @@ public class ClassificacaoService {
     private SimpMessagingTemplate messagingTemplate;
     @Autowired
     private EconomiaService economiaService;
+    @Autowired
+    private InsigniaService insigniaService;
 
     @Transactional
     public void registrarResultado(PartidaDTO dto) {
@@ -70,6 +73,7 @@ public class ClassificacaoService {
                 valorCompeticao
         );
 
+        partida.setDataHora(LocalDateTime.now());
         partida.setCoeficienteMandante(coefM);
         partida.setCoeficienteVisitante(coefV);
         partida.setGolsMandante(dto.golsMandante());
@@ -107,8 +111,13 @@ public class ClassificacaoService {
 
         economiaService.processarEconomiaPartida(partida);
 
+        List<LinhaClassificacaoDTO> novaClassificacao = calcularClassificacao(fase);
+        atualizarPosicoesNoBanco(novaClassificacao, fase);
+
+        insigniaService.processarPosPartida(jGlobalMandante,dto.golsMandante());
+        insigniaService.processarPosPartida(jGlobalVisitante, dto.golsVisitante());
+
         try {
-            List<LinhaClassificacaoDTO> novaClassificacao = calcularClassificacao(fase);
 
             String topico = "/topic/classificacao/" + fase.getId();
             messagingTemplate.convertAndSend(topico, novaClassificacao);
@@ -116,6 +125,29 @@ public class ClassificacaoService {
             log.info("Classificação atualizada e enviada via WebSocket para a fase: {}", fase.getId());
         } catch (Exception e) {
             log.error("Erro ao enviar atualização de classificação via WebSocket", e);
+        }
+    }
+
+    private void atualizarPosicoesNoBanco(List<LinhaClassificacaoDTO> classificacao, FaseTorneio fase) {
+        List<ParticipacaoFase> participacoes = fase.getParticipacoes();
+        boolean houveAlteracao = false;
+
+        for (LinhaClassificacaoDTO linha : classificacao) {
+            Optional<ParticipacaoFase> match = participacoes.stream()
+                    .filter(p -> p.getJogadorClube().getId().equals(linha.jogadorClubeId()))
+                    .findFirst();
+
+            if (match.isPresent()) {
+                ParticipacaoFase p = match.get();
+                if (!Objects.equals(p.getPosicaoClassificacao(), linha.posicao())) {
+                    p.setPosicaoClassificacao(linha.posicao());
+                    houveAlteracao = true;
+                }
+            }
+        }
+
+        if (houveAlteracao) {
+            participacaoRepository.saveAll(participacoes);
         }
     }
 
