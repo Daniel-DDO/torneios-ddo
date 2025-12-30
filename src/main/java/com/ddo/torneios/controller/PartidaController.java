@@ -2,6 +2,7 @@ package com.ddo.torneios.controller;
 
 import com.ddo.torneios.dto.DadosPartidaDTO;
 import com.ddo.torneios.dto.PartidaDTO;
+import com.ddo.torneios.dto.ReportPartidaDTO;
 import com.ddo.torneios.model.ReportPartida;
 import com.ddo.torneios.repository.PartidaRepository;
 import com.ddo.torneios.repository.ReportPartidaRepository;
@@ -86,14 +87,14 @@ public class PartidaController {
     }
 
     @PostMapping("/{partidaId}/analisar-problema")
-    public ResponseEntity<ReportPartida> analisarProblema(
+    public ResponseEntity<ReportPartidaDTO> analisarProblema(
             @PathVariable String partidaId,
             @RequestBody RelatoProblemaRequest request) {
 
         Optional<ReportPartida> reportExistente = reportPartidaRepository.findByPartida_Id(partidaId);
 
         if (reportExistente.isPresent()) {
-            return ResponseEntity.ok(reportExistente.get());
+            return ResponseEntity.ok(new ReportPartidaDTO(reportExistente.get()));
         }
 
         DadosPartidaDTO dadosDTO = DadosPartidaDTO.builder()
@@ -104,13 +105,13 @@ public class PartidaController {
                 .relatoOcorrido(request.relato())
                 .build();
 
-        ReportPartida novoReport = juizVirtualService.analisarDisputa(partidaId, dadosDTO);
+        ReportPartidaDTO novoReport = juizVirtualService.analisarDisputa(partidaId, dadosDTO);
 
         return ResponseEntity.ok(novoReport);
     }
 
     @PostMapping("/{partidaId}/reanalisar")
-    public ResponseEntity<ReportPartida> forcarReanalise(
+    public ResponseEntity<ReportPartidaDTO> forcarReanalise(
             @PathVariable String partidaId,
             @RequestBody RelatoProblemaRequest request) {
 
@@ -125,7 +126,7 @@ public class PartidaController {
                 .relatoOcorrido(request.relato())
                 .build();
 
-        ReportPartida novoReport = juizVirtualService.analisarDisputa(partidaId, dadosDTO);
+        ReportPartidaDTO novoReport = juizVirtualService.analisarDisputa(partidaId, dadosDTO);
         return ResponseEntity.ok(novoReport);
     }
 
