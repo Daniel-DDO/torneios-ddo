@@ -1,5 +1,6 @@
 package com.ddo.torneios.repository;
 
+import com.ddo.torneios.dto.JogadorResumoDTO;
 import com.ddo.torneios.model.Cargo;
 import com.ddo.torneios.model.Jogador;
 import jakarta.validation.constraints.NotBlank;
@@ -16,18 +17,51 @@ import java.util.Optional;
 @Repository
 public interface JogadorRepository extends JpaRepository<Jogador, String> {
     boolean existsJogadorByDiscord(@NotBlank String discord);
+
     boolean existsJogadorByEmail(@NotBlank String novoEmail);
+
     Optional<Jogador> findByDiscord(@NotBlank String discord);
+
     Optional<Jogador> findByEmail(@NotBlank String email);
+
     List<Jogador> findByDiscordContainingIgnoreCase(String discord);
 
     Page<Jogador> findByNomeContainingIgnoreCase(String nome, Pageable pageable);
+
     Page<Jogador> findByCargo(Cargo cargo, Pageable pageable);
+
     Page<Jogador> findByCargoNot(Cargo cargo, Pageable pageable);
+
     Long countByContaReivindicadaTrue();
 
     @Query("SELECT j FROM Jogador j WHERE LOWER(j.nome) LIKE LOWER(CONCAT('%', :termo, '%')) OR LOWER(j.discord) LIKE LOWER(CONCAT('%', :termo, '%'))")
     List<Jogador> buscarAutocomplete(@Param("termo") String termo, Pageable pageable);
 
     List<Jogador> findByNomeContainingIgnoreCaseOrDiscordContainingIgnoreCase(String nome, String discord);
+
+    @Query("""
+        SELECT new com.ddo.torneios.dto.JogadorResumoDTO(
+            j.id, 
+            j.nome, 
+            j.discord, 
+            j.pontosCoeficiente
+        )
+        FROM Jogador j
+        ORDER BY j.pontosCoeficiente DESC NULLS LAST
+    """)
+    List<JogadorResumoDTO> buscarRankingCompleto();
+
+    // Versão Top 10 Otimizada
+    @Query("""
+        SELECT new com.ddo.torneios.dto.JogadorResumoDTO(
+            j.id, 
+            j.nome, 
+            j.discord, 
+            j.pontosCoeficiente
+        )
+        FROM Jogador j
+        ORDER BY j.pontosCoeficiente DESC NULLS LAST
+        LIMIT 10
+    """)
+    List<JogadorResumoDTO> buscarTop10Ranking();
 }

@@ -427,7 +427,15 @@ public class JogadorService {
     public List<JogadorResumoDTO> buscarJogadoresParaSelect(String termo) {
         return jogadorRepository.findByNomeContainingIgnoreCaseOrDiscordContainingIgnoreCase(termo, termo)
                 .stream()
-                .map(j -> new JogadorResumoDTO(j.getId(), j.getNome(), j.getDiscord())) // DTO leve só com o necessário
+                .map(j -> new JogadorResumoDTO(j.getId(), j.getNome(), j.getDiscord(), j.getPontosCoeficiente())) // DTO leve só com o necessário
                 .collect(Collectors.toList());
+    }
+
+    public List<JogadorResumoDTO> retornarTodosJogadoresMelhorCoeficiente() {
+        return jogadorRepository.buscarRankingCompleto();
+    }
+
+    public List<JogadorResumoDTO> retornarTop10JogadoresMelhorCoeficiente() {
+        return jogadorRepository.buscarTop10Ranking();
     }
 }

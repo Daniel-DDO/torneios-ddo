@@ -221,4 +221,14 @@ public class JogadorController {
     public ResponseEntity<List<JogadorResumoDTO>> searchJogadores(@RequestParam String termo) {
         return ResponseEntity.ok(jogadorService.buscarJogadoresParaSelect(termo));
     }
+
+    @GetMapping("/by-coeficiente")
+    public ResponseEntity<List<JogadorResumoDTO>> retornarTodosJogadoresMelhorCoeficiente() {
+        return ResponseEntity.ok(jogadorService.retornarTodosJogadoresMelhorCoeficiente());
+    }
+
+    @GetMapping("/by-coeficiente-10")
+    public ResponseEntity<List<JogadorResumoDTO>> retornarTop10JogadoresMelhorCoeficiente() {
+        return ResponseEntity.ok(jogadorService.retornarTop10JogadoresMelhorCoeficiente());
+    }
 }
