@@ -37,9 +37,11 @@ public class JogadorClubeService {
             throw new IllegalArgumentException("Este jogador já está participando desta temporada com outro time.");
         }
 
+        /*
         if (jogadorClubeRepository.existsByClubeIdAndTemporadaId(request.getClubeId(), request.getTemporadaId())) {
             throw new IllegalArgumentException("Este clube já foi escolhido por outro jogador nesta temporada.");
         }
+         */
 
         Jogador jogador = jogadorRepository.findById(request.getJogadorId())
                 .orElseThrow(() -> new EntityNotFoundException("Jogador não encontrado com ID: " + request.getJogadorId()));
