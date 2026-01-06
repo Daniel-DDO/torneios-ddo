@@ -11,6 +11,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Set;
@@ -87,6 +88,10 @@ public class Jogador implements UserDetails {
     private String codigoReivindicacao;
 
     private LocalDateTime validadeCodigoReivindicacao;
+
+    @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.EAGER)
+    @JoinColumn(name = "jogador_id")
+    private List<Conquista> conquistas = new ArrayList<>();
 
     public Jogador(String nome, String discord) {
         this.nome = nome;

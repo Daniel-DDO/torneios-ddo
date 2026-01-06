@@ -36,26 +36,42 @@ public class GeradorLigaBalanceadaStrategy implements GeradorPartidasStrategy<Ro
             }
         }
 
-        //se true, usa o algoritmo original (padrão). Se false, usa o de caos.
-        boolean usarAlgoritmoPadrao = random.nextBoolean();
+        boolean comBacktracking = random.nextBoolean();
 
-        if (usarAlgoritmoPadrao) {
-            return gerarAlgoritmoPadrao(fase, participantes, rodadasDesejadas, n);
-        } else {
-            return gerarAlgoritmoCaos(fase, participantes, rodadasDesejadas, n);
+        if (comBacktracking) {
+            Map<String, ControleTime> controle = new HashMap<>();
+            for (ParticipacaoFase p : participantes) {
+                controle.put(p.getId(), new ControleTime(p));
+            }
+
+            List<Rodada> rodadas = new ArrayList<>();
+            for (int i = 1; i <= rodadasDesejadas; i++) {
+                Rodada r = new Rodada();
+                r.setFase(fase);
+                r.setNumero(i);
+                r.setStatus(StatusRodada.ABERTA);
+                r.setPartidas(new ArrayList<>());
+                rodadas.add(r);
+            }
+
+            int maxMandos = rodadasDesejadas / 2;
+
+            if (gerarAlgoritmoBacktracking(0, rodadas, participantes, controle, maxMandos)) {
+                return rodadas;
+            }
         }
+
+        return gerarAlgoritmoBalanceado(fase, participantes, rodadasDesejadas, n);
     }
 
-    //ALGORITMO 1: PADRÃO (Estático, ordenado, sem embaralhamento prévio)
-    private List<Rodada> gerarAlgoritmoPadrao(FaseTorneio fase, List<ParticipacaoFase> participantes, int rodadasDesejadas, int n) {
+    //ALGORITMO 1: sorteio inicial + matemática
+    private List<Rodada> gerarAlgoritmoBalanceado(FaseTorneio fase, List<ParticipacaoFase> participantes, int rodadasDesejadas, int n) {
 
         List<ParticipacaoFase> listaRotativa = new ArrayList<>(participantes);
 
-        //map para controlar quantos jogos em casa cada ID já fez
-        Map<String, Integer> contagemJogosEmCasa = new HashMap<>();
-        for (ParticipacaoFase p : participantes) {
-            contagemJogosEmCasa.put(p.getId(), 0);
-        }
+        Collections.shuffle(listaRotativa);
+
+        boolean inverterMandoGlobal = random.nextBoolean();
 
         List<Rodada> rodadasCriadas = new ArrayList<>();
 
@@ -75,29 +91,24 @@ public class GeradorLigaBalanceadaStrategy implements GeradorPartidasStrategy<Ro
 
                 JogadorClube mandante;
                 JogadorClube visitante;
-
-                int casaP1 = contagemJogosEmCasa.get(p1.getId());
-                int casaP2 = contagemJogosEmCasa.get(p2.getId());
-
                 boolean p1Manda;
 
-                if (casaP1 < casaP2) {
-                    p1Manda = true;
-                } else if (casaP2 < casaP1) {
-                    p1Manda = false;
+                if (i == 0) {
+                    p1Manda = (r % 2 != 0);
                 } else {
-                    //empate no histórico -> alternância matemática padrão
-                    p1Manda = (r + i) % 2 != 0;
+                    p1Manda = (i % 2 != 0);
+                }
+
+                if (inverterMandoGlobal) {
+                    p1Manda = !p1Manda;
                 }
 
                 if (p1Manda) {
                     mandante = p1.getJogadorClube();
                     visitante = p2.getJogadorClube();
-                    contagemJogosEmCasa.put(p1.getId(), casaP1 + 1);
                 } else {
                     mandante = p2.getJogadorClube();
                     visitante = p1.getJogadorClube();
-                    contagemJogosEmCasa.put(p2.getId(), casaP2 + 1);
                 }
 
                 Partida partida = new Partida();
@@ -111,10 +122,11 @@ public class GeradorLigaBalanceadaStrategy implements GeradorPartidasStrategy<Ro
                 partidasDestaRodada.add(partida);
             }
 
+            Collections.shuffle(partidasDestaRodada);
+
             rodada.setPartidas(partidasDestaRodada);
             rodadasCriadas.add(rodada);
 
-            //rotação padrão
             ParticipacaoFase ultimo = listaRotativa.remove(listaRotativa.size() - 1);
             listaRotativa.add(1, ultimo);
         }
@@ -122,104 +134,103 @@ public class GeradorLigaBalanceadaStrategy implements GeradorPartidasStrategy<Ro
         return rodadasCriadas;
     }
 
-    //ALGORITMO 2: CAOS BALANCEADO (Embaralha times, rodadas e inverte lógica de mando)
-    private List<Rodada> gerarAlgoritmoCaos(FaseTorneio fase, List<ParticipacaoFase> participantes, int rodadasDesejadas, int n) {
-
-        List<Rodada> todasRodadas = new ArrayList<>();
-
-        //embaralha a lista inicial para mudar o pivô
-        List<ParticipacaoFase> listaRotativa = new ArrayList<>(participantes);
-        Collections.shuffle(listaRotativa);
-
-        Map<String, Integer> contagemJogosEmCasa = new HashMap<>();
-        for (ParticipacaoFase p : participantes) {
-            contagemJogosEmCasa.put(p.getId(), 0);
+    //ALGORITMO 2: Com backtracking
+    private boolean gerarAlgoritmoBacktracking(
+            int rodadaIndex,
+            List<Rodada> rodadas,
+            List<ParticipacaoFase> todosParticipantes,
+            Map<String, ControleTime> controle,
+            int maxMandos
+    ) {
+        if (rodadaIndex == rodadas.size()) {
+            return true;
         }
 
-        //fator de aleatoriedade para inversão do critério de desempate
-        boolean inverteMandoBase = random.nextBoolean();
+        Rodada rodadaAtual = rodadas.get(rodadaIndex);
 
-        //loop de geração (Round Robin)
-        for (int r = 0; r < rodadasDesejadas; r++) {
+        List<ParticipacaoFase> pendentesNestaRodada = new ArrayList<>(todosParticipantes);
+        Collections.shuffle(pendentesNestaRodada);
 
-            Rodada rodada = new Rodada();
-            rodada.setFase(fase);
-            rodada.setStatus(StatusRodada.ABERTA);
+        return backtrackPartidas(rodadaAtual, pendentesNestaRodada, controle, maxMandos, rodadaIndex, rodadas, todosParticipantes);
+    }
 
-            List<Partida> partidasDestaRodada = new ArrayList<>();
-            int numJogosNaRodada = n / 2;
+    private boolean backtrackPartidas(
+            Rodada rodadaAtual,
+            List<ParticipacaoFase> pendentes,
+            Map<String, ControleTime> controle,
+            int maxMandos,
+            int rodadaIndexGlobal,
+            List<Rodada> todasRodadas,
+            List<ParticipacaoFase> todosParticipantesOriginal
+    ) {
+        if (pendentes.isEmpty()) {
+            return gerarAlgoritmoBacktracking(rodadaIndexGlobal + 1, todasRodadas, todosParticipantesOriginal, controle, maxMandos);
+        }
 
-            for (int i = 0; i < numJogosNaRodada; i++) {
-                ParticipacaoFase p1 = listaRotativa.get(i);
-                ParticipacaoFase p2 = listaRotativa.get(n - 1 - i);
+        ParticipacaoFase mandante = pendentes.get(0);
+        ControleTime ctrlMandante = controle.get(mandante.getId());
 
-                String id1 = p1.getId();
-                String id2 = p2.getId();
-                int casa1 = contagemJogosEmCasa.get(id1);
-                int casa2 = contagemJogosEmCasa.get(id2);
+        if (ctrlMandante.qtdCasa >= maxMandos) {
+            return false;
+        }
 
-                boolean p1Manda;
+        for (int i = 1; i < pendentes.size(); i++) {
+            ParticipacaoFase visitante = pendentes.get(i);
+            ControleTime ctrlVisitante = controle.get(visitante.getId());
 
-                //prioridade 1: balanceamento absoluto
-                if (casa1 < casa2) {
-                    p1Manda = true;
-                } else if (casa2 < casa1) {
-                    p1Manda = false;
-                } else {
-                    //prioridade 2: quebra de padrão algorítmico
-                    if (i == 0) {
-                        //o pivô alterna mando a cada rodada
-                        p1Manda = (r % 2 == 0) ^ inverteMandoBase;
-                    } else {
-                        //outros pares alternam com base na rodada e posição
-                        p1Manda = ((r + i) % 2 != 0) ^ inverteMandoBase;
-                    }
-                }
+            //REGRAS DE VALIDAÇÃO
+            if (ctrlVisitante.qtdFora >= maxMandos) continue;
 
-                JogadorClube mandante;
-                JogadorClube visitante;
+            if (ctrlMandante.adversariosEnfrentados.contains(visitante.getId())) continue;
 
-                if (p1Manda) {
-                    mandante = p1.getJogadorClube();
-                    visitante = p2.getJogadorClube();
-                    contagemJogosEmCasa.put(id1, casa1 + 1);
-                } else {
-                    mandante = p2.getJogadorClube();
-                    visitante = p1.getJogadorClube();
-                    contagemJogosEmCasa.put(id2, casa2 + 1);
-                }
+            Partida partida = new Partida();
+            partida.setFase(rodadaAtual.getFase());
+            partida.setRodada(rodadaAtual);
+            partida.setMandante(mandante.getJogadorClube());
+            partida.setVisitante(visitante.getJogadorClube());
+            partida.setTipoPartida(TipoPartida.PONTOS_CORRIDOS);
 
-                Partida partida = new Partida();
-                partida.setFase(fase);
-                partida.setRodada(rodada);
-                partida.setMandante(mandante);
-                partida.setVisitante(visitante);
-                partida.setTipoPartida(TipoPartida.PONTOS_CORRIDOS);
-                partida.setRealizada(false);
+            rodadaAtual.getPartidas().add(partida);
+            ctrlMandante.registrarJogo(true, visitante.getId());
+            ctrlVisitante.registrarJogo(false, mandante.getId());
 
-                partidasDestaRodada.add(partida);
+            List<ParticipacaoFase> novosPendentes = new ArrayList<>(pendentes);
+            novosPendentes.remove(mandante);
+            novosPendentes.remove(visitante);
+
+            if (backtrackPartidas(rodadaAtual, novosPendentes, controle, maxMandos, rodadaIndexGlobal, todasRodadas, todosParticipantesOriginal)) {
+                return true;
             }
 
-            //embaralha a ordem dos jogos dentro da rodada
-            Collections.shuffle(partidasDestaRodada);
-
-            rodada.setPartidas(partidasDestaRodada);
-            todasRodadas.add(rodada);
-
-            //rotação do Círculo
-            ParticipacaoFase ultimo = listaRotativa.remove(listaRotativa.size() - 1);
-            listaRotativa.add(1, ultimo);
+            //BACKTRACK (se falhou lá na frente, desfaz tudo e tenta o próximo 'i')
+            rodadaAtual.getPartidas().remove(partida);
+            ctrlMandante.desfazerJogo(true, visitante.getId());
+            ctrlVisitante.desfazerJogo(false, mandante.getId());
         }
 
-        //embaralha a ordem das rodadas
-        //isso impede que a sequência de adversários seja previsível
-        Collections.shuffle(todasRodadas);
+        return false;
+    }
 
-        //reatribui os números das rodadas sequencialmente após o embaralhamento
-        for (int i = 0; i < todasRodadas.size(); i++) {
-            todasRodadas.get(i).setNumero(i + 1);
+    private static class ControleTime {
+        ParticipacaoFase participacao;
+        int qtdCasa = 0;
+        int qtdFora = 0;
+        Set<String> adversariosEnfrentados = new HashSet<>();
+
+        public ControleTime(ParticipacaoFase p) {
+            this.participacao = p;
         }
 
-        return todasRodadas;
+        void registrarJogo(boolean ehMandante, String idAdversario) {
+            if (ehMandante) qtdCasa++;
+            else qtdFora++;
+            adversariosEnfrentados.add(idAdversario);
+        }
+
+        void desfazerJogo(boolean ehMandante, String idAdversario) {
+            if (ehMandante) qtdCasa--;
+            else qtdFora--;
+            adversariosEnfrentados.remove(idAdversario);
+        }
     }
 }
