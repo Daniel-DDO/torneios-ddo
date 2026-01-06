@@ -6,10 +6,12 @@ import com.ddo.torneios.repository.PartidaRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import lombok.extern.slf4j.Slf4j;
 
 import java.util.*;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class BracketService {
@@ -42,8 +44,10 @@ public class BracketService {
         FaseMataMata etapa = partidaFinalizada.getEtapaMataMata();
         Integer chave = partidaFinalizada.getChaveIndex();
 
-        boolean completo = partidaRepository.isConfrontoCompleto(fase, etapa, chave);
-        if (!completo) return;
+        if (partidaRepository.existeJogoPendente(fase, etapa, chave)) {
+            log.info("Confronto ainda não finalizado (aguardando volta ou outros jogos). Chave: {}", chave);
+            return;
+        }
 
         JogadorClube vencedor = calcularVencedorAgregado(fase, etapa, chave);
         if (vencedor == null) return;
@@ -66,24 +70,41 @@ public class BracketService {
     private JogadorClube calcularVencedorAgregado(FaseTorneio fase, FaseMataMata etapa, Integer chave) {
         List<Partida> jogos = partidaRepository.findByFaseAndEtapaMataMataAndChaveIndex(fase, etapa, chave);
 
-        if (jogos.size() == 1) return jogos.get(0).getVencedor();
+        if (jogos.size() == 1) {
+            return jogos.get(0).getVencedor();
+        }
 
-        Partida j1 = jogos.get(0);
-        Partida j2 = jogos.get(1);
+        Partida jogoIda = null;
+        Partida jogoVolta = null;
 
-        int golsMandanteJ1 = j1.getGolsMandante() != null ? j1.getGolsMandante() : 0;
-        int golsVisitanteJ1 = j1.getGolsVisitante() != null ? j1.getGolsVisitante() : 0;
-        int golsMandanteJ2 = j2.getGolsMandante() != null ? j2.getGolsMandante() : 0;
-        int golsVisitanteJ2 = j2.getGolsVisitante() != null ? j2.getGolsVisitante() : 0;
+        for (Partida p : jogos) {
+            TipoPartida tp = p.getTipoPartida();
+            if (tp == TipoPartida.MATA_MATA_IDA || tp == TipoPartida.FINAL_IDA) {
+                jogoIda = p;
+            } else if (tp == TipoPartida.MATA_MATA_VOLTA || tp == TipoPartida.FINAL_VOLTA) {
+                jogoVolta = p;
+            }
+        }
 
-        int totalTimeA = golsMandanteJ1 + golsVisitanteJ2;
-        int totalTimeB = golsVisitanteJ1 + golsMandanteJ2;
+        if (jogoIda == null || jogoVolta == null) {
+            throw new IllegalStateException("Confronto ID " + chave + " possui 2 jogos mas os tipos não são IDA/VOLTA corretamente.");
+        }
 
-        if (totalTimeA > totalTimeB) return j1.getMandante();
-        if (totalTimeB > totalTimeA) return j1.getVisitante();
+        int golsMandanteIda = jogoIda.getGolsMandante();
+        int golsVisitanteIda = jogoIda.getGolsVisitante();
 
-        if (j2.houvePenaltis()) {
-            return j2.getVencedor();
+        int golsMandanteVolta = jogoVolta.getGolsMandante();
+        int golsVisitanteVolta = jogoVolta.getGolsVisitante();
+
+        int totalTimeA = golsMandanteIda + golsVisitanteVolta;
+
+        int totalTimeB = golsVisitanteIda + golsMandanteVolta;
+
+        if (totalTimeA > totalTimeB) return jogoIda.getMandante();
+        if (totalTimeB > totalTimeA) return jogoIda.getVisitante();
+
+        if (jogoVolta.houvePenaltis()) {
+            return jogoVolta.getVencedor();
         }
 
         return null;

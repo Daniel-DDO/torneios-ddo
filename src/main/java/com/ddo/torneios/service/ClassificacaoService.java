@@ -37,6 +37,8 @@ public class ClassificacaoService {
     private EconomiaService economiaService;
     @Autowired
     private InsigniaService insigniaService;
+    @Autowired
+    private BracketService bracketService;
 
     @Transactional
     public void registrarResultado(PartidaDTO dto) {
@@ -100,6 +102,7 @@ public class ClassificacaoService {
 
         if (fase.getTipoTorneio() == TipoTorneio.MATA_MATA) {
             processarMataMata(dto, pMandante, pVisitante);
+            bracketService.processarAvancoVencedor(partida);
         } else {
             processarLiga(dto, pMandante, pVisitante);
         }
