@@ -1,15 +1,14 @@
 package com.ddo.torneios.model;
 
 import jakarta.persistence.*;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-import lombok.ToString;
+import lombok.*;
 import org.hibernate.annotations.ColumnDefault;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
-@Data
+@Getter
+@Setter
 @Entity
 public class Partida {
 
@@ -81,8 +80,9 @@ public class Partida {
     })
     private DisputaPenaltis penaltis;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(cascade = CascadeType.ALL)
     @JoinColumn(name = "partida_proxima_id")
+    @ToString.Exclude
     private Partida proximaPartida; //partida da próxima fase
 
     private Integer slotNaProxima;
