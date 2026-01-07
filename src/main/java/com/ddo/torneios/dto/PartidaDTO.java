@@ -72,8 +72,8 @@ public record PartidaDTO(
                 p.getEstadio(),
                 p.getLinkPartida(),
 
-                new JogadorClubeDTO(p.getMandante()),
-                new JogadorClubeDTO(p.getVisitante()),
+                p.getMandante() != null ? new JogadorClubeDTO(p.getMandante()) : null,
+                p.getVisitante() != null ? new JogadorClubeDTO(p.getVisitante()) : null,
 
                 p.getGolsMandante(),
                 p.getGolsVisitante(),
@@ -83,9 +83,8 @@ public record PartidaDTO(
                 p.isHouveProrrogacao(),
                 p.houvePenaltis(),
 
-                p.houvePenaltis() ? p.getPenaltis().getGolsMandante() : null,
-                p.houvePenaltis() ? p.getPenaltis().getGolsVisitante() : null,
-
+                (p.houvePenaltis() && p.getPenaltis() != null) ? p.getPenaltis().getGolsMandante() : null,
+                (p.houvePenaltis() && p.getPenaltis() != null) ? p.getPenaltis().getGolsVisitante() : null,
                 p.getLogEventos(),
 
                 p.getCartoesAmarelosMandante(),
