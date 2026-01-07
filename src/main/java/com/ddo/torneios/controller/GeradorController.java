@@ -65,7 +65,7 @@ public class GeradorController {
     }
 
     @PostMapping("/gerar-copa-real")
-    public ResponseEntity<List<PartidaDTO>> gerarCopaReal(@RequestBody GerarCopaRealRequest request) {
+    public ResponseEntity<Void> gerarCopaReal(@RequestBody GerarCopaRealRequest request) {
 
         FaseTorneio fase = faseRepository.findById(request.getFaseId())
                 .orElseThrow(() -> new RuntimeException("Fase não encontrada"));
@@ -83,10 +83,6 @@ public class GeradorController {
 
         partidaRepository.saveAll(partidasGeradas);
 
-        List<PartidaDTO> dtos = partidasGeradas.stream()
-                .map(PartidaDTO::new)
-                .collect(Collectors.toList());
-
-        return ResponseEntity.ok(dtos);
+        return ResponseEntity.ok().build();
     }
 }
