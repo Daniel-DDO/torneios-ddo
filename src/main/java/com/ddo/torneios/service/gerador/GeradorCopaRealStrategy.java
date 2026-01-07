@@ -32,19 +32,17 @@ public class GeradorCopaRealStrategy extends GeradorMataMataBase implements Gera
 
         List<Partida> todasPartidas = new ArrayList<>();
 
-        List<Partida> oitavas = new ArrayList<>();
-        for (int i = 0; i < 8; i++) {
-            ParticipacaoFase rei = eliteShuffle.get(i);
-            List<Partida> confronto = criarConfronto(fase, i + 1, null, rei, "Oitavas de Final");
-            confronto.forEach(p -> p.setEtapaMataMata(FaseMataMata.OITAVAS));
-            oitavas.addAll(confronto);
-        }
-        todasPartidas.addAll(oitavas);
-        vincularProximasFases(oitavas, fase); //Cria Quartas, Semi, Final
-
         ResultadoProcessamento resultadoResto = reduzirRestoParaOito(fase, restoShuffle);
         todasPartidas.addAll(resultadoResto.partidasCriadas);
         List<SlotCompetidor> sobreviventesResto = resultadoResto.slotsSobreviventes;
+
+        List<Partida> oitavas = new ArrayList<>();
+        for (int i = 0; i < 8; i++) {
+            ParticipacaoFase rei = eliteShuffle.get(i);
+            List<Partida> confronto = criarConfronto(fase, i + 1, rei, null, "Oitavas de Final");
+            confronto.forEach(p -> p.setEtapaMataMata(FaseMataMata.OITAVAS));
+            oitavas.addAll(confronto);
+        }
 
         for (int i = 0; i < 8; i++) {
             ParticipacaoFase chefeIntermediario = intermedShuffle.get(i);
@@ -52,8 +50,8 @@ public class GeradorCopaRealStrategy extends GeradorMataMataBase implements Gera
             SlotCompetidor desafiante = (i < sobreviventesResto.size()) ? sobreviventesResto.get(i) : null;
 
             if (desafiante != null) {
-                ParticipacaoFase p1 = desafiante.jogador;
-                ParticipacaoFase p2 = chefeIntermediario;
+                ParticipacaoFase p1 = chefeIntermediario;
+                ParticipacaoFase p2 = desafiante.jogador;
 
                 List<Partida> confronto16avos = criarConfronto(fase, i + 1, p1, p2, "16-avos de Final");
                 confronto16avos.forEach(p -> p.setEtapaMataMata(FaseMataMata.DEZESSEIS_AVOS));
@@ -71,6 +69,10 @@ public class GeradorCopaRealStrategy extends GeradorMataMataBase implements Gera
                 atualizarConfrontoOitavas(oitavas, i + 1, chefeIntermediario);
             }
         }
+
+        vincularProximasFases(oitavas, fase);
+
+        todasPartidas.addAll(oitavas);
 
         return todasPartidas;
     }
@@ -105,8 +107,8 @@ public class GeradorCopaRealStrategy extends GeradorMataMataBase implements Gera
                 confronto.forEach(p -> p.setEtapaMataMata(etapa));
                 partidasGeradas.addAll(confronto);
 
-                if (s1.partidaAnterior != null) conectarVencedor(s1.partidaAnterior, buscarJogoEntrada(confronto), 1);
-                if (s2.partidaAnterior != null) conectarVencedor(s2.partidaAnterior, buscarJogoEntrada(confronto), 2);
+                if (s1.partidaAnterior != null) conectarVencedor(s1.partidaAnterior, buscarJogoEntrada(confronto), 2); // p1 é visitante na ida
+                if (s2.partidaAnterior != null) conectarVencedor(s2.partidaAnterior, buscarJogoEntrada(confronto), 1); // p2 é mandante na ida
 
                 proximaFaseSlots.add(new SlotCompetidor(buscarJogoMestre(confronto)));
             }
@@ -123,18 +125,21 @@ public class GeradorCopaRealStrategy extends GeradorMataMataBase implements Gera
     }
 
     private int calcularProximoTarget(int n) {
-        // O objetivo final é chegar em 8.
-        // Se tem 12 -> reduz pra 8.
-        // Se tem 20 -> reduz pra 16 -> depois reduz pra 8.
         if (n > 32) return 32;
         if (n > 16) return 16;
         return 8;
     }
 
-    private void atualizarConfrontoOitavas(List<Partida> oitavas, int chaveIndex, ParticipacaoFase mandante) {
+    private void atualizarConfrontoOitavas(List<Partida> oitavas, int chaveIndex, ParticipacaoFase oponenteDaElite) {
         oitavas.stream()
                 .filter(p -> p.getChaveIndex() == chaveIndex)
-                .forEach(p -> p.setMandante(mandante.getJogadorClube()));
+                .filter(p -> p.getTipoPartida() == TipoPartida.MATA_MATA_IDA || p.getTipoPartida() == TipoPartida.MATA_MATA_UNICO)
+                .forEach(p -> p.setMandante(oponenteDaElite.getJogadorClube()));
+
+        oitavas.stream()
+                .filter(p -> p.getChaveIndex() == chaveIndex)
+                .filter(p -> p.getTipoPartida() == TipoPartida.MATA_MATA_VOLTA)
+                .forEach(p -> p.setVisitante(oponenteDaElite.getJogadorClube()));
     }
 
     private void conectarVencedor(Partida anteriorMestre, Partida proximaEntrada, int slot) {
