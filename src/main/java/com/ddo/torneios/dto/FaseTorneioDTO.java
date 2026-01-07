@@ -27,8 +27,8 @@ public record FaseTorneioDTO(
                 fase.getNumeroRodadas(),
                 fase.getFaseInicialMataMata() != null ? fase.getFaseInicialMataMata().name() : null,
                 fase.getTemJogoVolta(),
-                fase.getAlgoritmoLiga().toString(),
-                fase.getAlgoritmoMataMata().toString()
+                fase.getAlgoritmoLiga() != null ? fase.getAlgoritmoLiga().name() : null,
+                fase.getAlgoritmoMataMata() != null ? fase.getAlgoritmoMataMata().name() : null
         );
     }
 }
