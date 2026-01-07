@@ -1,9 +1,11 @@
 package com.ddo.torneios.model;
 
 import jakarta.persistence.*;
-        import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
 
-@Data
+@Getter
+@Setter
 @Entity
 @Table(uniqueConstraints = {
         @UniqueConstraint(columnNames = {"fase_id", "jogador_clube_id"})
@@ -37,4 +39,9 @@ public class ParticipacaoFase {
     private Integer posicaoClassificacao;
 
     private String grupo; //para fase de grupos
+
+    @Override
+    public String toString() {
+        return "ParticipacaoFase{id='" + id + "'}";
+    }
 }

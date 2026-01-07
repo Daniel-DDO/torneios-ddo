@@ -81,7 +81,7 @@ public class Partida {
     private DisputaPenaltis penaltis;
 
     @ManyToOne(cascade = CascadeType.ALL)
-    @JoinColumn(name = "partida_proxima_id")
+    @JoinColumn(name = "partida_proxima_id", nullable = true)
     @ToString.Exclude
     private Partida proximaPartida; //partida da próxima fase
 
@@ -114,5 +114,10 @@ public class Partida {
         }
 
         return null;
+    }
+
+    @Override
+    public String toString() {
+        return "Partida{id='" + id + "', fase='" + (fase != null ? fase.getId() : "null") + "'}";
     }
 }
