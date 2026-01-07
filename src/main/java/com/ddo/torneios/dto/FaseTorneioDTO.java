@@ -12,7 +12,9 @@ public record FaseTorneioDTO(
         TipoTorneio tipoTorneio,
         Integer numeroRodadas, //Null se for mata-mata
         String faseInicialMataMata, //Null se for pontos corridos
-        Boolean temJogoVolta
+        Boolean temJogoVolta,
+        String algoritmoLiga,
+        String algoritmoMataMata
 ) {
     public FaseTorneioDTO(FaseTorneio fase) {
         this(
@@ -24,7 +26,9 @@ public record FaseTorneioDTO(
                 fase.getTipoTorneio(),
                 fase.getNumeroRodadas(),
                 fase.getFaseInicialMataMata() != null ? fase.getFaseInicialMataMata().name() : null,
-                fase.getTemJogoVolta()
+                fase.getTemJogoVolta(),
+                fase.getAlgoritmoLiga().toString(),
+                fase.getAlgoritmoMataMata().toString()
         );
     }
 }

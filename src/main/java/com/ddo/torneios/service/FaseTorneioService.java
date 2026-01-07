@@ -114,4 +114,11 @@ public class FaseTorneioService {
                 .map(PartidaDTO::new)
                 .toList();
     }
+
+    public FaseTorneioDTO buscarPorId(String id) {
+        FaseTorneio fase = faseTorneioRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Fase não encontrada com ID: " + id));
+
+        return new FaseTorneioDTO(fase);
+    }
 }

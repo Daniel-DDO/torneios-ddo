@@ -41,6 +41,12 @@ public class FaseTorneioController {
         return ResponseEntity.status(HttpStatus.CREATED).body(novaFase);
     }
 
+    @GetMapping("/{id}")
+    public ResponseEntity<FaseTorneioDTO> buscarPorId(@PathVariable String id) {
+        FaseTorneioDTO fase = faseTorneioService.buscarPorId(id);
+        return ResponseEntity.ok(fase);
+    }
+
     @GetMapping("/torneio/{torneioId}")
     public ResponseEntity<List<FaseTorneioDTO>> listarPorTorneio(@PathVariable String torneioId) {
         List<FaseTorneioDTO> fases = faseTorneioService.listarFasesDoTorneio(torneioId);
