@@ -1,5 +1,6 @@
 package com.ddo.torneios.controller;
 
+import com.ddo.torneios.dto.PartidaDTO;
 import com.ddo.torneios.model.*;
 import com.ddo.torneios.repository.FaseTorneioRepository;
 import com.ddo.torneios.repository.ParticipacaoFaseRepository;
@@ -13,6 +14,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/fases")
@@ -63,7 +65,7 @@ public class GeradorController {
     }
 
     @PostMapping("/gerar-copa-real")
-    public ResponseEntity<List<Partida>> gerarCopaReal(@RequestBody GerarCopaRealRequest request) {
+    public ResponseEntity<List<PartidaDTO>> gerarCopaReal(@RequestBody GerarCopaRealRequest request) {
 
         FaseTorneio fase = faseRepository.findById(request.getFaseId())
                 .orElseThrow(() -> new RuntimeException("Fase não encontrada"));
@@ -81,6 +83,10 @@ public class GeradorController {
 
         partidaRepository.saveAll(partidasGeradas);
 
-        return ResponseEntity.ok(partidasGeradas);
+        List<PartidaDTO> dtos = partidasGeradas.stream()
+                .map(PartidaDTO::new)
+                .collect(Collectors.toList());
+
+        return ResponseEntity.ok(dtos);
     }
 }
