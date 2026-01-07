@@ -34,11 +34,11 @@ public class Partida {
     private LocalDateTime dataHora;
 
     @ManyToOne
-    @JoinColumn(name = "mandante_id", nullable = false)
+    @JoinColumn(name = "mandante_id", nullable = true)
     private JogadorClube mandante;
 
     @ManyToOne
-    @JoinColumn(name = "visitante_id", nullable = false)
+    @JoinColumn(name = "visitante_id", nullable = true)
     private JogadorClube visitante;
 
     private Integer golsMandante;
