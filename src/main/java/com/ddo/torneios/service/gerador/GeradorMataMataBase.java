@@ -14,11 +14,23 @@ public abstract class GeradorMataMataBase {
         if (temVolta) {
             lista.add(montarPartida(fase, etapa, index, p2, p1, prefixoLog + " - Ida",
                     ehFinal ? TipoPartida.FINAL_IDA : TipoPartida.MATA_MATA_IDA));
-            lista.add(montarPartida(fase, etapa, index, p1, p2, prefixoLog + " - Volta",
-                    ehFinal ? TipoPartida.FINAL_VOLTA : TipoPartida.MATA_MATA_VOLTA));
+
+            Partida volta = montarPartida(fase, etapa, index, p1, p2, prefixoLog + " - Volta",
+                    ehFinal ? TipoPartida.FINAL_VOLTA : TipoPartida.MATA_MATA_VOLTA);
+
+            if (ehFinal && fase.getEstadioFinal() != null) {
+                volta.setEstadio(fase.getEstadioFinal());
+            }
+            lista.add(volta);
+
         } else {
-            lista.add(montarPartida(fase, etapa, index, p1, p2, prefixoLog + " - Único",
-                    ehFinal ? TipoPartida.FINAL_UNICA : TipoPartida.MATA_MATA_UNICO));
+            Partida unica = montarPartida(fase, etapa, index, p1, p2, prefixoLog + " - Único",
+                    ehFinal ? TipoPartida.FINAL_UNICA : TipoPartida.MATA_MATA_UNICO);
+
+            if (ehFinal && fase.getEstadioFinal() != null) {
+                unica.setEstadio(fase.getEstadioFinal());
+            }
+            lista.add(unica);
         }
         return lista;
     }
@@ -33,6 +45,13 @@ public abstract class GeradorMataMataBase {
         p.setLogEventos(log);
         p.setTipoPartida(t);
         p.setRealizada(false);
+
+        if (e != FaseMataMata.FINAL && mandante != null) {
+            if (mandante.getJogadorClube() != null && mandante.getJogadorClube().getClube() != null) {
+                p.setEstadio(mandante.getJogadorClube().getClube().getEstadio());
+            }
+        }
+
         return p;
     }
 

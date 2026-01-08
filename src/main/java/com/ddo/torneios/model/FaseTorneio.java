@@ -61,6 +61,9 @@ public class FaseTorneio {
     @Column(name = "final_jogo_unico")
     private Boolean finalJogoUnico = true;
 
+    @Column(name = "estadio_final")
+    private String estadioFinal;
+
     @PrePersist
     @PreUpdate
     private void validarConsistencia() {

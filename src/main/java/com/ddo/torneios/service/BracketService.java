@@ -60,6 +60,10 @@ public class BracketService {
         for (Partida p : proximosJogos) {
             if (partidaFinalizada.getSlotNaProxima() == 1) {
                 p.setMandante(vencedor);
+
+                if (p.getEtapaMataMata() != FaseMataMata.FINAL && vencedor.getClube() != null) {
+                    p.setEstadio(vencedor.getClube().getEstadio());
+                }
             } else {
                 p.setVisitante(vencedor);
             }

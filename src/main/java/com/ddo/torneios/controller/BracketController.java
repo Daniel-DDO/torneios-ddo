@@ -1,5 +1,6 @@
 package com.ddo.torneios.controller;
 
+import com.ddo.torneios.dto.BracketResponseDTO;
 import com.ddo.torneios.dto.PartidaDTO;
 import com.ddo.torneios.model.FaseMataMata;
 import com.ddo.torneios.service.BracketService;
@@ -24,7 +25,10 @@ public class BracketController {
         return geradorService.buscarPorId(faseId)
                 .map(fase -> {
                     Map<String, List<PartidaDTO>> bracket = bracketService.obterBracket(fase);
-                    return ResponseEntity.ok(bracket);
+                    return ResponseEntity.ok(new BracketResponseDTO(
+                            fase.getEstadioFinal(),
+                            bracket
+                    ));
                 })
                 .orElse(ResponseEntity.notFound().build());
     }

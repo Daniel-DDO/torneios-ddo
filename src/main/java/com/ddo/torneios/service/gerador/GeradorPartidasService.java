@@ -1,6 +1,7 @@
 package com.ddo.torneios.service.gerador;
 
 import com.ddo.torneios.model.*;
+import com.ddo.torneios.repository.ClubeRepository;
 import com.ddo.torneios.repository.FaseTorneioRepository;
 import com.ddo.torneios.repository.PartidaRepository;
 import com.ddo.torneios.repository.RodadaRepository;
@@ -8,9 +9,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 
 @Service
 @RequiredArgsConstructor
@@ -20,6 +19,7 @@ public class GeradorPartidasService {
     private final RodadaRepository rodadaRepository;
     private final PartidaRepository partidaRepository;
     private final GeradorStrategyFactory strategyFactory;
+    private final ClubeRepository clubeRepository;
 
     @Transactional
     public void gerarEstruturaFase(String faseId, AlgoritmoGeracaoMataMata novoAlgMataMata, AlgoritmoGeracaoLiga novoAlgLiga) {
@@ -34,6 +34,11 @@ public class GeradorPartidasService {
         //se já existirem partidas realizadas (com placar), nn permite gerar.
         if (checarSeJaExistemResultados(fase)) {
             throw new IllegalStateException("Esta fase já possui partidas realizadas (com placar). Impossível gerar novamente sem resetar os jogos antes.");
+        }
+
+        if (fase.getEstadioFinal() == null) {
+            fase.setEstadioFinal(sortearEstadioFinal());
+            faseRepository.save(fase);
         }
 
         limparGeracoesAnteriores(fase);
@@ -99,5 +104,49 @@ public class GeradorPartidasService {
 
             partida.setEstadio(partida.getMandante().getClube().getEstadio());
         }
+    }
+
+    private String sortearEstadioFinal() {
+        List<String> estadiosBanco = clubeRepository.findEstadiosDeClubesTop();
+
+        List<String> lendarios = List.of(
+                "Wembley Stadium",
+                "Santiago Bernabéu",
+                "San Siro",
+                "Stade de France",
+                "Allianz Arena",
+                "Olympiastadion",
+                "Estádio da Luz",
+                "Estádio do Dragão",
+                "Atatürk Olympic Stadium",
+                "Hampden Park",
+                "Ernst-Happel-Stadion",
+                "Camp Nou",
+                "Puskás Aréna",
+                "Stadio Olimpico",
+                "Stade Vélodrome",
+                "King Baudouin Stadium",
+                "Aviva Stadium",
+                "Luzhniki Stadium",
+                "NSC Olimpiyskiy Stadium",
+                "De Kuip",
+                "Praterstadion"
+        );
+
+        Set<String> poolEstadios = new HashSet<>(lendarios);
+
+        if (estadiosBanco != null && !estadiosBanco.isEmpty()) {
+            estadiosBanco.stream()
+                    .filter(e -> e != null && !e.isBlank())
+                    .forEach(poolEstadios::add);
+        }
+
+        List<String> listaFinal = new ArrayList<>(poolEstadios);
+
+        if (listaFinal.isEmpty()) {
+            return "Cívitas Metropolitano";
+        }
+
+        return listaFinal.get(new Random().nextInt(listaFinal.size()));
     }
 }
