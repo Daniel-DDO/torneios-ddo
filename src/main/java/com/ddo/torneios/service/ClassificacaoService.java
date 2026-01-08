@@ -47,6 +47,11 @@ public class ClassificacaoService {
         Partida partida = partidaRepository.findById(dto.id())
                 .orElseThrow(() -> new RuntimeException("Partida não encontrada"));
 
+        if (partida.isRealizada()) {
+            log.warn("Tentativa de registrar resultado em partida já realizada: {}", dto.id());
+            return;
+        }
+
         FaseTorneio fase = partida.getFase();
 
         Integer valorCompeticao = fase.getTorneio().getCompeticao().getValor();
