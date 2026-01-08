@@ -109,4 +109,11 @@ public class BracketService {
 
         return null;
     }
+
+    public List<PartidaDTO> obterDetalhesConfronto(FaseTorneio fase, FaseMataMata etapa, Integer chaveIndex) {
+        return partidaRepository.findByFaseAndEtapaMataMataAndChaveIndex(fase, etapa, chaveIndex)
+                .stream()
+                .map(PartidaDTO::new)
+                .collect(Collectors.toList());
+    }
 }
