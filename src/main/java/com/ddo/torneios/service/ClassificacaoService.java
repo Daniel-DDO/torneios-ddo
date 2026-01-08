@@ -446,4 +446,163 @@ public class ClassificacaoService {
 
         int getSaldo() { return golsPro - golsContra; }
     }
+
+    @Transactional
+    public void desfazerResultado(String partidaId) {
+        Partida partida = partidaRepository.findById(partidaId)
+                .orElseThrow(() -> new RuntimeException("Partida não encontrada"));
+
+        if (!partida.isRealizada()) return;
+
+        FaseTorneio fase = partida.getFase();
+        ParticipacaoFase pMandante = encontrarParticipacao(fase.getId(), partida.getMandante().getId());
+        ParticipacaoFase pVisitante = encontrarParticipacao(fase.getId(), partida.getVisitante().getId());
+
+        removerHistoricoJogadores(partida, pMandante, pVisitante);
+
+        if (fase.getTipoTorneio() == TipoTorneio.MATA_MATA) {
+            reverterMataMata(pMandante, pVisitante);
+        } else {
+            reverterPontosLiga(partida, pMandante, pVisitante);
+        }
+
+        reverterCoeficientes(partida);
+        economiaService.estornarEconomiaPartida(partida);
+
+        limparDadosPartida(partida);
+
+        partidaRepository.save(partida);
+        participacaoRepository.saveAll(List.of(pMandante, pVisitante));
+
+        jogadorClubeRepository.saveAll(List.of(pMandante.getJogadorClube(), pVisitante.getJogadorClube()));
+        jogadorRepository.saveAll(List.of(pMandante.getJogadorClube().getJogador(), pVisitante.getJogadorClube().getJogador()));
+
+        List<LinhaClassificacaoDTO> novaClassificacao = calcularClassificacao(fase);
+        atualizarPosicoesNoBanco(novaClassificacao, fase);
+
+        try {
+            String topico = "/topic/classificacao/" + fase.getId();
+            messagingTemplate.convertAndSend(topico, novaClassificacao);
+            log.info("Desfazer partida: Classificação atualizada para a fase: {}", fase.getId());
+        } catch (Exception e) {
+            log.error("Erro ao enviar atualização após desfazer partida", e);
+        }
+    }
+
+    private void removerHistoricoJogadores(Partida partida, ParticipacaoFase pMandante, ParticipacaoFase pVisitante) {
+        JogadorClube jcMandante = pMandante.getJogadorClube();
+        JogadorClube jcVisitante = pVisitante.getJogadorClube();
+        Jogador jMandante = jcMandante.getJogador();
+        Jogador jVisitante = jcVisitante.getJogador();
+
+        int gm = safeInt(partida.getGolsMandante());
+        int gv = safeInt(partida.getGolsVisitante());
+        int cam = safeInt(partida.getCartoesAmarelosMandante());
+        int cvm = safeInt(partida.getCartoesVermelhosMandante());
+        int cav = safeInt(partida.getCartoesAmarelosVisitante());
+        int cvv = safeInt(partida.getCartoesVermelhosVisitante());
+
+        removerStatsEntidades(pMandante, jcMandante, jMandante, gm, gv, cam, cvm);
+        removerStatsEntidades(pVisitante, jcVisitante, jVisitante, gv, gm, cav, cvv);
+
+        if (gm > gv) {
+            decrementarResultado(pMandante, jcMandante, jMandante, 1, 0, 0); // Remove vitoria mandante
+            decrementarResultado(pVisitante, jcVisitante, jVisitante, 0, 0, 1); // Remove derrota visitante
+        } else if (gv > gm) {
+            decrementarResultado(pMandante, jcMandante, jMandante, 0, 0, 1); // Remove derrota mandante
+            decrementarResultado(pVisitante, jcVisitante, jVisitante, 1, 0, 0); // Remove vitoria visitante
+        } else {
+            decrementarResultado(pMandante, jcMandante, jMandante, 0, 1, 0); // Remove empate
+            decrementarResultado(pVisitante, jcVisitante, jVisitante, 0, 1, 0); // Remove empate
+        }
+    }
+
+    private void removerStatsEntidades(ParticipacaoFase pf, JogadorClube jc, Jogador j, int golsPro, int golsContra, int ca, int cv) {
+        //Subtrai Jogos
+        pf.setPartidasJogadas(Math.max(0, safeInt(pf.getPartidasJogadas()) - 1));
+        jc.setPartidasJogadas(Math.max(0, safeInt(jc.getPartidasJogadas()) - 1));
+        j.setPartidasJogadas(Math.max(0, safeInt(j.getPartidasJogadas()) - 1));
+
+        //Subtrai Gols
+        pf.setGolsPro(Math.max(0, safeInt(pf.getGolsPro()) - golsPro));
+        jc.setTotalGolsMarcados(Math.max(0, safeInt(jc.getTotalGolsMarcados()) - golsPro));
+        j.setGolsMarcados(Math.max(0, safeInt(j.getGolsMarcados()) - golsPro));
+
+        pf.setGolsContra(Math.max(0, safeInt(pf.getGolsContra()) - golsContra));
+        jc.setTotalGolsSofridos(Math.max(0, safeInt(jc.getTotalGolsSofridos()) - golsContra));
+        j.setGolsSofridos(Math.max(0, safeInt(j.getGolsSofridos()) - golsContra));
+
+        pf.setSaldoGols(pf.getGolsPro() - pf.getGolsContra());
+
+        jc.setTotalCartoesAmarelos(Math.max(0, safeInt(jc.getTotalCartoesAmarelos()) - ca));
+        jc.setTotalCartoesVermelhos(Math.max(0, safeInt(jc.getTotalCartoesVermelhos()) - cv));
+        j.setCartoesAmarelos(Math.max(0, safeLong(j.getCartoesAmarelos()) - ca));
+        j.setCartoesVermelhos(Math.max(0, safeLong(j.getCartoesVermelhos()) - cv));
+    }
+
+    private void decrementarResultado(ParticipacaoFase pf, JogadorClube jc, Jogador j, int v, int e, int d) {
+        pf.setVitorias(Math.max(0, safeInt(pf.getVitorias()) - v));
+        pf.setEmpates(Math.max(0, safeInt(pf.getEmpates()) - e));
+        pf.setDerrotas(Math.max(0, safeInt(pf.getDerrotas()) - d));
+
+        jc.setVitorias(Math.max(0, safeInt(jc.getVitorias()) - v));
+        jc.setEmpates(Math.max(0, safeInt(jc.getEmpates()) - e));
+        jc.setDerrotas(Math.max(0, safeInt(jc.getDerrotas()) - d));
+
+        j.setVitorias(Math.max(0, safeInt(j.getVitorias()) - v));
+        j.setEmpates(Math.max(0, safeInt(j.getEmpates()) - e));
+        j.setDerrotas(Math.max(0, safeInt(j.getDerrotas()) - d));
+    }
+
+    private void reverterPontosLiga(Partida partida, ParticipacaoFase m, ParticipacaoFase v) {
+        int gm = safeInt(partida.getGolsMandante());
+        int gv = safeInt(partida.getGolsVisitante());
+
+        if (gm > gv) {
+            m.setPontos(Math.max(0, safeInt(m.getPontos()) - 3));
+        } else if (gm < gv) {
+            v.setPontos(Math.max(0, safeInt(v.getPontos()) - 3));
+        } else {
+            m.setPontos(Math.max(0, safeInt(m.getPontos()) - 1));
+            v.setPontos(Math.max(0, safeInt(v.getPontos()) - 1));
+        }
+    }
+
+    private void reverterMataMata(ParticipacaoFase m, ParticipacaoFase v) {
+        m.setStatusClassificacao(StatusClassificacao.ATIVO);
+        v.setStatusClassificacao(StatusClassificacao.ATIVO);
+    }
+
+    private void reverterCoeficientes(Partida partida) {
+        BigDecimal coefM = partida.getCoeficienteMandante();
+        BigDecimal coefV = partida.getCoeficienteVisitante();
+
+        if (coefM == null) coefM = BigDecimal.ZERO;
+        if (coefV == null) coefV = BigDecimal.ZERO;
+
+        JogadorClube jcMandante = partida.getMandante();
+        JogadorClube jcVisitante = partida.getVisitante();
+        Jogador jGlobalMandante = jcMandante.getJogador();
+        Jogador jGlobalVisitante = jcVisitante.getJogador();
+
+        jcMandante.setPontosCoeficiente(safeAdd(jcMandante.getPontosCoeficiente(), coefM.negate()));
+        jcVisitante.setPontosCoeficiente(safeAdd(jcVisitante.getPontosCoeficiente(), coefV.negate()));
+
+        jGlobalMandante.setPontosCoeficiente(safeAdd(jGlobalMandante.getPontosCoeficiente(), coefM.negate()));
+        jGlobalVisitante.setPontosCoeficiente(safeAdd(jGlobalVisitante.getPontosCoeficiente(), coefV.negate()));
+    }
+
+    private void limparDadosPartida(Partida partida) {
+        partida.setRealizada(false);
+        partida.setDataHora(null);
+        partida.setGolsMandante(null);
+        partida.setGolsVisitante(null);
+        partida.setCoeficienteMandante(null);
+        partida.setCoeficienteVisitante(null);
+        partida.setCartoesAmarelosMandante(null);
+        partida.setCartoesVermelhosMandante(null);
+        partida.setCartoesAmarelosVisitante(null);
+        partida.setCartoesVermelhosVisitante(null);
+        partida.setWo(false);
+    }
 }

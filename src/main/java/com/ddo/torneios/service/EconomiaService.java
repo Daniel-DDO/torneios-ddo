@@ -121,4 +121,42 @@ public class EconomiaService {
     private enum TipoResultado {
         VITORIA, EMPATE, DERROTA
     }
+
+    /**
+     * Remove os valores financeiros creditados anteriormente aos jogadores.
+     * Baseia-se no valor salvo na Partida (snapshot) para garantir integridade.
+     */
+    @Transactional
+    public void estornarEconomiaPartida(Partida partida) {
+        BigDecimal receitaMandante = partida.getReceitaMandante() != null ?
+                partida.getReceitaMandante() : BigDecimal.ZERO;
+
+        BigDecimal receitaVisitante = partida.getReceitaVisitante() != null ?
+                partida.getReceitaVisitante() : BigDecimal.ZERO;
+
+        debitarSaldos(partida.getMandante(), receitaMandante);
+        debitarSaldos(partida.getVisitante(), receitaVisitante);
+
+        partida.setReceitaMandante(null);
+        partida.setReceitaVisitante(null);
+
+        partidaRepository.save(partida);
+    }
+
+    private void debitarSaldos(JogadorClube jc, BigDecimal valorParaRemover) {
+        if (valorParaRemover.compareTo(BigDecimal.ZERO) == 0) return;
+
+        BigDecimal balancoAtual = jc.getBalancoFinanceiro() != null ?
+                jc.getBalancoFinanceiro() : BigDecimal.ZERO;
+
+        jc.setBalancoFinanceiro(balancoAtual.subtract(valorParaRemover));
+        jogadorClubeRepository.save(jc);
+
+        Jogador jogador = jc.getJogador();
+        BigDecimal saldoAtual = jogador.getSaldoVirtual() != null ?
+                jogador.getSaldoVirtual() : BigDecimal.ZERO;
+
+        jogador.setSaldoVirtual(saldoAtual.subtract(valorParaRemover));
+        jogadorRepository.save(jogador);
+    }
 }
