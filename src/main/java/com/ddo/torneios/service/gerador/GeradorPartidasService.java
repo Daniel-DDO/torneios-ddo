@@ -31,7 +31,6 @@ public class GeradorPartidasService {
 
         faseRepository.save(fase);
 
-        //se já existirem partidas realizadas (com placar), nn permite gerar.
         if (checarSeJaExistemResultados(fase)) {
             throw new IllegalStateException("Esta fase já possui partidas realizadas (com placar). Impossível gerar novamente sem resetar os jogos antes.");
         }
@@ -48,7 +47,7 @@ public class GeradorPartidasService {
 
         Object resultado = strategy.gerar(fase, participantes);
 
-        processarESalvar(resultado);
+        processarESalvar(resultado, fase);
     }
 
     private boolean checarSeJaExistemResultados(FaseTorneio fase) {
@@ -58,7 +57,7 @@ public class GeradorPartidasService {
     @Transactional
     public void limparGeracoesAnteriores(FaseTorneio fase) {
         partidaRepository.deleteByFaseAndRodadaIsNull(fase);
-        partidaRepository.flush(); // Garante que saiu do banco
+        partidaRepository.flush();
 
         if (fase.getRodadas() != null && !fase.getRodadas().isEmpty()) {
             List<Rodada> rodadasParaRemover = new ArrayList<>(fase.getRodadas());
@@ -71,7 +70,7 @@ public class GeradorPartidasService {
     }
 
     @SuppressWarnings("unchecked")
-    private void processarESalvar(Object resultado) {
+    private void processarESalvar(Object resultado, FaseTorneio fase) {
         if (!(resultado instanceof List<?> lista) || lista.isEmpty()) return;
 
         Object primeiro = lista.get(0);
@@ -87,7 +86,15 @@ public class GeradorPartidasService {
         }
         else if (primeiro instanceof Partida) {
             List<Partida> partidas = (List<Partida>) lista;
-            partidas.forEach(this::vincularEstadioDoMandante);
+
+            partidas.forEach(p -> {
+                if (p.getTipoPartida() == TipoPartida.FINAL_UNICA) {
+                    vincularEstadioFinal(p, fase.getEstadioFinal());
+                } else {
+                    vincularEstadioDoMandante(p);
+                }
+            });
+
             partidaRepository.saveAll(partidas);
             partidaRepository.flush();
         }
@@ -95,6 +102,14 @@ public class GeradorPartidasService {
 
     public Optional<FaseTorneio> buscarPorId(String faseId) {
         return faseRepository.findById(faseId);
+    }
+
+    private void vincularEstadioFinal(Partida partida, String estadioSorteado) {
+        if (estadioSorteado != null) {
+            partida.setEstadio(estadioSorteado);
+        } else {
+            vincularEstadioDoMandante(partida);
+        }
     }
 
     private void vincularEstadioDoMandante(Partida partida) {
@@ -110,27 +125,11 @@ public class GeradorPartidasService {
         List<String> estadiosBanco = clubeRepository.findEstadiosDeClubesTop();
 
         List<String> lendarios = List.of(
-                "Wembley Stadium",
-                "Santiago Bernabéu",
-                "San Siro",
-                "Stade de France",
-                "Allianz Arena",
-                "Olympiastadion",
-                "Estádio da Luz",
-                "Estádio do Dragão",
-                "Atatürk Olympic Stadium",
-                "Hampden Park",
-                "Ernst-Happel-Stadion",
-                "Camp Nou",
-                "Puskás Aréna",
-                "Stadio Olimpico",
-                "Stade Vélodrome",
-                "King Baudouin Stadium",
-                "Aviva Stadium",
-                "Luzhniki Stadium",
-                "NSC Olimpiyskiy Stadium",
-                "De Kuip",
-                "Praterstadion"
+                "Wembley Stadium", "Santiago Bernabéu", "San Siro", "Stade de France",
+                "Allianz Arena", "Olympiastadion", "Estádio da Luz", "Estádio do Dragão",
+                "Atatürk Olympic Stadium", "Hampden Park", "Ernst-Happel-Stadion", "Camp Nou",
+                "Puskás Aréna", "Stadio Olimpico", "Stade Vélodrome", "King Baudouin Stadium",
+                "Aviva Stadium", "Luzhniki Stadium", "NSC Olimpiyskiy Stadium", "De Kuip", "Praterstadion"
         );
 
         Set<String> poolEstadios = new HashSet<>(lendarios);
@@ -143,10 +142,29 @@ public class GeradorPartidasService {
 
         List<String> listaFinal = new ArrayList<>(poolEstadios);
 
-        if (listaFinal.isEmpty()) {
-            return "Cívitas Metropolitano";
-        }
+        if (listaFinal.isEmpty()) return "Cívitas Metropolitano";
 
         return listaFinal.get(new Random().nextInt(listaFinal.size()));
+    }
+
+    @Transactional
+    public void atualizarEstadioFinalManualmente(String faseId, String novoEstadio) {
+        FaseTorneio fase = faseRepository.findById(faseId)
+                .orElseThrow(() -> new IllegalArgumentException("Fase não encontrada para o ID: " + faseId));
+
+        fase.setEstadioFinal(novoEstadio);
+        faseRepository.save(fase);
+
+        List<Partida> partidasDaFase = partidaRepository.findByFase(fase);
+
+        Optional<Partida> partidaFinal = partidasDaFase.stream()
+                .filter(p -> p.getTipoPartida() == TipoPartida.FINAL_UNICA)
+                .findFirst();
+
+        if (partidaFinal.isPresent()) {
+            Partida p = partidaFinal.get();
+            p.setEstadio(novoEstadio);
+            partidaRepository.save(p);
+        }
     }
 }

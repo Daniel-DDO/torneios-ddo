@@ -1,9 +1,6 @@
 package com.ddo.torneios.controller;
 
-import com.ddo.torneios.dto.FaseTorneioDTO;
-import com.ddo.torneios.dto.PartidaDTO;
-import com.ddo.torneios.dto.RelatorioFaseDTO;
-import com.ddo.torneios.dto.RodadaDTO;
+import com.ddo.torneios.dto.*;
 import com.ddo.torneios.model.FaseTorneio;
 import com.ddo.torneios.model.ZonaFase;
 import com.ddo.torneios.repository.FaseTorneioRepository;
@@ -11,6 +8,7 @@ import com.ddo.torneios.request.FaseTorneioRequest;
 import com.ddo.torneios.service.ClassificacaoService;
 import com.ddo.torneios.service.ExportService;
 import com.ddo.torneios.service.FaseTorneioService;
+import com.ddo.torneios.service.gerador.GeradorPartidasService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -34,6 +32,9 @@ public class FaseTorneioController {
 
     @Autowired
     private ExportService exportService;
+
+    @Autowired
+    private GeradorPartidasService geradorService;
 
     @PostMapping("/criar")
     public ResponseEntity<FaseTorneioDTO> criarFase(@RequestBody @Valid FaseTorneioRequest request) {
@@ -109,5 +110,19 @@ public class FaseTorneioController {
 
         RelatorioFaseDTO dados = exportService.prepararDadosExportacao(fase);
         return ResponseEntity.ok(dados);
+    }
+
+    @PatchMapping("/{faseId}/estadio-final")
+    public ResponseEntity<Void> atualizarEstadioFinal(
+            @PathVariable String faseId,
+            @RequestBody EstadioUpdateDTO dto) {
+
+        if (dto.novoEstadio() == null || dto.novoEstadio().isBlank()) {
+            return ResponseEntity.badRequest().build();
+        }
+
+        geradorService.atualizarEstadioFinalManualmente(faseId, dto.novoEstadio());
+
+        return ResponseEntity.ok().build();
     }
 }

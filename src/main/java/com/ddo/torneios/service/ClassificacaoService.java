@@ -242,12 +242,33 @@ public class ClassificacaoService {
         }
     }
 
-    private void processarMataMata(PartidaDTO dto, ParticipacaoFase m, ParticipacaoFase v) {
-        int totalM = safeInt(dto.golsMandante()) + safeInt(dto.penaltisMandante());
-        int totalV = safeInt(dto.golsVisitante()) + safeInt(dto.penaltisVisitante());
+    private void processarMataMata(PartidaDTO dto, ParticipacaoFase pMandante, ParticipacaoFase pVisitante) {
+        Partida partida = partidaRepository.findById(dto.id())
+                .orElseThrow(() -> new RuntimeException("Partida não encontrada"));
 
-        ParticipacaoFase venceu = totalM > totalV ? m : v;
-        ParticipacaoFase perdeu = venceu == m ? v : m;
+        FaseTorneio fase = partida.getFase();
+        FaseMataMata etapa = partida.getEtapaMataMata();
+        Integer chave = partida.getChaveIndex();
+
+        //Se ainda tem jogo pendente (ex: acabou de jogar a IDA), não muda status de classificação de ninguém ainda.
+        if (partidaRepository.existeJogoPendente(fase, etapa, chave)) {
+            return;
+        }
+
+        List<Partida> jogosDoConfronto = partidaRepository.findByFaseAndEtapaMataMataAndChaveIndex(fase, etapa, chave);
+
+        JogadorClube vencedorJc = calcularVencedorConfronto(jogosDoConfronto);
+
+        ParticipacaoFase venceu;
+        ParticipacaoFase perdeu;
+
+        if (pMandante.getJogadorClube().equals(vencedorJc)) {
+            venceu = pMandante;
+            perdeu = pVisitante;
+        } else {
+            venceu = pVisitante;
+            perdeu = pMandante;
+        }
 
         perdeu.setStatusClassificacao(StatusClassificacao.ELIMINADO);
 
@@ -258,6 +279,44 @@ public class ClassificacaoService {
             } catch (Exception ignored) {
             }
         }
+    }
+
+    private JogadorClube calcularVencedorConfronto(List<Partida> jogos) {
+        if (jogos.isEmpty()) return null;
+        if (jogos.size() == 1) return jogos.get(0).getVencedor();
+
+        //Lógica para IDA e VOLTA
+        Partida ida = jogos.stream().filter(p -> isIda(p.getTipoPartida())).findFirst().orElse(null);
+        Partida volta = jogos.stream().filter(p -> isVolta(p.getTipoPartida())).findFirst().orElse(null);
+
+        if (ida == null || volta == null) return null; // Inconsistência
+
+        JogadorClube timeA = ida.getMandante();
+        JogadorClube timeB = ida.getVisitante();
+
+        int golsTimeA = (ida.getGolsMandante() != null ? ida.getGolsMandante() : 0);
+        int golsTimeB = (ida.getGolsVisitante() != null ? ida.getGolsVisitante() : 0);
+
+        if (volta.getMandante().equals(timeA)) {
+            golsTimeA += (volta.getGolsMandante() != null ? volta.getGolsMandante() : 0);
+            golsTimeB += (volta.getGolsVisitante() != null ? volta.getGolsVisitante() : 0);
+        } else {
+            golsTimeA += (volta.getGolsVisitante() != null ? volta.getGolsVisitante() : 0);
+            golsTimeB += (volta.getGolsMandante() != null ? volta.getGolsMandante() : 0);
+        }
+
+        if (golsTimeA > golsTimeB) return timeA;
+        if (golsTimeB > golsTimeA) return timeB;
+
+        return volta.getVencedor();
+    }
+
+    private boolean isIda(TipoPartida tp) {
+        return tp == TipoPartida.MATA_MATA_IDA || tp == TipoPartida.FINAL_IDA;
+    }
+
+    private boolean isVolta(TipoPartida tp) {
+        return tp == TipoPartida.MATA_MATA_VOLTA || tp == TipoPartida.FINAL_VOLTA;
     }
 
     private BigDecimal calcularCoeficiente(

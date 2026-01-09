@@ -21,9 +21,30 @@ public class BracketService {
     public Map<String, List<PartidaDTO>> obterBracket(FaseTorneio fase) {
         List<Partida> todasPartidas = partidaRepository.findByFase(fase);
 
-        return todasPartidas.stream()
+        List<Partida> partidasMataMata = todasPartidas.stream()
                 .filter(p -> p.getEtapaMataMata() != null)
-                .map(PartidaDTO::new)
+                .toList();
+
+        List<PartidaDTO> dtos = new ArrayList<>();
+
+        for (Partida p : partidasMataMata) {
+            Partida partidaIda = null;
+
+            if (isVolta(p.getTipoPartida())) {
+                partidaIda = partidasMataMata.stream()
+                        .filter(other ->
+                                other.getEtapaMataMata() == p.getEtapaMataMata() &&
+                                        other.getChaveIndex().equals(p.getChaveIndex()) &&
+                                        isIda(other.getTipoPartida())
+                        )
+                        .findFirst()
+                        .orElse(null);
+            }
+
+            dtos.add(new PartidaDTO(p, partidaIda));
+        }
+
+        return dtos.stream()
                 .collect(Collectors.groupingBy(
                         PartidaDTO::etapaMataMata,
                         LinkedHashMap::new,
@@ -45,7 +66,7 @@ public class BracketService {
         Integer chave = partidaFinalizada.getChaveIndex();
 
         if (partidaRepository.existeJogoPendente(fase, etapa, chave)) {
-            log.info("Confronto ainda não finalizado (aguardando volta ou outros jogos). Chave: {}", chave);
+            log.info("Confronto ainda não finalizado. Chave: {}", chave);
             return;
         }
 
@@ -53,65 +74,100 @@ public class BracketService {
         if (vencedor == null) return;
 
         Partida proximaMestra = partidaFinalizada.getProximaPartida();
+
         List<Partida> proximosJogos = partidaRepository.findByFaseAndEtapaMataMataAndChaveIndex(
                 fase, proximaMestra.getEtapaMataMata(), proximaMestra.getChaveIndex()
         );
 
-        for (Partida p : proximosJogos) {
-            if (partidaFinalizada.getSlotNaProxima() == 1) {
-                p.setMandante(vencedor);
+        int slot = partidaFinalizada.getSlotNaProxima();
 
-                if (p.getEtapaMataMata() != FaseMataMata.FINAL && vencedor.getClube() != null) {
-                    p.setEstadio(vencedor.getClube().getEstadio());
+        for (Partida p : proximosJogos) {
+            boolean isJogoIdaOuUnico = ehJogoIdaOuUnico(p.getTipoPartida());
+
+            //Lógica Cruzada:
+            //Slot 1: Mandante na IDA, Visitante na VOLTA
+            //Slot 2: Visitante na IDA, Mandante na VOLTA
+
+            if (slot == 1) {
+                if (isJogoIdaOuUnico) {
+                    configurarMandante(p, vencedor);
+                } else {
+                    configurarVisitante(p, vencedor);
                 }
             } else {
-                p.setVisitante(vencedor);
+                if (isJogoIdaOuUnico) {
+                    configurarVisitante(p, vencedor);
+                } else {
+                    configurarMandante(p, vencedor);
+                }
             }
             partidaRepository.save(p);
         }
     }
 
+    private boolean ehJogoIdaOuUnico(TipoPartida tipo) {
+        return tipo == TipoPartida.MATA_MATA_IDA ||
+                tipo == TipoPartida.FINAL_IDA ||
+                tipo == TipoPartida.MATA_MATA_UNICO ||
+                tipo == TipoPartida.FINAL_UNICA;
+    }
+
+    private void configurarMandante(Partida p, JogadorClube time) {
+        p.setMandante(time);
+        if (p.getEtapaMataMata() != FaseMataMata.FINAL && time.getClube() != null) {
+            p.setEstadio(time.getClube().getEstadio());
+        }
+    }
+
+    private void configurarVisitante(Partida p, JogadorClube time) {
+        p.setVisitante(time);
+    }
+
     private JogadorClube calcularVencedorAgregado(FaseTorneio fase, FaseMataMata etapa, Integer chave) {
-        List<Partida> jogos = partidaRepository.findByFaseAndEtapaMataMataAndChaveIndex(fase, etapa, chave);
+        List<Partida> partidas = partidaRepository.findByFaseAndEtapaMataMataAndChaveIndex(fase, etapa, chave);
 
-        if (jogos.size() == 1) {
-            return jogos.get(0).getVencedor();
+        if (partidas == null || partidas.isEmpty()) return null;
+
+        if (partidas.size() == 1) {
+            Partida unica = partidas.get(0);
+            return unica.getVencedor();
         }
 
-        Partida jogoIda = null;
-        Partida jogoVolta = null;
+        Partida ida = partidas.stream().filter(p -> isIda(p.getTipoPartida())).findFirst().orElse(null);
+        Partida volta = partidas.stream().filter(p -> isVolta(p.getTipoPartida())).findFirst().orElse(null);
 
-        for (Partida p : jogos) {
-            TipoPartida tp = p.getTipoPartida();
-            if (tp == TipoPartida.MATA_MATA_IDA || tp == TipoPartida.FINAL_IDA) {
-                jogoIda = p;
-            } else if (tp == TipoPartida.MATA_MATA_VOLTA || tp == TipoPartida.FINAL_VOLTA) {
-                jogoVolta = p;
-            }
+        if (ida == null || volta == null) return null;
+
+        JogadorClube timeA = ida.getMandante();
+        JogadorClube timeB = ida.getVisitante();
+
+        int golsTimeA = (ida.getGolsMandante() != null) ? ida.getGolsMandante() : 0;
+        int golsTimeB = (ida.getGolsVisitante() != null) ? ida.getGolsVisitante() : 0;
+
+        if (volta.getMandante().equals(timeA)) {
+            golsTimeA += (volta.getGolsMandante() != null) ? volta.getGolsMandante() : 0;
+            golsTimeB += (volta.getGolsVisitante() != null) ? volta.getGolsVisitante() : 0;
+        } else {
+            golsTimeA += (volta.getGolsVisitante() != null) ? volta.getGolsVisitante() : 0;
+            golsTimeB += (volta.getGolsMandante() != null) ? volta.getGolsMandante() : 0;
         }
 
-        if (jogoIda == null || jogoVolta == null) {
-            throw new IllegalStateException("Confronto ID " + chave + " possui 2 jogos mas os tipos não são IDA/VOLTA corretamente.");
-        }
+        if (golsTimeA > golsTimeB) return timeA;
+        if (golsTimeB > golsTimeA) return timeB;
 
-        int golsMandanteIda = jogoIda.getGolsMandante();
-        int golsVisitanteIda = jogoIda.getGolsVisitante();
-
-        int golsMandanteVolta = jogoVolta.getGolsMandante();
-        int golsVisitanteVolta = jogoVolta.getGolsVisitante();
-
-        int totalTimeA = golsMandanteIda + golsVisitanteVolta;
-
-        int totalTimeB = golsVisitanteIda + golsMandanteVolta;
-
-        if (totalTimeA > totalTimeB) return jogoIda.getMandante();
-        if (totalTimeB > totalTimeA) return jogoIda.getVisitante();
-
-        if (jogoVolta.houvePenaltis()) {
-            return jogoVolta.getVencedor();
+        if (volta.houvePenaltis()) {
+            return volta.getVencedor();
         }
 
         return null;
+    }
+
+    private boolean isIda(TipoPartida tp) {
+        return tp == TipoPartida.MATA_MATA_IDA || tp == TipoPartida.FINAL_IDA;
+    }
+
+    private boolean isVolta(TipoPartida tp) {
+        return tp == TipoPartida.MATA_MATA_VOLTA || tp == TipoPartida.FINAL_VOLTA;
     }
 
     public List<PartidaDTO> obterDetalhesConfronto(FaseTorneio fase, FaseMataMata etapa, Integer chaveIndex) {
