@@ -10,6 +10,7 @@ import lombok.NoArgsConstructor;
 import org.hibernate.annotations.ColumnDefault;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 
 @Data
 @Entity
@@ -52,7 +53,18 @@ public class Clube {
     @Column(nullable = false, columnDefinition = "integer default 0")
     private Integer titulos = 0;
 
+    @Column(precision = 19, scale = 2)
     private BigDecimal valorAvaliado;
+
+    @Column(precision = 19, scale = 2)
+    private BigDecimal lanceMinimo;
+
+    public void atualizarLanceMinimo() {
+        if (this.valorAvaliado != null) {
+            this.lanceMinimo = this.valorAvaliado.multiply(new BigDecimal("0.65"))
+                    .setScale(2, RoundingMode.HALF_EVEN);
+        }
+    }
 
     public Clube(String nome, String estadio, String imagem, LigaClube ligaClube, String sigla, String corPrimaria, String corSecundaria, BigDecimal estrelas) {
         this.nome = nome;
