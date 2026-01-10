@@ -1,15 +1,14 @@
 package com.ddo.torneios.model;
 
 import jakarta.persistence.*;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-import lombok.ToString;
+import lombok.*;
 import org.hibernate.annotations.ColumnDefault;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
-@Data
+@Getter
+@Setter
 @Entity
 public class Partida {
 
@@ -35,11 +34,11 @@ public class Partida {
     private LocalDateTime dataHora;
 
     @ManyToOne
-    @JoinColumn(name = "mandante_id", nullable = false)
+    @JoinColumn(name = "mandante_id", nullable = true)
     private JogadorClube mandante;
 
     @ManyToOne
-    @JoinColumn(name = "visitante_id", nullable = false)
+    @JoinColumn(name = "visitante_id", nullable = true)
     private JogadorClube visitante;
 
     private Integer golsMandante;
@@ -81,8 +80,9 @@ public class Partida {
     })
     private DisputaPenaltis penaltis;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "partida_proxima_id")
+    @ManyToOne(cascade = CascadeType.ALL)
+    @JoinColumn(name = "partida_proxima_id", nullable = true)
+    @ToString.Exclude
     private Partida proximaPartida; //partida da próxima fase
 
     private Integer slotNaProxima;
@@ -114,5 +114,10 @@ public class Partida {
         }
 
         return null;
+    }
+
+    @Override
+    public String toString() {
+        return "Partida{id='" + id + "', fase='" + (fase != null ? fase.getId() : "null") + "'}";
     }
 }

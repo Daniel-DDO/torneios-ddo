@@ -53,6 +53,19 @@ public class PartidaController {
         }
     }
 
+    @PostMapping("/{id}/desfazer-resultado")
+    public ResponseEntity<String> desfazerResultado(@PathVariable String id) {
+        try {
+            classificacaoService.desfazerResultado(id);
+            return ResponseEntity.ok("Resultado desfeito, pontuações revertidas e economia estornada com sucesso!");
+
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body("Não foi possível desfazer o resultado: " + e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body("Erro interno ao tentar desfazer resultado: " + e.getMessage());
+        }
+    }
+
     @GetMapping("/fase/{faseId}")
     public ResponseEntity<List<PartidaDTO>> listarPorFase(@PathVariable String faseId) {
         return ResponseEntity.ok(partidaService.listarPorFase(faseId));

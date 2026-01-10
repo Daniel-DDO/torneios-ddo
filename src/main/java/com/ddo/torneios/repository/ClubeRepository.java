@@ -5,6 +5,7 @@ import com.ddo.torneios.model.LigaClube;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -28,4 +29,7 @@ public interface ClubeRepository extends JpaRepository<Clube, String> {
 
     boolean existsBySiglaIn(List<String> siglas);
     boolean existsByNomeIn(List<String> nomes);
+
+    @Query("SELECT c.estadio FROM Clube c WHERE c.estrelas >= 5 AND c.estadio IS NOT NULL")
+    List<String> findEstadiosDeClubesTop();
 }

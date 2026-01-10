@@ -41,8 +41,14 @@ public interface PartidaRepository extends JpaRepository<Partida, String> {
 
     List<Partida> findByFaseAndRealizadaTrue(FaseTorneio fase);
 
-    @Query("SELECT COUNT(p) = 2 FROM Partida p WHERE p.fase = :fase AND p.etapaMataMata = :etapa AND p.chaveIndex = :chave AND p.realizada = true")
-    boolean isConfrontoCompleto(@Param("fase") FaseTorneio fase, @Param("etapa") FaseMataMata etapa, @Param("chave") Integer chave);
+    @Query("SELECT COUNT(p) > 0 FROM Partida p " +
+            "WHERE p.fase = :fase " +
+            "AND p.etapaMataMata = :etapa " +
+            "AND p.chaveIndex = :chave " +
+            "AND p.realizada = false")
+    boolean existeJogoPendente(@Param("fase") FaseTorneio fase,
+                               @Param("etapa") FaseMataMata etapa,
+                               @Param("chave") Integer chave);
 
     List<Partida> findByFaseAndEtapaMataMataAndChaveIndex(FaseTorneio fase, FaseMataMata etapa, Integer chave);
 
@@ -63,4 +69,5 @@ public interface PartidaRepository extends JpaRepository<Partida, String> {
             "ORDER BY p.dataHora DESC")
     List<Partida> findPorFaseEJogador(@Param("faseId") String faseId,
                                       @Param("jogadorId") String jogadorId);
+
 }

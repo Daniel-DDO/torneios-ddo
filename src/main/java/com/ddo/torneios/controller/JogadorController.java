@@ -1,9 +1,6 @@
 package com.ddo.torneios.controller;
 
-import com.ddo.torneios.dto.JogadorDTO;
-import com.ddo.torneios.dto.JogadorResumoDTO;
-import com.ddo.torneios.dto.LoginResponseDTO;
-import com.ddo.torneios.dto.PaginacaoDTO;
+import com.ddo.torneios.dto.*;
 import com.ddo.torneios.model.Cargo;
 import com.ddo.torneios.model.Jogador;
 import com.ddo.torneios.request.*;
@@ -230,5 +227,10 @@ public class JogadorController {
     @GetMapping("/by-coeficiente-10")
     public ResponseEntity<List<JogadorResumoDTO>> retornarTop10JogadoresMelhorCoeficiente() {
         return ResponseEntity.ok(jogadorService.retornarTop10JogadoresMelhorCoeficiente());
+    }
+
+    @GetMapping("/{id}/historia")
+    public ResponseEntity<JogadorHistoriaDTO> obterHistoriaJogador(@PathVariable String id) {
+        return ResponseEntity.ok(jogadorService.obterResumoHistoria(id));
     }
 }

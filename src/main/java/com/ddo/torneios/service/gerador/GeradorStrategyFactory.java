@@ -28,6 +28,8 @@ public class GeradorStrategyFactory {
     private GeradorMataMataSorteioDirigidoStrategy sorteioDirigidoStrategy;
     @Autowired
     private GeradorMataMataPotesManuaisStrategy potesManuaisStrategy;
+    @Autowired
+    private GeradorCopaRealStrategy geradorCopaRealStrategy;
 
     public GeradorPartidasStrategy<?> getStrategy(FaseTorneio fase) {
         if (fase.getTipoTorneio() == TipoTorneio.PONTOS_CORRIDOS) {
@@ -52,6 +54,7 @@ public class GeradorStrategyFactory {
             case SORTEIO_TOTAL -> sorteioTotalStrategy;
             case SORTEIO_DIRIGIDO -> sorteioDirigidoStrategy;
             case POTES_MANUAIS -> potesManuaisStrategy;
+            case COPA_REAL_DDO -> geradorCopaRealStrategy;
         };
     }
 }

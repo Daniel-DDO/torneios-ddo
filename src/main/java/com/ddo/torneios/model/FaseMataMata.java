@@ -6,7 +6,8 @@ public enum FaseMataMata {
     QUARTAS(8),
     OITAVAS(16),
     DEZESSEIS_AVOS(32),
-    TRINTA_E_DOIS_AVOS(64);
+    TRINTA_E_DOIS_AVOS(64),
+    SESSENTA_E_QUATRO_AVOS(128);
 
     private final int numeroTimes;
 

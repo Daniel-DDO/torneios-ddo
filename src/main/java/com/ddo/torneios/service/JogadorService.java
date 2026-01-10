@@ -1,9 +1,6 @@
 package com.ddo.torneios.service;
 
-import com.ddo.torneios.dto.JogadorDTO;
-import com.ddo.torneios.dto.JogadorResumoDTO;
-import com.ddo.torneios.dto.LoginResponseDTO;
-import com.ddo.torneios.dto.PaginacaoDTO;
+import com.ddo.torneios.dto.*;
 import com.ddo.torneios.exception.EmailJaCadastradoException;
 import com.ddo.torneios.exception.JogadorExisteException;
 import com.ddo.torneios.exception.RegraNegocioException;
@@ -437,5 +434,45 @@ public class JogadorService {
 
     public List<JogadorResumoDTO> retornarTop10JogadoresMelhorCoeficiente() {
         return jogadorRepository.buscarTop10Ranking();
+    }
+
+    public JogadorHistoriaDTO obterResumoHistoria(String jogadorId) {
+        Jogador j = jogadorRepository.findById(jogadorId)
+                .orElseThrow(() -> new EntityNotFoundException("Jogador não encontrado"));
+
+        int jogos = j.getPartidasJogadas() != null ? j.getPartidasJogadas() : 0;
+        int vitorias = j.getVitorias() != null ? j.getVitorias() : 0;
+        int empates = j.getEmpates() != null ? j.getEmpates() : 0;
+        int derrotas = j.getDerrotas() != null ? j.getDerrotas() : 0;
+        int gm = j.getGolsMarcados() != null ? j.getGolsMarcados() : 0;
+        int gs = j.getGolsSofridos() != null ? j.getGolsSofridos() : 0;
+
+        double aproveitamento = 0.0;
+        if (jogos > 0) {
+            double pontosConquistados = (vitorias * 3.0) + empates;
+            double pontosPossiveis = jogos * 3.0;
+            aproveitamento = (pontosConquistados / pontosPossiveis) * 100.0;
+        }
+
+        double mediaGols = (jogos > 0) ? (double) gm / jogos : 0.0;
+
+        return new JogadorHistoriaDTO(
+                j.getId(),
+                j.getNome(),
+                j.getImagem(),
+                j.getCargo().name(),
+                jogos,
+                vitorias,
+                empates,
+                derrotas,
+                String.format("%.1f%%", aproveitamento),
+                gm,
+                gs,
+                (gm - gs),
+                Math.round(mediaGols * 100.0) / 100.0,
+                j.getTitulos() != null ? j.getTitulos() : 0,
+                j.getFinais() != null ? j.getFinais() : 0,
+                j.getPontosCoeficiente()
+        );
     }
 }

@@ -1,7 +1,9 @@
 package com.ddo.torneios.controller;
 
+import com.ddo.torneios.dto.ParametrosEconomicosDTO;
 import com.ddo.torneios.dto.TorneioDTO;
 import com.ddo.torneios.request.TorneioRequest;
+import com.ddo.torneios.service.EconomiaService;
 import com.ddo.torneios.service.TorneioService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,6 +19,9 @@ public class TorneioController {
 
     @Autowired
     private TorneioService torneioService;
+
+    @Autowired
+    private EconomiaService economiaService;
 
     @PostMapping("/criar")
     public ResponseEntity<TorneioDTO> criarTorneio(@RequestBody @Valid TorneioRequest request) {
@@ -40,6 +45,11 @@ public class TorneioController {
     public ResponseEntity<List<TorneioDTO>> listarPorTemporada(@PathVariable String temporadaId) {
         List<TorneioDTO> torneios = torneioService.listarPorTemporada(temporadaId);
         return ResponseEntity.ok(torneios);
+    }
+
+    @GetMapping("/transparencia")
+    public ResponseEntity<ParametrosEconomicosDTO> getRegrasEconomicas() {
+        return ResponseEntity.ok(economiaService.getParametrosTransparencia());
     }
 
 }

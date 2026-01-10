@@ -6,10 +6,12 @@ import com.ddo.torneios.repository.PartidaRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import lombok.extern.slf4j.Slf4j;
 
 import java.util.*;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class BracketService {
@@ -19,9 +21,30 @@ public class BracketService {
     public Map<String, List<PartidaDTO>> obterBracket(FaseTorneio fase) {
         List<Partida> todasPartidas = partidaRepository.findByFase(fase);
 
-        return todasPartidas.stream()
+        List<Partida> partidasMataMata = todasPartidas.stream()
                 .filter(p -> p.getEtapaMataMata() != null)
-                .map(PartidaDTO::new)
+                .toList();
+
+        List<PartidaDTO> dtos = new ArrayList<>();
+
+        for (Partida p : partidasMataMata) {
+            Partida partidaIda = null;
+
+            if (isVolta(p.getTipoPartida())) {
+                partidaIda = partidasMataMata.stream()
+                        .filter(other ->
+                                other.getEtapaMataMata() == p.getEtapaMataMata() &&
+                                        other.getChaveIndex().equals(p.getChaveIndex()) &&
+                                        isIda(other.getTipoPartida())
+                        )
+                        .findFirst()
+                        .orElse(null);
+            }
+
+            dtos.add(new PartidaDTO(p, partidaIda));
+        }
+
+        return dtos.stream()
                 .collect(Collectors.groupingBy(
                         PartidaDTO::etapaMataMata,
                         LinkedHashMap::new,
@@ -42,50 +65,115 @@ public class BracketService {
         FaseMataMata etapa = partidaFinalizada.getEtapaMataMata();
         Integer chave = partidaFinalizada.getChaveIndex();
 
-        boolean completo = partidaRepository.isConfrontoCompleto(fase, etapa, chave);
-        if (!completo) return;
+        if (partidaRepository.existeJogoPendente(fase, etapa, chave)) {
+            log.info("Confronto ainda não finalizado. Chave: {}", chave);
+            return;
+        }
 
         JogadorClube vencedor = calcularVencedorAgregado(fase, etapa, chave);
         if (vencedor == null) return;
 
         Partida proximaMestra = partidaFinalizada.getProximaPartida();
+
         List<Partida> proximosJogos = partidaRepository.findByFaseAndEtapaMataMataAndChaveIndex(
                 fase, proximaMestra.getEtapaMataMata(), proximaMestra.getChaveIndex()
         );
 
+        int slot = partidaFinalizada.getSlotNaProxima();
+
         for (Partida p : proximosJogos) {
-            if (partidaFinalizada.getSlotNaProxima() == 1) {
-                p.setMandante(vencedor);
+            boolean isJogoIdaOuUnico = ehJogoIdaOuUnico(p.getTipoPartida());
+
+            //Lógica Cruzada:
+            //Slot 1: Mandante na IDA, Visitante na VOLTA
+            //Slot 2: Visitante na IDA, Mandante na VOLTA
+
+            if (slot == 1) {
+                if (isJogoIdaOuUnico) {
+                    configurarMandante(p, vencedor);
+                } else {
+                    configurarVisitante(p, vencedor);
+                }
             } else {
-                p.setVisitante(vencedor);
+                if (isJogoIdaOuUnico) {
+                    configurarVisitante(p, vencedor);
+                } else {
+                    configurarMandante(p, vencedor);
+                }
             }
             partidaRepository.save(p);
         }
     }
 
+    private boolean ehJogoIdaOuUnico(TipoPartida tipo) {
+        return tipo == TipoPartida.MATA_MATA_IDA ||
+                tipo == TipoPartida.FINAL_IDA ||
+                tipo == TipoPartida.MATA_MATA_UNICO ||
+                tipo == TipoPartida.FINAL_UNICA;
+    }
+
+    private void configurarMandante(Partida p, JogadorClube time) {
+        p.setMandante(time);
+        if (p.getEtapaMataMata() != FaseMataMata.FINAL && time.getClube() != null) {
+            p.setEstadio(time.getClube().getEstadio());
+        }
+    }
+
+    private void configurarVisitante(Partida p, JogadorClube time) {
+        p.setVisitante(time);
+    }
+
     private JogadorClube calcularVencedorAgregado(FaseTorneio fase, FaseMataMata etapa, Integer chave) {
-        List<Partida> jogos = partidaRepository.findByFaseAndEtapaMataMataAndChaveIndex(fase, etapa, chave);
+        List<Partida> partidas = partidaRepository.findByFaseAndEtapaMataMataAndChaveIndex(fase, etapa, chave);
 
-        if (jogos.size() == 1) return jogos.get(0).getVencedor();
+        if (partidas == null || partidas.isEmpty()) return null;
 
-        Partida j1 = jogos.get(0);
-        Partida j2 = jogos.get(1);
+        if (partidas.size() == 1) {
+            Partida unica = partidas.get(0);
+            return unica.getVencedor();
+        }
 
-        int golsMandanteJ1 = j1.getGolsMandante() != null ? j1.getGolsMandante() : 0;
-        int golsVisitanteJ1 = j1.getGolsVisitante() != null ? j1.getGolsVisitante() : 0;
-        int golsMandanteJ2 = j2.getGolsMandante() != null ? j2.getGolsMandante() : 0;
-        int golsVisitanteJ2 = j2.getGolsVisitante() != null ? j2.getGolsVisitante() : 0;
+        Partida ida = partidas.stream().filter(p -> isIda(p.getTipoPartida())).findFirst().orElse(null);
+        Partida volta = partidas.stream().filter(p -> isVolta(p.getTipoPartida())).findFirst().orElse(null);
 
-        int totalTimeA = golsMandanteJ1 + golsVisitanteJ2;
-        int totalTimeB = golsVisitanteJ1 + golsMandanteJ2;
+        if (ida == null || volta == null) return null;
 
-        if (totalTimeA > totalTimeB) return j1.getMandante();
-        if (totalTimeB > totalTimeA) return j1.getVisitante();
+        JogadorClube timeA = ida.getMandante();
+        JogadorClube timeB = ida.getVisitante();
 
-        if (j2.houvePenaltis()) {
-            return j2.getVencedor();
+        int golsTimeA = (ida.getGolsMandante() != null) ? ida.getGolsMandante() : 0;
+        int golsTimeB = (ida.getGolsVisitante() != null) ? ida.getGolsVisitante() : 0;
+
+        if (volta.getMandante().equals(timeA)) {
+            golsTimeA += (volta.getGolsMandante() != null) ? volta.getGolsMandante() : 0;
+            golsTimeB += (volta.getGolsVisitante() != null) ? volta.getGolsVisitante() : 0;
+        } else {
+            golsTimeA += (volta.getGolsVisitante() != null) ? volta.getGolsVisitante() : 0;
+            golsTimeB += (volta.getGolsMandante() != null) ? volta.getGolsMandante() : 0;
+        }
+
+        if (golsTimeA > golsTimeB) return timeA;
+        if (golsTimeB > golsTimeA) return timeB;
+
+        if (volta.houvePenaltis()) {
+            return volta.getVencedor();
         }
 
         return null;
+    }
+
+    private boolean isIda(TipoPartida tp) {
+        return tp == TipoPartida.MATA_MATA_IDA || tp == TipoPartida.FINAL_IDA;
+    }
+
+    private boolean isVolta(TipoPartida tp) {
+        return tp == TipoPartida.MATA_MATA_VOLTA || tp == TipoPartida.FINAL_VOLTA;
+    }
+
+    public List<PartidaDTO> obterDetalhesConfronto(FaseTorneio fase, FaseMataMata etapa, Integer chaveIndex) {
+        return partidaRepository.findByFaseAndEtapaMataMataAndChaveIndex(fase, etapa, chaveIndex)
+                .stream()
+                .map(PartidaDTO::new)
+                .collect(Collectors.toList());
     }
 }

@@ -1,6 +1,8 @@
 package com.ddo.torneios.controller;
 
+import com.ddo.torneios.dto.BracketResponseDTO;
 import com.ddo.torneios.dto.PartidaDTO;
+import com.ddo.torneios.model.FaseMataMata;
 import com.ddo.torneios.service.BracketService;
 import com.ddo.torneios.service.gerador.GeradorPartidasService;
 import lombok.RequiredArgsConstructor;
@@ -23,7 +25,24 @@ public class BracketController {
         return geradorService.buscarPorId(faseId)
                 .map(fase -> {
                     Map<String, List<PartidaDTO>> bracket = bracketService.obterBracket(fase);
-                    return ResponseEntity.ok(bracket);
+                    return ResponseEntity.ok(new BracketResponseDTO(
+                            fase.getEstadioFinal(),
+                            bracket
+                    ));
+                })
+                .orElse(ResponseEntity.notFound().build());
+    }
+
+    @GetMapping("/{faseId}/chave/{etapa}/{chaveIndex}")
+    public ResponseEntity<?> buscarConfronto(
+            @PathVariable String faseId,
+            @PathVariable FaseMataMata etapa,
+            @PathVariable Integer chaveIndex) {
+
+        return geradorService.buscarPorId(faseId)
+                .map(fase -> {
+                    List<PartidaDTO> partidas = bracketService.obterDetalhesConfronto(fase, etapa, chaveIndex);
+                    return ResponseEntity.ok(partidas);
                 })
                 .orElse(ResponseEntity.notFound().build());
     }
