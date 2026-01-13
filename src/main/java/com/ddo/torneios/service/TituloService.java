@@ -1,11 +1,12 @@
 package com.ddo.torneios.service;
 
 import com.ddo.torneios.model.*;
+import com.ddo.torneios.repository.ClubeRepository;
 import com.ddo.torneios.repository.JogadorClubeRepository;
 import com.ddo.torneios.repository.JogadorRepository;
 import com.ddo.torneios.repository.TituloRepository;
 import com.ddo.torneios.request.TituloRequest;
-import com.ddo.torneios.util.ByteArrayMultipartFile; // Import da nossa classe utilitária
+import com.ddo.torneios.util.ByteArrayMultipartFile;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -13,7 +14,6 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
-import java.util.Optional;
 
 @Slf4j
 @Service
@@ -26,31 +26,38 @@ public class TituloService {
     @Autowired
     private JogadorClubeRepository jogadorClubeRepository;
     @Autowired
+    private ClubeRepository clubeRepository;
+    @Autowired
     private PostGeradorService postGeradorService;
     @Autowired
     private ImgBBService imgBBService;
 
     @Transactional
-    public Conquista concederTituloAoJogador(String jogadorId, String nomeTitulo, String nomeEdicao) {
-        Jogador jogador = jogadorRepository.findById(jogadorId)
-                .orElseThrow(() -> new RuntimeException("Jogador não encontrado"));
+    public Conquista concederTituloAoJogador(String jogadorClubeId, String idTitulo, String nomeEdicao) {
+        JogadorClube jogadorClube = jogadorClubeRepository.findById(jogadorClubeId)
+                .orElseThrow(() -> new RuntimeException("Vínculo Jogador-Clube não encontrado"));
 
-        Titulo titulo = tituloRepository.findByNome(nomeTitulo)
-                .orElseThrow(() -> new RuntimeException("Título não encontrado: " + nomeTitulo));
+        Jogador jogador = jogadorClube.getJogador();
+        Clube clube = jogadorClube.getClube();
+
+        Titulo titulo = tituloRepository.findById(idTitulo)
+                .orElseThrow(() -> new RuntimeException("Título não encontrado: " + idTitulo));
 
         Conquista novaConquista = new Conquista(titulo, nomeEdicao);
 
         try {
             if (titulo.getImagemGerarPost() != null && !titulo.getImagemGerarPost().isEmpty()) {
 
-                String urlLogoClube = obterUrlImagemClube(jogadorId);
-                if (urlLogoClube == null) urlLogoClube = jogador.getImagem();
+                String urlLogoParaPost = clube.getImagem();
+                if (urlLogoParaPost == null || urlLogoParaPost.isEmpty()) {
+                    urlLogoParaPost = jogador.getImagem();
+                }
 
                 log.info("Gerando post do título para {}", jogador.getNome());
 
                 byte[] imagemBytes = postGeradorService.gerarImagemTitulo(
                         titulo.getImagemGerarPost(),
-                        urlLogoClube,
+                        urlLogoParaPost,
                         jogador.getNome()
                 );
 
@@ -75,18 +82,17 @@ public class TituloService {
         }
 
         jogador.getConquistas().add(novaConquista);
+
         if (jogador.getTitulos() == null) jogador.setTitulos(0);
         jogador.setTitulos(jogador.getTitulos() + 1);
 
+        if (clube.getTitulos() == null) clube.setTitulos(0);
+        clube.setTitulos(clube.getTitulos() + 1);
+
         jogadorRepository.save(jogador);
+        clubeRepository.save(clube);
 
         return novaConquista;
-    }
-
-    private String obterUrlImagemClube(String jogadorClubeId) {
-        return jogadorClubeRepository.findById(jogadorClubeId)
-                .map(jc -> jc.getClube().getImagem())
-                .orElse(null);
     }
 
     @Transactional
