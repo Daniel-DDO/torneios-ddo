@@ -22,6 +22,8 @@ public class Conquista {
     private LocalDate dataConquista;
     private String nomeEdicao;
 
+    private String imagem;
+
     public Conquista(Titulo titulo, String nomeEdicao) {
         this.titulo = titulo;
         this.dataConquista = LocalDate.now();
