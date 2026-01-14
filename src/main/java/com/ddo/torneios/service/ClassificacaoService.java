@@ -92,6 +92,17 @@ public class ClassificacaoService {
         partida.setCartoesAmarelosVisitante(dto.cartoesAmarelosVisitante());
         partida.setCartoesVermelhosVisitante(dto.cartoesVermelhosVisitante());
 
+        partida.setHouveProrrogacao(dto.houveProrrogacao());
+
+        if (dto.houvePenaltis()) {
+            DisputaPenaltis penaltis = new DisputaPenaltis();
+            penaltis.setGolsMandante(dto.penaltisMandante());
+            penaltis.setGolsVisitante(dto.penaltisVisitante());
+            partida.setPenaltis(penaltis);
+        } else {
+            partida.setPenaltis(null);
+        }
+
         atribuirHistoricoJogadores(partida, pMandante, pVisitante);
 
         JogadorClube jcMandante = partida.getMandante();
@@ -105,19 +116,18 @@ public class ClassificacaoService {
         jGlobalMandante.setPontosCoeficiente(safeAdd(jGlobalMandante.getPontosCoeficiente(), coefM));
         jGlobalVisitante.setPontosCoeficiente(safeAdd(jGlobalVisitante.getPontosCoeficiente(), coefV));
 
+        partidaRepository.save(partida);
+        jogadorClubeRepository.saveAll(List.of(jcMandante, jcVisitante));
+        jogadorRepository.saveAll(List.of(jGlobalMandante, jGlobalVisitante));
+        participacaoRepository.saveAll(List.of(pMandante, pVisitante));
+        economiaService.processarEconomiaPartida(partida);
+
         if (fase.getTipoTorneio() == TipoTorneio.MATA_MATA) {
             processarMataMata(dto, pMandante, pVisitante);
             bracketService.processarAvancoVencedor(partida);
         } else {
             processarLiga(dto, pMandante, pVisitante);
         }
-
-        partidaRepository.save(partida);
-        jogadorClubeRepository.saveAll(List.of(jcMandante, jcVisitante));
-        jogadorRepository.saveAll(List.of(jGlobalMandante, jGlobalVisitante));
-        participacaoRepository.saveAll(List.of(pMandante, pVisitante));
-
-        economiaService.processarEconomiaPartida(partida);
 
         List<LinhaClassificacaoDTO> novaClassificacao = calcularClassificacao(fase);
         atualizarPosicoesNoBanco(novaClassificacao, fase);
