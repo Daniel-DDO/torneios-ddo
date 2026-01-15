@@ -42,11 +42,11 @@ public class TituloController {
     @PostMapping("/conceder")
     public ResponseEntity<?> concederTitulo(@RequestBody Map<String, String> payload) {
         try {
-            String jogadorId = payload.get("jogadorId");
+            String jogadorClubeId = payload.get("jogadorClubeId");
             String nomeTitulo = payload.get("nomeTitulo");
             String edicao = payload.get("edicao");
 
-            tituloService.concederTituloAoJogador(jogadorId, nomeTitulo, edicao);
+            tituloService.concederTituloAoJogador(jogadorClubeId, nomeTitulo, edicao);
 
             return ResponseEntity.ok(Map.of("mensagem", "Título concedido com sucesso!"));
         } catch (Exception e) {
