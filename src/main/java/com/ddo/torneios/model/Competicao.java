@@ -23,4 +23,8 @@ public class Competicao {
 
     @Column(columnDefinition = "TEXT")
     private String descricao;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "titulo_id", nullable = true)
+    private Titulo titulo;
 }

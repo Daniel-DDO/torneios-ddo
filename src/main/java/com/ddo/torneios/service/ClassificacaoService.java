@@ -24,8 +24,6 @@ public class ClassificacaoService {
     @Autowired
     private ParticipacaoFaseRepository participacaoRepository;
     @Autowired
-    private FaseTorneioRepository faseRepository;
-    @Autowired
     private PartidaRepository partidaRepository;
     @Autowired
     private JogadorClubeRepository jogadorClubeRepository;
@@ -39,6 +37,10 @@ public class ClassificacaoService {
     private InsigniaService insigniaService;
     @Autowired
     private BracketService bracketService;
+    @Autowired
+    private TituloService tituloService;
+    @Autowired
+    private ClubeRepository clubeRepository;
 
     @Transactional
     public void registrarResultado(PartidaDTO dto) {
@@ -127,6 +129,40 @@ public class ClassificacaoService {
             bracketService.processarAvancoVencedor(partida);
         } else {
             processarLiga(dto, pMandante, pVisitante);
+        }
+
+
+        if (partida.getTipoPartida() == TipoPartida.FINAL_UNICA) {
+            jGlobalMandante.setFinais((jGlobalMandante.getFinais() == null ? 0 : jGlobalMandante.getFinais()) + 1);
+            jGlobalVisitante.setFinais((jGlobalVisitante.getFinais() == null ? 0 : jGlobalVisitante.getFinais()) + 1);
+
+            jogadorRepository.saveAll(List.of(jGlobalMandante, jGlobalVisitante));
+
+            JogadorClube vencedor = null;
+
+            if (dto.wo()) {
+                if (dto.golsMandante() > dto.golsVisitante()) vencedor = jcMandante;
+                else vencedor = jcVisitante;
+            } else if (dto.houvePenaltis()) {
+                if (dto.penaltisMandante() > dto.penaltisVisitante()) vencedor = jcMandante;
+                else vencedor = jcVisitante;
+            } else {
+                if (dto.golsMandante() > dto.golsVisitante()) vencedor = jcMandante;
+                else if (dto.golsVisitante() > dto.golsMandante()) vencedor = jcVisitante;
+            }
+
+            if (vencedor != null) {
+                Competicao competicao = fase.getTorneio().getCompeticao();
+
+                if (competicao != null && competicao.getTitulo() != null) {
+                    String tituloId = competicao.getTitulo().getId();
+                    String nomeEdicao = fase.getTorneio().getNome();
+
+                    tituloService.concederTituloAoJogador(vencedor.getId(), tituloId, nomeEdicao);
+                } else {
+                    log.warn("Campeão definido (Partida {}), mas não foi possível localizar o Título vinculado à Competição.", partida.getId());
+                }
+            }
         }
 
         List<LinhaClassificacaoDTO> novaClassificacao = calcularClassificacao(fase);
