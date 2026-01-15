@@ -13,6 +13,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.time.LocalDate;
 import java.util.List;
 
 @Slf4j
@@ -44,6 +45,7 @@ public class TituloService {
                 .orElseThrow(() -> new RuntimeException("Título não encontrado: " + idTitulo));
 
         Conquista novaConquista = new Conquista(titulo, nomeEdicao);
+        novaConquista.setDataConquista(LocalDate.now());
 
         try {
             if (titulo.getImagemGerarPost() != null && !titulo.getImagemGerarPost().isEmpty()) {
