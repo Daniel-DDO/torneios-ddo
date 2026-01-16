@@ -3,6 +3,7 @@ package com.ddo.torneios.model;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 @Data
 @Entity
@@ -26,5 +27,6 @@ public class Competicao {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "titulo_id", nullable = true)
+    @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
     private Titulo titulo;
 }
