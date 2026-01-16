@@ -1,6 +1,7 @@
 package com.ddo.torneios.service;
 
 import com.ddo.torneios.dto.LinhaClassificacaoDTO;
+import com.ddo.torneios.dto.ParametrosCoeficienteDTO;
 import com.ddo.torneios.dto.PartidaDTO;
 import com.ddo.torneios.model.*;
 import com.ddo.torneios.repository.*;
@@ -365,6 +366,23 @@ public class ClassificacaoService {
         return tp == TipoPartida.MATA_MATA_VOLTA || tp == TipoPartida.FINAL_VOLTA;
     }
 
+    //coeficiente
+    private static final double TETO_GOLS = 6.0;
+    private static final double PTS_VITORIA = 4.0;
+    private static final double PTS_EMPATE = 2.0;
+    private static final double PTS_GOLEADA = 2.0;
+    private static final double PTS_CLEAN_SHEET = 2.0;
+
+    private static final double PTS_DERROTA = -1.0;
+    private static final double PENALIDADE_AMARELO = -0.5;
+    private static final int LIMITE_AMARELOS = 2;
+    private static final double PENALIDADE_VERMELHO = -2.0;
+    private static final double PENALIDADE_GOL_SOFRIDO = -0.5;
+
+    private static final double DIVISOR_NIVEL_TIME = 4.0;
+    private static final double PONTUACAO_MINIMA = -8.0;
+    private static final double PONTUACAO_MAXIMA = 14;
+
     private BigDecimal calcularCoeficiente(
             Integer golsM, Integer golsS, boolean vit, boolean emp, boolean der,
             Integer ca, Integer cv, BigDecimal estrelas, Integer valorTorneio
@@ -376,26 +394,48 @@ public class ClassificacaoService {
         double nivelTime = estrelas != null ? estrelas.doubleValue() : 1.0;
         double pesoTorneio = valorTorneio != null ? valorTorneio / 100.0 : 1.0;
 
-        double pontosGols = Math.min(gm, 6.0);
-        double pontosResultadoPos = vit ? 4.0 : (emp ? 2.0 : 0.0);
-        double pontosGoleada = (gm - gs > 3) ? 2.0 : 0.0;
-        double pontosCleanSheet = (gs == 0) ? 2.0 : 0.0;
+        double pontosGols = Math.min(gm, TETO_GOLS);
+        double pontosResultadoPos = vit ? PTS_VITORIA : (emp ? PTS_EMPATE : 0.0);
+        double pontosGoleada = (gm - gs > 3) ? PTS_GOLEADA : 0.0;
+        double pontosCleanSheet = (gs == 0) ? PTS_CLEAN_SHEET : 0.0;
 
         double positivos = pontosGols + pontosResultadoPos + pontosGoleada + pontosCleanSheet;
 
-        double pontosResultadoNeg = der ? -1.0 : 0.0;
-        double penalidadeAmarelos = Math.max(0, amt - 2) * -0.5;
-        double penalidadeVermelhos = vrm * -2.0;
-        double penalidadeGolsSofridos = gs * -0.5;
+        double pontosResultadoNeg = der ? PTS_DERROTA : 0.0;
+
+        double penalidadeAmarelos = Math.max(0, amt - LIMITE_AMARELOS) * PENALIDADE_AMARELO;
+        double penalidadeVermelhos = vrm * PENALIDADE_VERMELHO;
+        double penalidadeGolsSofridos = gs * PENALIDADE_GOL_SOFRIDO;
 
         double negativos = pontosResultadoNeg + penalidadeAmarelos + penalidadeVermelhos + penalidadeGolsSofridos;
 
-        double multiplicadorNegativos = 1.0 + (nivelTime - 1.0) / 4.0;
+        double multiplicadorNegativos = 1.0 + (nivelTime - 1.0) / DIVISOR_NIVEL_TIME;
         double negativosAjustados = negativos * multiplicadorNegativos;
 
         double pontosTotais = (positivos + negativosAjustados) * pesoTorneio;
 
-        return BigDecimal.valueOf(Math.max(pontosTotais, -8.0)).setScale(2, RoundingMode.HALF_UP);
+        pontosTotais = Math.max(pontosTotais, PONTUACAO_MINIMA);
+        pontosTotais = Math.min(pontosTotais, PONTUACAO_MAXIMA);
+
+        return BigDecimal.valueOf(pontosTotais).setScale(2, RoundingMode.HALF_UP);
+    }
+
+    public ParametrosCoeficienteDTO getParametrosPublicos() {
+        return ParametrosCoeficienteDTO.builder()
+                .tetoGols(TETO_GOLS)
+                .pontosVitoria(PTS_VITORIA)
+                .pontosEmpate(PTS_EMPATE)
+                .pontosGoleada(PTS_GOLEADA)
+                .pontosCleanSheet(PTS_CLEAN_SHEET)
+                .pontosDerrota(PTS_DERROTA)
+                .penalidadePorAmarelo(PENALIDADE_AMARELO)
+                .limiteAmarelosSemPunicao(LIMITE_AMARELOS)
+                .penalidadePorVermelho(PENALIDADE_VERMELHO)
+                .penalidadePorGolSofrido(PENALIDADE_GOL_SOFRIDO)
+                .divisorNivelTime(DIVISOR_NIVEL_TIME)
+                .pontuacaoMinima(PONTUACAO_MINIMA)
+                .pontuacaoMaxima(PONTUACAO_MAXIMA)
+                .build();
     }
 
     private StatusClassificacao definirProximoStatus(FaseMataMata etapaAtual) {
