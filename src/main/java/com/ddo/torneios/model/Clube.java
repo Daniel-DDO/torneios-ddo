@@ -11,6 +11,8 @@ import org.hibernate.annotations.ColumnDefault;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.util.ArrayList;
+import java.util.List;
 
 @Data
 @Entity
@@ -58,6 +60,11 @@ public class Clube {
 
     @Column(precision = 19, scale = 2)
     private BigDecimal lanceMinimo;
+
+    @OneToMany(mappedBy = "clube", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private List<Conquista> conquistas = new ArrayList<>();
+
+    private String nomeExtenso;
 
     public void atualizarLanceMinimo() {
         if (this.valorAvaliado != null) {

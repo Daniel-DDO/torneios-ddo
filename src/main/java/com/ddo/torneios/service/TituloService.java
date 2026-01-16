@@ -1,10 +1,7 @@
 package com.ddo.torneios.service;
 
 import com.ddo.torneios.model.*;
-import com.ddo.torneios.repository.ClubeRepository;
-import com.ddo.torneios.repository.JogadorClubeRepository;
-import com.ddo.torneios.repository.JogadorRepository;
-import com.ddo.torneios.repository.TituloRepository;
+import com.ddo.torneios.repository.*;
 import com.ddo.torneios.request.TituloRequest;
 import com.ddo.torneios.util.ByteArrayMultipartFile;
 import lombok.extern.slf4j.Slf4j;
@@ -14,6 +11,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Slf4j
@@ -32,6 +30,8 @@ public class TituloService {
     private PostGeradorService postGeradorService;
     @Autowired
     private ImgBBService imgBBService;
+    @Autowired
+    private ConquistaRepository conquistaRepository;
 
     @Transactional
     public Conquista concederTituloAoJogador(String jogadorClubeId, String idTitulo, String nomeEdicao) {
@@ -41,11 +41,21 @@ public class TituloService {
         Jogador jogador = jogadorClube.getJogador();
         Clube clube = jogadorClube.getClube();
 
+        boolean jaPossui = conquistaRepository.existsByTituloIdAndNomeEdicaoAndJogadorId(
+                idTitulo,
+                nomeEdicao,
+                jogador.getId()
+        );
+
+        if (jaPossui) {
+            throw new RuntimeException("O jogador " + jogador.getNome() + " já possui o título desta edição (" + nomeEdicao + ").");
+        }
+
         Titulo titulo = tituloRepository.findById(idTitulo)
                 .orElseThrow(() -> new RuntimeException("Título não encontrado: " + idTitulo));
 
-        Conquista novaConquista = new Conquista(titulo, nomeEdicao);
-        novaConquista.setDataConquista(LocalDate.now());
+        Conquista novaConquista = new Conquista(titulo, nomeEdicao, clube, jogador);
+        novaConquista.setDataConquista(LocalDateTime.now());
 
         try {
             if (titulo.getImagemGerarPost() != null && !titulo.getImagemGerarPost().isEmpty()) {
@@ -83,7 +93,10 @@ public class TituloService {
             log.error("Erro ao gerar imagem (o título será concedido sem imagem): ", e);
         }
 
+        conquistaRepository.save(novaConquista);
+
         jogador.getConquistas().add(novaConquista);
+        clube.getConquistas().add(novaConquista);
 
         if (jogador.getTitulos() == null) jogador.setTitulos(0);
         jogador.setTitulos(jogador.getTitulos() + 1);
