@@ -57,14 +57,18 @@ public class ConquistaService {
     private ConquistaDashboardDTO converterParaDTO(Conquista c) {
         return new ConquistaDashboardDTO(
                 c.getId(),
+                c.getTitulo().getId(),
                 c.getTitulo().getNome(),
                 c.getNomeEdicao(),
                 c.getImagem(),
+                c.getJogador().getId(),
                 c.getJogador().getNome(),
                 c.getJogador().getImagem(),
+                c.getClube() != null ? c.getClube().getId() : null,
                 c.getClube() != null ? c.getClube().getNome() : "Sem Clube",
                 c.getClube() != null ? c.getClube().getSigla() : "N/A",
                 c.getClube() != null ? c.getClube().getImagem() : null,
+
                 c.getDataConquista()
         );
     }
