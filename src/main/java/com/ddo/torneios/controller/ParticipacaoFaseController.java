@@ -3,12 +3,16 @@ package com.ddo.torneios.controller;
 import com.ddo.torneios.dto.LinhaClassificacaoDTO;
 import com.ddo.torneios.dto.ParticipacaoFaseDTO;
 import com.ddo.torneios.model.FaseTorneio;
+import com.ddo.torneios.model.ParticipacaoFase;
 import com.ddo.torneios.repository.FaseTorneioRepository;
+import com.ddo.torneios.repository.ParticipacaoFaseRepository;
 import com.ddo.torneios.request.ParticipacaoFaseRequest;
 import com.ddo.torneios.service.ClassificacaoService;
 import com.ddo.torneios.service.ParticipacaoFaseService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -71,5 +75,25 @@ public class ParticipacaoFaseController {
     public ResponseEntity<List<ParticipacaoFaseDTO>> buscarAutocomplete(@RequestParam String termo) {
         List<ParticipacaoFaseDTO> resultados = participacaoFaseService.buscarAutocomplete(termo);
         return ResponseEntity.ok(resultados);
+    }
+
+    @Autowired
+    private ParticipacaoFaseRepository participacaoFaserepository;
+
+    @GetMapping("/previa-classificados/{faseId}")
+    public ResponseEntity<List<ParticipacaoFaseDTO>> verPreviaClassificados(
+            @PathVariable String faseId,
+            @RequestParam(defaultValue = "16") int quantidade) {
+
+        Pageable limit = PageRequest.of(0, quantidade);
+
+        List<ParticipacaoFase> classificados = participacaoFaserepository
+                .findByFaseIdOrderByPontosDescVitoriasDescSaldoGolsDescGolsProDesc(faseId, limit);
+
+        List<ParticipacaoFaseDTO> dtos = classificados.stream()
+                .map(ParticipacaoFaseDTO::new)
+                .toList();
+
+        return ResponseEntity.ok(dtos);
     }
 }

@@ -2,12 +2,14 @@ package com.ddo.torneios.controller;
 
 import com.ddo.torneios.dto.*;
 import com.ddo.torneios.model.FaseTorneio;
+import com.ddo.torneios.model.TipoGeracao;
 import com.ddo.torneios.model.ZonaFase;
 import com.ddo.torneios.repository.FaseTorneioRepository;
 import com.ddo.torneios.request.FaseTorneioRequest;
 import com.ddo.torneios.service.ClassificacaoService;
 import com.ddo.torneios.service.ExportService;
 import com.ddo.torneios.service.FaseTorneioService;
+import com.ddo.torneios.service.TransicaoFaseService;
 import com.ddo.torneios.service.gerador.GeradorPartidasService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -124,5 +126,23 @@ public class FaseTorneioController {
         geradorService.atualizarEstadioFinalManualmente(faseId, dto.novoEstadio());
 
         return ResponseEntity.ok().build();
+    }
+
+    @Autowired
+    private TransicaoFaseService transicaoService;
+
+    @PostMapping("/{faseId}/gerar-mata-mata")
+    public ResponseEntity<String> gerarMataMata(
+            @PathVariable String faseId,
+            @RequestParam(defaultValue = "PADRAO_1_VS_ULTIMO") TipoGeracao tipo) {
+
+        try {
+            transicaoService.inicializarFaseMataMata(faseId, tipo);
+            return ResponseEntity.ok("Mata-mata gerado com sucesso baseando-se na fase anterior!");
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body("Erro ao gerar mata-mata: " + e.getMessage());
+        }
     }
 }
