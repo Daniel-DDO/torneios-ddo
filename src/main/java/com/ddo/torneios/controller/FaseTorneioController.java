@@ -132,17 +132,28 @@ public class FaseTorneioController {
     private TransicaoFaseService transicaoService;
 
     @PostMapping("/{faseId}/gerar-mata-mata")
-    public ResponseEntity<String> gerarMataMata(
-            @PathVariable String faseId,
-            @RequestParam(defaultValue = "PADRAO_1_VS_ULTIMO") TipoGeracao tipo) {
-
+    public ResponseEntity<String> gerarMataMata(@PathVariable String faseId) {
         try {
-            transicaoService.inicializarFaseMataMata(faseId, tipo);
-            return ResponseEntity.ok("Mata-mata gerado com sucesso baseando-se na fase anterior!");
-        } catch (IllegalArgumentException e) {
+            transicaoService.inicializarFaseMataMata(faseId);
+            return ResponseEntity.ok("Processo de geração de mata-mata iniciado com sucesso.");
+        } catch (IllegalArgumentException | IllegalStateException e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         } catch (Exception e) {
-            return ResponseEntity.internalServerError().body("Erro ao gerar mata-mata: " + e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.internalServerError().body("Erro interno ao gerar mata-mata: " + e.getMessage());
+        }
+    }
+
+    @PostMapping("/{faseId}/confirmar-mata-mata-manual")
+    public ResponseEntity<String> confirmarMataMataManual(@PathVariable String faseId) {
+        try {
+            transicaoService.confirmarMataMataManual(faseId);
+            return ResponseEntity.ok("Partidas geradas com sucesso baseadas na configuração manual dos potes!");
+        } catch (IllegalArgumentException | IllegalStateException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.internalServerError().body("Erro ao confirmar mata-mata manual: " + e.getMessage());
         }
     }
 }

@@ -1,9 +1,6 @@
 package com.ddo.torneios.service;
 
-import com.ddo.torneios.model.FaseTorneio;
-import com.ddo.torneios.model.ParticipacaoFase;
-import com.ddo.torneios.model.Partida;
-import com.ddo.torneios.model.TipoGeracao;
+import com.ddo.torneios.model.*;
 import com.ddo.torneios.repository.FaseTorneioRepository;
 import com.ddo.torneios.repository.ParticipacaoFaseRepository;
 import com.ddo.torneios.repository.PartidaRepository;
@@ -34,90 +31,98 @@ public class TransicaoFaseService {
     private FaseTorneioRepository faseRepository;
 
     @Transactional
-    public void inicializarFaseMataMata(String novaFaseId, TipoGeracao tipoGeracao) {
+    public void inicializarFaseMataMata(String novaFaseId) {
         FaseTorneio faseNova = faseRepository.findById(novaFaseId)
-                .orElseThrow(() -> new IllegalArgumentException("Fase não encontrada."));
+                .orElseThrow(() -> new IllegalArgumentException("Fase não encontrada com ID: " + novaFaseId));
 
-        int ordemAnterior = faseNova.getOrdem() - 1;
+        if (faseNova.getAlgoritmoMataMata() == null) {
+            throw new IllegalStateException("A fase " + faseNova.getNome() + " não possui algoritmo configurado.");
+        }
 
-        FaseTorneio faseAnterior = faseRepository
-                .findByTorneioIdAndOrdem(faseNova.getTorneio().getId(), ordemAnterior)
-                .orElseThrow(() -> new IllegalArgumentException(
-                        "Não foi encontrada uma fase anterior (Ordem " + ordemAnterior + ") para este torneio."));
+        boolean ehFaseInicial = (faseNova.getOrdem() == 1) || Boolean.TRUE.equals(faseNova.getFaseInicialMataMata());
 
-        gerarFaseMataMata(faseAnterior, faseNova, tipoGeracao);
+        if (ehFaseInicial) {
+            gerarMataMataSemOrigem(faseNova);
+        } else {
+            transicionarDaFaseAnterior(faseNova);
+        }
     }
 
-    @Transactional
-    public void gerarFaseMataMata(FaseTorneio faseLigaAnterior, FaseTorneio faseMataMataNova, TipoGeracao tipoGeracao) {
+    private void gerarMataMataSemOrigem(FaseTorneio fase) {
+        List<ParticipacaoFase> participantesAtuais = participacaoRepository.findByFase(fase);
 
-        int quantidadeClassificados = determinarQuantidadeClassificados(faseMataMataNova);
+        if (participantesAtuais.isEmpty()) {
+            throw new IllegalArgumentException("A fase é inicial/independente, mas não há times cadastrados nela. Adicione os times manualmente antes de gerar o mata-mata.");
+        }
 
+        int qtdEsperada = determinarQuantidadeClassificados(fase);
+        if (participantesAtuais.size() != qtdEsperada) {
+            throw new IllegalArgumentException("Quantidade incorreta de times. Esperado: " + qtdEsperada + ", Encontrado: " + participantesAtuais.size());
+        }
+
+        if (fase.getAlgoritmoMataMata() == AlgoritmoGeracaoMataMata.POTES_MANUAIS) {
+            return;
+        }
+
+        gerarPartidasInterno(fase, participantesAtuais, fase.getAlgoritmoMataMata());
+    }
+
+    private void transicionarDaFaseAnterior(FaseTorneio faseNova) {
+        int ordemAnterior = faseNova.getOrdem() - 1;
+        FaseTorneio faseAnterior = faseRepository
+                .findByTorneioIdAndOrdem(faseNova.getTorneio().getId(), ordemAnterior)
+                .orElseThrow(() -> new IllegalArgumentException("Fase anterior (Ordem " + ordemAnterior + ") não encontrada."));
+
+        int quantidadeClassificados = determinarQuantidadeClassificados(faseNova);
         Pageable limit = PageRequest.of(0, quantidadeClassificados);
 
         List<ParticipacaoFase> classificadosLiga = participacaoRepository
-                .findByFaseIdOrderByPontosDescVitoriasDescSaldoGolsDescGolsProDesc(faseLigaAnterior.getId(), limit);
+                .findByFaseIdOrderByPontosDescVitoriasDescSaldoGolsDescGolsProDesc(faseAnterior.getId(), limit);
 
         if (classificadosLiga.size() < quantidadeClassificados) {
             throw new IllegalArgumentException(
                     String.format("Fase anterior tem apenas %d participantes, mas a fase %s exige %d classificados.",
-                            classificadosLiga.size(), faseMataMataNova.getNome(), quantidadeClassificados)
+                            classificadosLiga.size(), faseNova.getNome(), quantidadeClassificados)
             );
         }
 
-        List<ParticipacaoFase> novasParticipacoes = new ArrayList<>();
-
-        for (int i = 0; i < classificadosLiga.size(); i++) {
-            ParticipacaoFase pLiga = classificadosLiga.get(i);
-
-            ParticipacaoFase pMataMata = new ParticipacaoFase();
-            pMataMata.setFase(faseMataMataNova);
-            pMataMata.setJogadorClube(pLiga.getJogadorClube());
-
-            pMataMata.setPosicaoClassificacao(i + 1);
-
-            pMataMata.setPontos(0);
-            pMataMata.setVitorias(0);
-            pMataMata.setSaldoGols(0);
-            pMataMata.setGolsPro(0);
-            pMataMata.setGolsContra(0);
-            pMataMata.setPartidasJogadas(0);
-            pMataMata.setEmpates(0);
-            pMataMata.setDerrotas(0);
-
-            if (tipoGeracao == TipoGeracao.POTES_MANUAIS) {
-                if (i < quantidadeClassificados / 2) {
-                    pMataMata.setGrupo("Pote 1");
-                } else {
-                    pMataMata.setGrupo("Pote 2");
-                }
-            }
-
-            novasParticipacoes.add(pMataMata);
-        }
-
+        List<ParticipacaoFase> novasParticipacoes = criarParticipacoesParaNovaFase(classificadosLiga, faseNova, faseNova.getAlgoritmoMataMata());
         participacaoRepository.saveAll(novasParticipacoes);
 
-        if (tipoGeracao == TipoGeracao.POTES_MANUAIS) {
-            return;
+        if (faseNova.getAlgoritmoMataMata() != AlgoritmoGeracaoMataMata.POTES_MANUAIS) {
+            gerarPartidasInterno(faseNova, novasParticipacoes, faseNova.getAlgoritmoMataMata());
         }
-
-        gerarPartidasInterno(faseMataMataNova, novasParticipacoes, tipoGeracao);
     }
 
     @Transactional
-    public void gerarPartidasAposEdicaoManual(FaseTorneio faseMataMata, TipoGeracao tipoGeracao) {
-        List<ParticipacaoFase> participantes = participacaoRepository.findByFase(faseMataMata);
+    public void confirmarMataMataManual(String faseId) {
+        FaseTorneio fase = faseRepository.findById(faseId)
+                .orElseThrow(() -> new IllegalArgumentException("Fase não encontrada."));
 
-        if (participantes.isEmpty()) {
-            throw new IllegalArgumentException("Não há participantes nesta fase para gerar partidas.");
+        if (fase.getAlgoritmoMataMata() != AlgoritmoGeracaoMataMata.POTES_MANUAIS) {
+            throw new IllegalArgumentException("Esta ação é exclusiva para fases configuradas como POTES_MANUAIS.");
         }
 
-        gerarPartidasInterno(faseMataMata, participantes, tipoGeracao);
+        List<ParticipacaoFase> participantesAtuais = participacaoRepository.findByFase(fase);
+
+        if (participantesAtuais.isEmpty()) {
+            throw new IllegalStateException("Nenhum participante encontrado nesta fase.");
+        }
+
+        gerarPartidasInterno(fase, participantesAtuais, AlgoritmoGeracaoMataMata.POTES_MANUAIS);
     }
 
-    private void gerarPartidasInterno(FaseTorneio fase, List<ParticipacaoFase> participantes, TipoGeracao tipo) {
-        GeradorPartidasStrategy<Partida> estrategia = geradorFactory.obterEstrategia(tipo);
+    private void gerarPartidasInterno(FaseTorneio fase, List<ParticipacaoFase> participantes, AlgoritmoGeracaoMataMata algoritmo) {
+        if (partidaRepository.countByFaseId(fase.getId()) > 0) {
+            throw new IllegalStateException("Já existem partidas geradas para esta fase. Exclua as partidas antes de gerar novamente.");
+        }
+
+        if (partidaRepository.existsByFaseId(fase.getId())) {
+           throw new IllegalStateException("Já existem partidas geradas...");
+        }
+
+
+        GeradorPartidasStrategy<Partida> estrategia = geradorFactory.obterEstrategia(algoritmo);
         List<Partida> partidasGeradas = estrategia.gerar(fase, participantes);
 
         if (!partidasGeradas.isEmpty()) {
@@ -125,15 +130,55 @@ public class TransicaoFaseService {
         }
     }
 
+    private List<ParticipacaoFase> criarParticipacoesParaNovaFase(List<ParticipacaoFase> origem,
+                                                                  FaseTorneio destino,
+                                                                  AlgoritmoGeracaoMataMata algoritmo) {
+        List<ParticipacaoFase> listaNova = new ArrayList<>();
+        int totalClassificados = origem.size();
+
+        for (int i = 0; i < totalClassificados; i++) {
+            ParticipacaoFase pAntiga = origem.get(i);
+            ParticipacaoFase pNova = new ParticipacaoFase();
+
+            pNova.setFase(destino);
+            pNova.setJogadorClube(pAntiga.getJogadorClube());
+            pNova.setPosicaoClassificacao(i + 1);
+
+            pNova.setPontos(0);
+            pNova.setVitorias(0);
+            pNova.setEmpates(0);
+            pNova.setDerrotas(0);
+            pNova.setGolsPro(0);
+            pNova.setGolsContra(0);
+            pNova.setSaldoGols(0);
+            pNova.setPartidasJogadas(0);
+
+            if (algoritmo == AlgoritmoGeracaoMataMata.POTES_MANUAIS ||
+                    algoritmo == AlgoritmoGeracaoMataMata.SORTEIO_DIRIGIDO) {
+                if (i < totalClassificados / 2) {
+                    pNova.setGrupo("Pote A");
+                } else {
+                    pNova.setGrupo("Pote B");
+                }
+            } else {
+                pNova.setGrupo(null);
+            }
+
+            listaNova.add(pNova);
+        }
+        return listaNova;
+    }
+
     private int determinarQuantidadeClassificados(FaseTorneio fase) {
         if (fase.getNome() == null) return 16;
-        String nome = fase.getNome().toLowerCase();
+        String nomeNormalizado = fase.getNome().toLowerCase();
 
-        if (nome.contains("16 avos")) return 32;
-        if (nome.contains("oitavas")) return 16;
-        if (nome.contains("quartas")) return 8;
-        if (nome.contains("semi")) return 4;
-        if (nome.contains("final")) return 2;
+        if (nomeNormalizado.contains("32 avos") || nomeNormalizado.contains("trinta")) return 64;
+        if (nomeNormalizado.contains("16 avos") || nomeNormalizado.contains("dezesseis")) return 32;
+        if (nomeNormalizado.contains("oitavas")) return 16;
+        if (nomeNormalizado.contains("quartas")) return 8;
+        if (nomeNormalizado.contains("semi")) return 4;
+        if (nomeNormalizado.contains("final")) return 2;
 
         return 16;
     }
