@@ -31,5 +31,5 @@ public class Titulo {
 
     private String imagemGerarPost;
 
-    private boolean ativo;
+    private Boolean ativo;
 }
