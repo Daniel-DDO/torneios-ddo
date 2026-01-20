@@ -212,7 +212,7 @@ public class TransicaoFaseService {
         Pageable limit = PageRequest.of(0, qtd);
 
         List<ParticipacaoFase> classificados = participacaoRepository
-                .findByFaseIdOrderByPontosDescVitoriasDescSaldoGolsDescGolsProDesc(faseAnterior.getId(), limit);
+                .findByFaseIdOrderByPosicaoClassificacaoAsc(faseAnterior.getId(), limit);
 
         List<PreviaClassificadosDTO.ResumoClassificado> listaResumo = new ArrayList<>();
 

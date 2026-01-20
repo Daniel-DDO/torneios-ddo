@@ -27,4 +27,6 @@ public interface ParticipacaoFaseRepository extends JpaRepository<ParticipacaoFa
     List<ParticipacaoFase> buscarTop10PorNomeOuDiscord(@Param("termo") String termo, Pageable pageable);
     // No ParticipacaoFaseRepository
     List<ParticipacaoFase> findByFaseIdOrderByPontosDescVitoriasDescSaldoGolsDescGolsProDesc(String faseId, Pageable pageable);
+
+    List<ParticipacaoFase> findByFaseIdOrderByPosicaoClassificacaoAsc(String faseId, Pageable pageable);
 }
