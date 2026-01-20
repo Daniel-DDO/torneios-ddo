@@ -3,7 +3,6 @@ package com.ddo.torneios.service.gerador;
 import com.ddo.torneios.model.*;
 import org.springframework.stereotype.Component;
 import java.util.*;
-import java.util.stream.Collectors;
 
 @Component
 public class GeradorMataMataSorteioDirigidoStrategy extends GeradorMataMataBase implements GeradorPartidasStrategy<Partida> {
@@ -25,6 +24,7 @@ public class GeradorMataMataSorteioDirigidoStrategy extends GeradorMataMataBase 
 
         List<ParticipacaoFase> poteA = new ArrayList<>(ranking.subList(0, totalConfrontos));
         List<ParticipacaoFase> poteB = new ArrayList<>(ranking.subList(totalConfrontos, n));
+
         Collections.shuffle(poteB);
 
         ParticipacaoFase[] cabecasDeChave = new ParticipacaoFase[totalConfrontos];
@@ -33,20 +33,23 @@ public class GeradorMataMataSorteioDirigidoStrategy extends GeradorMataMataBase 
         ParticipacaoFase rank1 = poteA.remove(0);
         ParticipacaoFase rank2 = poteA.remove(0);
 
-        List<Integer> slotsParesSuperior = gerarSlotsPares(1, meioChave);
-        List<Integer> slotsParesInferior = gerarSlotsPares(meioChave + 1, totalConfrontos);
+        List<Integer> slotsParesEsquerda = gerarSlotsPares(1, meioChave);
+        List<Integer> slotsParesDireita = gerarSlotsPares(meioChave + 1, totalConfrontos);
 
-        boolean rank1NoSuperior = random.nextBoolean();
-        if (rank1NoSuperior) {
-            posicionarEmSlotAleatorio(cabecasDeChave, rank1, slotsParesSuperior, random);
-            posicionarEmSlotAleatorio(cabecasDeChave, rank2, slotsParesInferior, random);
+        boolean rank1NaEsquerda = random.nextBoolean();
+
+        if (rank1NaEsquerda) {
+            posicionarEmSlotAleatorio(cabecasDeChave, rank1, slotsParesEsquerda, random);
+            posicionarEmSlotAleatorio(cabecasDeChave, rank2, slotsParesDireita, random);
         } else {
-            posicionarEmSlotAleatorio(cabecasDeChave, rank1, slotsParesInferior, random);
-            posicionarEmSlotAleatorio(cabecasDeChave, rank2, slotsParesSuperior, random);
+            posicionarEmSlotAleatorio(cabecasDeChave, rank1, slotsParesDireita, random);
+            posicionarEmSlotAleatorio(cabecasDeChave, rank2, slotsParesEsquerda, random);
         }
 
         Collections.shuffle(poteA);
+
         Iterator<ParticipacaoFase> it = poteA.iterator();
+
         for (int i = 0; i < totalConfrontos; i++) {
             if (cabecasDeChave[i] == null) {
                 cabecasDeChave[i] = it.next();
@@ -59,7 +62,6 @@ public class GeradorMataMataSorteioDirigidoStrategy extends GeradorMataMataBase 
         for (int i = 0; i < totalConfrontos; i++) {
             List<Partida> confronto = criarConfronto(fase, i + 1, cabecasDeChave[i], poteB.get(i), "Sorteio Dirigido");
             todasPartidas.addAll(confronto);
-
             rodadaInicialMestres.add(confronto.get(confronto.size() - 1));
         }
 
@@ -69,7 +71,6 @@ public class GeradorMataMataSorteioDirigidoStrategy extends GeradorMataMataBase 
     }
 
     private void construirArvoreAteFinal(FaseTorneio fase, List<Partida> rodadaAnterior, List<Partida> listaGlobal) {
-
         List<Partida> currentRound = rodadaAnterior;
 
         while (currentRound.size() > 1) {
@@ -102,7 +103,6 @@ public class GeradorMataMataSorteioDirigidoStrategy extends GeradorMataMataBase 
                 nextRound.add(proximoJogoDecisivo);
                 novaChaveIndex++;
             }
-
             currentRound = nextRound;
         }
     }
