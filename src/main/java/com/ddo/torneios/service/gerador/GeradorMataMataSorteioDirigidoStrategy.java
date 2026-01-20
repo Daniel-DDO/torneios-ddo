@@ -18,7 +18,17 @@ public class GeradorMataMataSorteioDirigidoStrategy extends GeradorMataMataBase 
         validarQuantidadeParticipantes(n, fase.getFaseInicialMataMata());
 
         List<ParticipacaoFase> ranking = new ArrayList<>(participantes);
-        ranking.sort(Comparator.comparing(ParticipacaoFase::getPosicaoClassificacao));
+
+        ranking.sort(Comparator.comparing(ParticipacaoFase::getPosicaoClassificacao, Comparator.nullsLast(Comparator.naturalOrder())));
+
+        //DEBUG:
+        System.out.println(">>> DEBUG SORTEIO DIRIGIDO (Top 4):");
+        for (int i = 0; i < Math.min(ranking.size(), 4); i++) {
+            ParticipacaoFase p = ranking.get(i);
+            String nome = (p.getJogadorClube() != null) ? p.getJogadorClube().getJogador().getNome() : "N/A";
+            System.out.println(String.format("Pos %d: %s (Classificação DB: %d)",
+                    i+1, nome, p.getPosicaoClassificacao()));
+        }
 
         int totalConfrontos = n / 2;
         int meioChave = totalConfrontos / 2;
@@ -26,6 +36,7 @@ public class GeradorMataMataSorteioDirigidoStrategy extends GeradorMataMataBase 
         List<ParticipacaoFase> poteA = new ArrayList<>(ranking.subList(0, totalConfrontos));
         List<ParticipacaoFase> poteB = new ArrayList<>(ranking.subList(totalConfrontos, n));
 
+        Collections.shuffle(poteB);
         Collections.shuffle(poteB);
 
         ParticipacaoFase[] cabecasDeChave = new ParticipacaoFase[totalConfrontos];
@@ -57,7 +68,6 @@ public class GeradorMataMataSorteioDirigidoStrategy extends GeradorMataMataBase 
         }
 
         List<Partida> partidasGeradas = new ArrayList<>();
-
         FaseMataMata faseInicial = fase.getFaseInicialMataMata();
         String nomeFaseLog = faseInicial.name();
 
@@ -91,7 +101,6 @@ public class GeradorMataMataSorteioDirigidoStrategy extends GeradorMataMataBase 
         for (int i = inicio; i <= fim; i++) {
             if (i % 2 == 0) pares.add(i);
         }
-
         if (pares.isEmpty()) {
             for (int i = inicio; i <= fim; i++) pares.add(i);
         }

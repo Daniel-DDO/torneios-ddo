@@ -78,7 +78,7 @@ public class TransicaoFaseService {
         Pageable limit = PageRequest.of(0, quantidadeClassificados);
 
         List<ParticipacaoFase> classificadosLiga = participacaoRepository
-                .findByFaseIdOrderByPontosDescVitoriasDescSaldoGolsDescGolsProDesc(faseAnterior.getId(), limit);
+                .findByFaseIdOrderByPosicaoClassificacaoAsc(faseAnterior.getId(), limit);
 
         if (classificadosLiga.size() < quantidadeClassificados) {
             throw new IllegalArgumentException(
