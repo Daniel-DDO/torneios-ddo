@@ -148,4 +148,77 @@ public class TituloService {
         t.setImagemGerarPost(req.imagemGerarPost());
         return t;
     }
+
+    @Transactional
+    public Conquista concederTituloLegado(String jogadorId, String clubeId, String idTitulo, String nomeEdicao, LocalDateTime data) {
+
+        Jogador jogador = jogadorRepository.findById(jogadorId)
+                .orElseThrow(() -> new RuntimeException("Jogador não encontrado: " + jogadorId));
+
+        Clube clube = clubeRepository.findById(clubeId)
+                .orElseThrow(() -> new RuntimeException("Clube não encontrado: " + clubeId));
+
+        boolean jaPossui = conquistaRepository.existsByTituloIdAndNomeEdicaoAndJogadorId(
+                idTitulo,
+                nomeEdicao,
+                jogador.getId()
+        );
+
+        if (jaPossui) {
+            throw new RuntimeException("O jogador " + jogador.getNome() + " já possui o título desta edição (" + nomeEdicao + ").");
+        }
+
+        Titulo titulo = tituloRepository.findById(idTitulo)
+                .orElseThrow(() -> new RuntimeException("Título não encontrado: " + idTitulo));
+
+        Conquista novaConquista = new Conquista(titulo, nomeEdicao, clube, jogador);
+        novaConquista.setDataConquista(data);
+
+        try {
+            if (titulo.getImagemGerarPost() != null && !titulo.getImagemGerarPost().isEmpty()) {
+
+                String urlLogoParaPost = clube.getImagem();
+                if (urlLogoParaPost == null || urlLogoParaPost.isEmpty()) {
+                    urlLogoParaPost = jogador.getImagem();
+                }
+
+                log.info("Gerando post do título legado para {}", jogador.getNome());
+
+                byte[] imagemBytes = postGeradorService.gerarImagemTitulo(
+                        titulo.getImagemGerarPost(),
+                        urlLogoParaPost,
+                        jogador.getNome()
+                );
+
+                if (imagemBytes != null) {
+                    String nomeArquivo = "titulo_legado_" + jogador.getId() + "_" + System.currentTimeMillis() + ".png";
+
+                    MultipartFile multipartFile = new ByteArrayMultipartFile(
+                            imagemBytes,
+                            "image",
+                            nomeArquivo,
+                            "image/png"
+                    );
+
+                    String urlImgBB = imgBBService.uploadImagem(multipartFile);
+                    novaConquista.setImagem(urlImgBB);
+                }
+            }
+        } catch (Exception e) {
+            log.error("Erro ao gerar imagem legado: ", e);
+        }
+
+        conquistaRepository.save(novaConquista);
+
+        if (jogador.getConquistas() != null) jogador.getConquistas().add(novaConquista);
+        if (clube.getConquistas() != null) clube.getConquistas().add(novaConquista);
+
+        jogador.setTitulos(jogador.getTitulos() == null ? 1 : jogador.getTitulos() + 1);
+        clube.setTitulos(clube.getTitulos() == null ? 1 : clube.getTitulos() + 1);
+
+        jogadorRepository.save(jogador);
+        clubeRepository.save(clube);
+
+        return novaConquista;
+    }
 }

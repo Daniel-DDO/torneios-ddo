@@ -2,6 +2,7 @@ package com.ddo.torneios.controller;
 
 import com.ddo.torneios.model.Conquista;
 import com.ddo.torneios.model.Titulo;
+import com.ddo.torneios.request.ConcederTituloLegadoRequest;
 import com.ddo.torneios.request.ConcederTituloRequest;
 import com.ddo.torneios.request.TituloRequest;
 import com.ddo.torneios.service.TituloService;
@@ -52,6 +53,29 @@ public class TituloController {
 
             return ResponseEntity.ok(Map.of(
                     "mensagem", "Título concedido com sucesso!",
+                    "idConquista", conquistaGerada.getId(),
+                    "imagemGerada", conquistaGerada.getImagem() != null ? conquistaGerada.getImagem() : "",
+                    "nomeTitulo", conquistaGerada.getTitulo().getNome()
+            ));
+
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("erro", e.getMessage()));
+        }
+    }
+
+    @PostMapping("/conceder-legado")
+    public ResponseEntity<?> concederTituloLegado(@RequestBody ConcederTituloLegadoRequest request) {
+        try {
+            Conquista conquistaGerada = tituloService.concederTituloLegado(
+                    request.jogadorId(),
+                    request.clubeId(),
+                    request.idTitulo(),
+                    request.edicao(),
+                    request.data()
+            );
+
+            return ResponseEntity.ok(Map.of(
+                    "mensagem", "Título legado concedido com sucesso!",
                     "idConquista", conquistaGerada.getId(),
                     "imagemGerada", conquistaGerada.getImagem() != null ? conquistaGerada.getImagem() : "",
                     "nomeTitulo", conquistaGerada.getTitulo().getNome()
