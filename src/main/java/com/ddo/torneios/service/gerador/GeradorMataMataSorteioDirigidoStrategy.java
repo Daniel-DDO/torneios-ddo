@@ -3,6 +3,7 @@ package com.ddo.torneios.service.gerador;
 import com.ddo.torneios.model.*;
 import org.springframework.stereotype.Component;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Component
 public class GeradorMataMataSorteioDirigidoStrategy extends GeradorMataMataBase implements GeradorPartidasStrategy<Partida> {
@@ -10,6 +11,7 @@ public class GeradorMataMataSorteioDirigidoStrategy extends GeradorMataMataBase 
     @Override
     public List<Partida> gerar(FaseTorneio fase, List<ParticipacaoFase> participantes) {
         int n = participantes.size();
+
         if (n < 4 || n % 2 != 0) {
             throw new IllegalArgumentException("Para sorteio dirigido, o número de participantes deve ser PAR e >= 4.");
         }
@@ -28,11 +30,9 @@ public class GeradorMataMataSorteioDirigidoStrategy extends GeradorMataMataBase 
         ParticipacaoFase[] cabecasDeChave = new ParticipacaoFase[totalConfrontos];
         Random random = new Random();
 
-        //rank 1 e rank 2 para posicionamento especial
         ParticipacaoFase rank1 = poteA.remove(0);
         ParticipacaoFase rank2 = poteA.remove(0);
 
-        //slots pares (2, 4, 6, 8...) separados por metade superior e inferior
         List<Integer> slotsParesSuperior = gerarSlotsPares(1, meioChave);
         List<Integer> slotsParesInferior = gerarSlotsPares(meioChave + 1, totalConfrontos);
 
@@ -53,12 +53,96 @@ public class GeradorMataMataSorteioDirigidoStrategy extends GeradorMataMataBase 
             }
         }
 
-        List<Partida> partidas = new ArrayList<>();
+        List<Partida> todasPartidas = new ArrayList<>();
+        List<Partida> rodadaInicialMestres = new ArrayList<>();
+
         for (int i = 0; i < totalConfrontos; i++) {
-            partidas.addAll(criarConfronto(fase, i + 1, cabecasDeChave[i], poteB.get(i), "Sorteio Dirigido"));
+            List<Partida> confronto = criarConfronto(fase, i + 1, cabecasDeChave[i], poteB.get(i), "Sorteio Dirigido");
+            todasPartidas.addAll(confronto);
+
+            rodadaInicialMestres.add(confronto.get(confronto.size() - 1));
         }
 
-        return partidas;
+        construirArvoreAteFinal(fase, rodadaInicialMestres, todasPartidas);
+
+        return todasPartidas;
+    }
+
+    private void construirArvoreAteFinal(FaseTorneio fase, List<Partida> rodadaAnterior, List<Partida> listaGlobal) {
+
+        List<Partida> currentRound = rodadaAnterior;
+
+        while (currentRound.size() > 1) {
+            currentRound.sort(Comparator.comparingInt(Partida::getChaveIndex));
+
+            List<Partida> nextRound = new ArrayList<>();
+            FaseMataMata etapaAtual = currentRound.get(0).getEtapaMataMata();
+            FaseMataMata proximaEtapa = obterProximaEtapa(etapaAtual);
+
+            int novaChaveIndex = 1;
+
+            for (int i = 0; i < currentRound.size(); i += 2) {
+                Partida jogoOrigemA = currentRound.get(i);
+                Partida jogoOrigemB = currentRound.get(i + 1);
+
+                boolean isFinal = (proximaEtapa == FaseMataMata.FINAL);
+                boolean temVolta = fase.getTemJogoVolta() && !isFinal;
+
+                List<Partida> novoConfronto = criarConfrontoVazio(fase, proximaEtapa, novaChaveIndex, temVolta);
+                listaGlobal.addAll(novoConfronto);
+
+                Partida proximoJogoDecisivo = novoConfronto.get(novoConfronto.size() - 1);
+
+                jogoOrigemA.setProximaPartida(proximoJogoDecisivo);
+                jogoOrigemA.setSlotNaProxima(1);
+
+                jogoOrigemB.setProximaPartida(proximoJogoDecisivo);
+                jogoOrigemB.setSlotNaProxima(2);
+
+                nextRound.add(proximoJogoDecisivo);
+                novaChaveIndex++;
+            }
+
+            currentRound = nextRound;
+        }
+    }
+
+    private List<Partida> criarConfrontoVazio(FaseTorneio fase, FaseMataMata etapa, int chave, boolean temVolta) {
+        List<Partida> jogos = new ArrayList<>();
+
+        if (temVolta) {
+            Partida ida = new Partida();
+            ida.setFase(fase);
+            ida.setEtapaMataMata(etapa);
+            ida.setChaveIndex(chave);
+            ida.setTipoPartida(etapa == FaseMataMata.FINAL ? TipoPartida.FINAL_IDA : TipoPartida.MATA_MATA_IDA);
+            jogos.add(ida);
+
+            Partida volta = new Partida();
+            volta.setFase(fase);
+            volta.setEtapaMataMata(etapa);
+            volta.setChaveIndex(chave);
+            volta.setTipoPartida(etapa == FaseMataMata.FINAL ? TipoPartida.FINAL_VOLTA : TipoPartida.MATA_MATA_VOLTA);
+            jogos.add(volta);
+        } else {
+            Partida unico = new Partida();
+            unico.setFase(fase);
+            unico.setEtapaMataMata(etapa);
+            unico.setChaveIndex(chave);
+            unico.setTipoPartida(etapa == FaseMataMata.FINAL ? TipoPartida.FINAL_UNICA : TipoPartida.MATA_MATA_UNICO);
+            jogos.add(unico);
+        }
+        return jogos;
+    }
+
+    private FaseMataMata obterProximaEtapa(FaseMataMata atual) {
+        switch (atual) {
+            case DEZESSEIS_AVOS: return FaseMataMata.OITAVAS;
+            case OITAVAS: return FaseMataMata.QUARTAS;
+            case QUARTAS: return FaseMataMata.SEMIFINAL;
+            case SEMIFINAL: return FaseMataMata.FINAL;
+            default: throw new IllegalStateException("Etapa inválida para progressão: " + atual);
+        }
     }
 
     private void posicionarEmSlotAleatorio(ParticipacaoFase[] grid, ParticipacaoFase p, List<Integer> slots, Random r) {
