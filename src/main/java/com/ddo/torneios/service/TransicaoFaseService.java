@@ -1,5 +1,6 @@
 package com.ddo.torneios.service;
 
+import com.ddo.torneios.dto.PreviaClassificadosDTO;
 import com.ddo.torneios.model.*;
 import com.ddo.torneios.repository.FaseTorneioRepository;
 import com.ddo.torneios.repository.ParticipacaoFaseRepository;
@@ -181,5 +182,51 @@ public class TransicaoFaseService {
         if (nomeNormalizado.contains("final")) return 2;
 
         return 16;
+    }
+
+    public PreviaClassificadosDTO obterPreviaClassificados(String novaFaseId) {
+        FaseTorneio faseNova = faseRepository.findById(novaFaseId)
+                .orElseThrow(() -> new IllegalArgumentException("Fase não encontrada."));
+
+        boolean ehFaseInicial = (faseNova.getOrdem() == 1) || Boolean.TRUE.equals(faseNova.getFaseInicialMataMata());
+
+        if (ehFaseInicial) {
+            List<ParticipacaoFase> atuais = participacaoRepository.findByFase(faseNova);
+            List<PreviaClassificadosDTO.ResumoClassificado> lista = atuais.stream()
+                    .map(p -> new PreviaClassificadosDTO.ResumoClassificado(
+                            0,
+                            p.getJogadorClube().getId(),
+                            p.getJogadorClube().getJogador().getNome(),
+                            p.getJogadorClube().getClube().getNome(),
+                            p.getJogadorClube().getClube().getImagem()
+                    )).toList();
+            return new PreviaClassificadosDTO("ID atual","Fase Atual (Manual)", lista.size(), lista);
+        }
+
+        int ordemAnterior = faseNova.getOrdem() - 1;
+        FaseTorneio faseAnterior = faseRepository
+                .findByTorneioIdAndOrdem(faseNova.getTorneio().getId(), ordemAnterior)
+                .orElseThrow(() -> new IllegalArgumentException("Fase anterior não encontrada."));
+
+        int qtd = determinarQuantidadeClassificados(faseNova);
+        Pageable limit = PageRequest.of(0, qtd);
+
+        List<ParticipacaoFase> classificados = participacaoRepository
+                .findByFaseIdOrderByPontosDescVitoriasDescSaldoGolsDescGolsProDesc(faseAnterior.getId(), limit);
+
+        List<PreviaClassificadosDTO.ResumoClassificado> listaResumo = new ArrayList<>();
+
+        for (int i = 0; i < classificados.size(); i++) {
+            ParticipacaoFase p = classificados.get(i);
+            listaResumo.add(new PreviaClassificadosDTO.ResumoClassificado(
+                    i + 1,
+                    p.getJogadorClube().getId(),
+                    p.getJogadorClube().getJogador().getNome(),
+                    p.getJogadorClube().getClube().getNome(),
+                    p.getJogadorClube().getClube().getImagem()
+            ));
+        }
+
+        return new PreviaClassificadosDTO(faseAnterior.getId(), faseAnterior.getNome(), qtd, listaResumo);
     }
 }

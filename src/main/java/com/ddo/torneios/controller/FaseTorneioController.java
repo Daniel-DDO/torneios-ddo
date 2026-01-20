@@ -156,4 +156,9 @@ public class FaseTorneioController {
             return ResponseEntity.internalServerError().body("Erro ao confirmar mata-mata manual: " + e.getMessage());
         }
     }
+
+    @GetMapping("/{faseId}/previa-classificados")
+    public ResponseEntity<PreviaClassificadosDTO> getPreviaClassificados(@PathVariable String faseId) {
+        return ResponseEntity.ok(transicaoService.obterPreviaClassificados(faseId));
+    }
 }
