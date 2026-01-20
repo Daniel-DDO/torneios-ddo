@@ -14,7 +14,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 public class TransicaoFaseService {
@@ -228,5 +230,84 @@ public class TransicaoFaseService {
         }
 
         return new PreviaClassificadosDTO(faseAnterior.getId(), faseAnterior.getNome(), qtd, listaResumo);
+    }
+
+    /**
+     * Recebe a lista de 4 eliminados da Liga Real e os distribui nas Quartas da Copa Liga.
+     * @param idFaseCopaLiga O ID da fase da Copa Liga (onde estão as partidas geradas).
+     * @param eliminadosLigaReal A lista original das participações na Liga Real (serão convertidas).
+     */
+    @Transactional
+    public void distribuirEliminadosCopaLiga(String idFaseCopaLiga, List<ParticipacaoFase> eliminadosLigaReal) {
+
+        if (eliminadosLigaReal.size() != 4) {
+            throw new IllegalArgumentException("É necessário fornecer exatamente 4 eliminados da Liga Real para preencher as Quartas.");
+        }
+
+        FaseTorneio faseCopa = faseRepository.findById(idFaseCopaLiga)
+                .orElseThrow(() -> new IllegalArgumentException("Fase da Copa Liga não encontrada."));
+
+        List<ParticipacaoFase> novosParticipantes = new ArrayList<>();
+
+        for (ParticipacaoFase antigo : eliminadosLigaReal) {
+            boolean jaExiste = participacaoRepository.existsByFaseIdAndJogadorClubeId(
+                    faseCopa.getId(), antigo.getJogadorClube().getId());
+
+            if (jaExiste) {
+                novosParticipantes.add(participacaoRepository.findByFaseIdAndJogadorClubeId(
+                        faseCopa.getId(), antigo.getJogadorClube().getId()).orElseThrow());
+            } else {
+                ParticipacaoFase novo = new ParticipacaoFase();
+                novo.setFase(faseCopa);
+                novo.setJogadorClube(antigo.getJogadorClube());
+                novo.setPontos(0);
+                novo.setVitorias(0);
+                novo.setEmpates(0);
+                novo.setDerrotas(0);
+                novo.setGolsPro(0);
+                novo.setGolsContra(0);
+                novo.setSaldoGols(0);
+                novo.setPartidasJogadas(0);
+                novo.setGrupo("Entrada Quartas");
+
+                novosParticipantes.add(participacaoRepository.save(novo));
+            }
+        }
+
+        List<Partida> partidasQuartas = partidaRepository.findByFaseId(idFaseCopaLiga).stream()
+                .filter(p -> p.getEtapaMataMata() == FaseMataMata.QUARTAS)
+                .collect(Collectors.toList());
+
+        if (partidasQuartas.isEmpty()) {
+            throw new IllegalStateException("Não foram encontradas partidas de Quartas de Final nesta fase da Copa Liga.");
+        }
+
+        Collections.shuffle(novosParticipantes);
+
+        for (int i = 0; i < 4; i++) {
+            int chaveIndex = i + 1;
+
+            ParticipacaoFase participanteSorteado = novosParticipantes.get(i);
+
+            JogadorClube jogadorSorteado = participanteSorteado.getJogadorClube();
+
+            List<Partida> jogosDaChave = partidasQuartas.stream()
+                    .filter(p -> p.getChaveIndex() != null && p.getChaveIndex() == chaveIndex)
+                    .collect(Collectors.toList());
+
+            for (Partida jogo : jogosDaChave) {
+                if (jogo.getTipoPartida() == TipoPartida.MATA_MATA_IDA) {
+                    jogo.setMandante(jogadorSorteado);
+                }
+                else if (jogo.getTipoPartida() == TipoPartida.MATA_MATA_VOLTA) {
+                    jogo.setVisitante(jogadorSorteado);
+                }
+                else if (jogo.getTipoPartida() == TipoPartida.MATA_MATA_UNICO) {
+                    jogo.setMandante(jogadorSorteado);
+                }
+            }
+        }
+
+        partidaRepository.saveAll(partidasQuartas);
     }
 }
