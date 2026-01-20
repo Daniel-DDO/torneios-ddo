@@ -194,7 +194,7 @@ public class TransicaoFaseService {
             List<ParticipacaoFase> atuais = participacaoRepository.findByFase(faseNova);
             List<PreviaClassificadosDTO.ResumoClassificado> lista = atuais.stream()
                     .map(p -> new PreviaClassificadosDTO.ResumoClassificado(
-                            0,
+                            p.getPosicaoClassificacao(),
                             p.getJogadorClube().getId(),
                             p.getJogadorClube().getJogador().getNome(),
                             p.getJogadorClube().getClube().getNome(),
