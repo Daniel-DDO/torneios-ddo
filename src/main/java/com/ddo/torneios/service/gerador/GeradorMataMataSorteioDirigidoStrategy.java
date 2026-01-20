@@ -14,6 +14,7 @@ public class GeradorMataMataSorteioDirigidoStrategy extends GeradorMataMataBase 
         if (n < 4 || n % 2 != 0) {
             throw new IllegalArgumentException("Para sorteio dirigido, o número de participantes deve ser PAR e >= 4.");
         }
+
         validarQuantidadeParticipantes(n, fase.getFaseInicialMataMata());
 
         List<ParticipacaoFase> ranking = new ArrayList<>(participantes);
