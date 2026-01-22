@@ -3,6 +3,7 @@ package com.ddo.torneios.controller;
 import com.ddo.torneios.dto.*;
 import com.ddo.torneios.model.Cargo;
 import com.ddo.torneios.model.Jogador;
+import com.ddo.torneios.model.StatusJogador;
 import com.ddo.torneios.request.*;
 import com.ddo.torneios.service.JogadorService;
 import jakarta.validation.Valid;
@@ -232,5 +233,14 @@ public class JogadorController {
     @GetMapping("/{id}/historia")
     public ResponseEntity<JogadorHistoriaDTO> obterHistoriaJogador(@PathVariable String id) {
         return ResponseEntity.ok(jogadorService.obterResumoHistoria(id));
+    }
+
+    @PatchMapping("/{id}/status")
+    public ResponseEntity<Void> alterarStatus(
+            @PathVariable String id,
+            @RequestParam StatusJogador status) {
+
+        jogadorService.alterarStatusJogador(id, status);
+        return ResponseEntity.noContent().build();
     }
 }
