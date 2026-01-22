@@ -84,8 +84,11 @@ public class TransicaoFaseService {
 
         if (classificadosLiga.size() < quantidadeClassificados) {
             throw new IllegalArgumentException(
-                    String.format("Fase anterior tem apenas %d participantes, mas a fase %s exige %d classificados.",
-                            classificadosLiga.size(), faseNova.getNome(), quantidadeClassificados)
+                    String.format("Fase anterior tem apenas %d participantes, mas a fase '%s' está configurada (%s) para exigir %d classificados.",
+                            classificadosLiga.size(),
+                            faseNova.getNome(),
+                            faseNova.getFaseInicialMataMata(), // Mostra qual enum está configurado no erro
+                            quantidadeClassificados)
             );
         }
 
@@ -119,11 +122,6 @@ public class TransicaoFaseService {
         if (partidaRepository.countByFaseId(fase.getId()) > 0) {
             throw new IllegalStateException("Já existem partidas geradas para esta fase. Exclua as partidas antes de gerar novamente.");
         }
-
-        if (partidaRepository.existsByFaseId(fase.getId())) {
-           throw new IllegalStateException("Já existem partidas geradas...");
-        }
-
 
         GeradorPartidasStrategy<Partida> estrategia = geradorFactory.obterEstrategia(algoritmo);
         List<Partida> partidasGeradas = estrategia.gerar(fase, participantes);
@@ -173,16 +171,9 @@ public class TransicaoFaseService {
     }
 
     private int determinarQuantidadeClassificados(FaseTorneio fase) {
-        if (fase.getNome() == null) return 16;
-        String nomeNormalizado = fase.getNome().toLowerCase();
-
-        if (nomeNormalizado.contains("32 avos") || nomeNormalizado.contains("trinta")) return 64;
-        if (nomeNormalizado.contains("16 avos") || nomeNormalizado.contains("dezesseis")) return 32;
-        if (nomeNormalizado.contains("oitavas")) return 16;
-        if (nomeNormalizado.contains("quartas")) return 8;
-        if (nomeNormalizado.contains("semi")) return 4;
-        if (nomeNormalizado.contains("final")) return 2;
-
+        if (fase.getFaseInicialMataMata() != null) {
+            return fase.getFaseInicialMataMata().getNumeroTimes();
+        }
         return 16;
     }
 
@@ -190,7 +181,7 @@ public class TransicaoFaseService {
         FaseTorneio faseNova = faseRepository.findById(novaFaseId)
                 .orElseThrow(() -> new IllegalArgumentException("Fase não encontrada."));
 
-        boolean ehFaseInicial = (faseNova.getOrdem() == 1) || Boolean.TRUE.equals(faseNova.getFaseInicialMataMata());
+        boolean ehFaseInicial = (faseNova.getOrdem() == 1);
 
         if (ehFaseInicial) {
             List<ParticipacaoFase> atuais = participacaoRepository.findByFase(faseNova);
