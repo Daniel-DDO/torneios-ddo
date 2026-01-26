@@ -42,12 +42,18 @@ public class TransicaoFaseService {
             throw new IllegalStateException("A fase " + faseNova.getNome() + " não possui algoritmo configurado.");
         }
 
-        boolean ehFaseInicial = (faseNova.getOrdem() == 1) || Boolean.TRUE.equals(faseNova.getFaseInicialMataMata());
+        boolean ehFaseInicial = (faseNova.getOrdem() == 1) || Boolean.TRUE.equals(faseNova.getFaseInicialMataMata() != null); // Pequena correção de null check
 
-        if (ehFaseInicial) {
+        if (ehFaseInicial && faseNova.getOrdem() == 1) { // Reforço de lógica para garantir
+            gerarMataMataSemOrigem(faseNova);
+        } else if (Boolean.TRUE.equals(faseNova.getFaseInicialMataMata() != null) && faseNova.getOrdem() == 1) {
             gerarMataMataSemOrigem(faseNova);
         } else {
-            transicionarDaFaseAnterior(faseNova);
+            if(faseNova.getOrdem() == 1) {
+                gerarMataMataSemOrigem(faseNova);
+            } else {
+                transicionarDaFaseAnterior(faseNova);
+            }
         }
     }
 
@@ -59,8 +65,13 @@ public class TransicaoFaseService {
         }
 
         int qtdEsperada = determinarQuantidadeClassificados(fase);
+
         if (participantesAtuais.size() != qtdEsperada) {
-            throw new IllegalArgumentException("Quantidade incorreta de times. Esperado: " + qtdEsperada + ", Encontrado: " + participantesAtuais.size());
+            throw new IllegalArgumentException(String.format("Quantidade incorreta de times para %s (%s). Esperado: %d, Encontrado: %d",
+                    fase.getAlgoritmoMataMata(),
+                    fase.getFaseInicialMataMata(),
+                    qtdEsperada,
+                    participantesAtuais.size()));
         }
 
         if (fase.getAlgoritmoMataMata() == AlgoritmoGeracaoMataMata.POTES_MANUAIS) {
@@ -87,7 +98,7 @@ public class TransicaoFaseService {
                     String.format("Fase anterior tem apenas %d participantes, mas a fase '%s' está configurada (%s) para exigir %d classificados.",
                             classificadosLiga.size(),
                             faseNova.getNome(),
-                            faseNova.getFaseInicialMataMata(), // Mostra qual enum está configurado no erro
+                            faseNova.getFaseInicialMataMata(),
                             quantidadeClassificados)
             );
         }
@@ -171,8 +182,14 @@ public class TransicaoFaseService {
     }
 
     private int determinarQuantidadeClassificados(FaseTorneio fase) {
-        if (fase.getFaseInicialMataMata() != null) {
-            return fase.getFaseInicialMataMata().getNumeroTimes();
+        FaseMataMata etapa = fase.getFaseInicialMataMata();
+
+        if (etapa != null) {
+            if (fase.getAlgoritmoMataMata() == AlgoritmoGeracaoMataMata.COPA_LIGA
+                    && etapa == FaseMataMata.OITAVAS) {
+                return 8;
+            }
+            return etapa.getNumeroTimes();
         }
         return 16;
     }
@@ -223,11 +240,6 @@ public class TransicaoFaseService {
         return new PreviaClassificadosDTO(faseAnterior.getId(), faseAnterior.getNome(), qtd, listaResumo);
     }
 
-    /**
-     * Recebe a lista de 4 eliminados da Liga Real e os distribui nas Quartas da Copa Liga.
-     * @param idFaseCopaLiga O ID da fase da Copa Liga (onde estão as partidas geradas).
-     * @param eliminadosLigaReal A lista original das participações na Liga Real (serão convertidas).
-     */
     @Transactional
     public void distribuirEliminadosCopaLiga(String idFaseCopaLiga, List<ParticipacaoFase> eliminadosLigaReal) {
 
