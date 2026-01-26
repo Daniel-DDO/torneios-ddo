@@ -23,6 +23,8 @@ public class GeradorMataMataFactory {
                 estrategias.put(AlgoritmoGeracaoMataMata.SORTEIO_TOTAL, strategy);
             } else if (strategy instanceof GeradorMataMataPotesManuaisStrategy) {
                 estrategias.put(AlgoritmoGeracaoMataMata.POTES_MANUAIS, strategy);
+            } else if (strategy instanceof GeradorCopaLigaStrategy) {
+                estrategias.put(AlgoritmoGeracaoMataMata.COPA_LIGA, strategy);
             }
         }
     }
