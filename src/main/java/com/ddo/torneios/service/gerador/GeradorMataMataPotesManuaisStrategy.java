@@ -16,7 +16,7 @@ public class GeradorMataMataPotesManuaisStrategy extends GeradorMataMataBase imp
             throw new IllegalArgumentException("Para Mata-Mata, o número total de participantes deve ser PAR.");
         }
 
-        validarQuantidadeParticipantes(n, fase.getFaseInicialMataMata());
+        validarQuantidadeParticipantes(n, fase);
 
         List<ParticipacaoFase> poteA = new ArrayList<>();
         List<ParticipacaoFase> poteB = new ArrayList<>();

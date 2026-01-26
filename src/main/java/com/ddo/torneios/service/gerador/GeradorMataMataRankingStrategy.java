@@ -15,7 +15,7 @@ public class GeradorMataMataRankingStrategy extends GeradorMataMataBase implemen
             throw new IllegalArgumentException("Para Mata-Mata por ranking, o número de participantes deve ser PAR.");
         }
 
-        validarQuantidadeParticipantes(n, fase.getFaseInicialMataMata());
+        validarQuantidadeParticipantes(n, fase);
 
         List<ParticipacaoFase> ranking = new ArrayList<>(participantes);
 

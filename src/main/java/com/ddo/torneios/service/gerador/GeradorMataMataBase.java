@@ -109,12 +109,19 @@ public abstract class GeradorMataMataBase {
         return lista;
     }
 
-    protected void validarQuantidadeParticipantes(int n, FaseMataMata etapa) {
+    protected void validarQuantidadeParticipantes(int n, FaseTorneio fase) {
+        FaseMataMata etapa = fase.getFaseInicialMataMata();
         int esperado = etapa.getNumeroTimes();
+
+        if (fase.getAlgoritmoMataMata() == AlgoritmoGeracaoMataMata.COPA_LIGA
+                && etapa == FaseMataMata.OITAVAS) {
+            esperado = 8;
+        }
+
         if (n != esperado) {
             throw new IllegalArgumentException(
-                    String.format("Erro de consistência: A fase %s exige exatos %d jogadores, mas foram enviados %d.",
-                            etapa.name(), esperado, n)
+                    String.format("Erro de consistência: A fase %s exige exatos %d jogadores (Algoritmo: %s), mas foram enviados %d.",
+                            etapa.name(), esperado, fase.getAlgoritmoMataMata(), n)
             );
         }
     }

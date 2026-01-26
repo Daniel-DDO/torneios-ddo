@@ -15,7 +15,7 @@ public class GeradorMataMataSorteioTotalStrategy extends GeradorMataMataBase imp
             throw new IllegalArgumentException("Número de participantes deve ser PAR e maior que 1 para o sorteio total.");
         }
 
-        validarQuantidadeParticipantes(n, fase.getFaseInicialMataMata());
+        validarQuantidadeParticipantes(n, fase);
 
         List<ParticipacaoFase> sorteio = new ArrayList<>(participantes);
 
