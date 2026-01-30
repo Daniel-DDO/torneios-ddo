@@ -40,6 +40,15 @@ public class Lance {
 
     private LocalDateTime dataHoraLance;
 
+    private LocalDateTime dataLance;
+
+    @PrePersist
+    public void prePersist() {
+        if (this.dataLance == null) {
+            this.dataLance = LocalDateTime.now();
+        }
+    }
+
     public Lance(Leilao leilao, Jogador jogador, Clube clube, BigDecimal valor, Integer prioridade) {
         this.leilao = leilao;
         this.jogador = jogador;
