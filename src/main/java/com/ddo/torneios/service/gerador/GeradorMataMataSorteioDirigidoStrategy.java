@@ -10,58 +10,88 @@ public class GeradorMataMataSorteioDirigidoStrategy extends GeradorMataMataBase 
     @Override
     public List<Partida> gerar(FaseTorneio fase, List<ParticipacaoFase> participantes) {
         int n = participantes.size();
+
         if (n < 4 || n % 2 != 0) {
             throw new IllegalArgumentException("Para sorteio dirigido, o número de participantes deve ser PAR e >= 4.");
         }
-        validarQuantidadeParticipantes(n, fase.getFaseInicialMataMata());
+
+        validarQuantidadeParticipantes(n, fase);
 
         List<ParticipacaoFase> ranking = new ArrayList<>(participantes);
-        ranking.sort(Comparator.comparing(ParticipacaoFase::getPosicaoClassificacao));
+
+        ranking.sort(Comparator.comparing(ParticipacaoFase::getPosicaoClassificacao, Comparator.nullsLast(Comparator.naturalOrder())));
+
+        //DEBUG:
+        System.out.println(">>> DEBUG SORTEIO DIRIGIDO (Top 4):");
+        for (int i = 0; i < Math.min(ranking.size(), 4); i++) {
+            ParticipacaoFase p = ranking.get(i);
+            String nome = (p.getJogadorClube() != null) ? p.getJogadorClube().getJogador().getNome() : "N/A";
+            System.out.println(String.format("Pos %d: %s (Classificação DB: %d)",
+                    i+1, nome, p.getPosicaoClassificacao()));
+        }
 
         int totalConfrontos = n / 2;
         int meioChave = totalConfrontos / 2;
 
         List<ParticipacaoFase> poteA = new ArrayList<>(ranking.subList(0, totalConfrontos));
         List<ParticipacaoFase> poteB = new ArrayList<>(ranking.subList(totalConfrontos, n));
+
+        Collections.shuffle(poteB);
         Collections.shuffle(poteB);
 
         ParticipacaoFase[] cabecasDeChave = new ParticipacaoFase[totalConfrontos];
         Random random = new Random();
 
-        //rank 1 e rank 2 para posicionamento especial
         ParticipacaoFase rank1 = poteA.remove(0);
         ParticipacaoFase rank2 = poteA.remove(0);
 
-        //slots pares (2, 4, 6, 8...) separados por metade superior e inferior
-        List<Integer> slotsParesSuperior = gerarSlotsPares(1, meioChave);
-        List<Integer> slotsParesInferior = gerarSlotsPares(meioChave + 1, totalConfrontos);
+        List<Integer> slotsParesEsquerda = gerarSlotsPares(1, meioChave);
+        List<Integer> slotsParesDireita = gerarSlotsPares(meioChave + 1, totalConfrontos);
 
-        boolean rank1NoSuperior = random.nextBoolean();
-        if (rank1NoSuperior) {
-            posicionarEmSlotAleatorio(cabecasDeChave, rank1, slotsParesSuperior, random);
-            posicionarEmSlotAleatorio(cabecasDeChave, rank2, slotsParesInferior, random);
+        boolean rank1NaEsquerda = random.nextBoolean();
+
+        if (rank1NaEsquerda) {
+            posicionarEmSlotAleatorio(cabecasDeChave, rank1, slotsParesEsquerda, random);
+            posicionarEmSlotAleatorio(cabecasDeChave, rank2, slotsParesDireita, random);
         } else {
-            posicionarEmSlotAleatorio(cabecasDeChave, rank1, slotsParesInferior, random);
-            posicionarEmSlotAleatorio(cabecasDeChave, rank2, slotsParesSuperior, random);
+            posicionarEmSlotAleatorio(cabecasDeChave, rank1, slotsParesDireita, random);
+            posicionarEmSlotAleatorio(cabecasDeChave, rank2, slotsParesEsquerda, random);
         }
 
         Collections.shuffle(poteA);
         Iterator<ParticipacaoFase> it = poteA.iterator();
+
         for (int i = 0; i < totalConfrontos; i++) {
             if (cabecasDeChave[i] == null) {
                 cabecasDeChave[i] = it.next();
             }
         }
 
-        List<Partida> partidas = new ArrayList<>();
+        List<Partida> partidasGeradas = new ArrayList<>();
+        FaseMataMata faseInicial = fase.getFaseInicialMataMata();
+        String nomeFaseLog = faseInicial.name();
+
         for (int i = 0; i < totalConfrontos; i++) {
-            partidas.addAll(criarConfronto(fase, i + 1, cabecasDeChave[i], poteB.get(i), "Sorteio Dirigido"));
+            List<Partida> confronto = criarConfronto(
+                    fase,
+                    i + 1,
+                    cabecasDeChave[i],
+                    poteB.get(i),
+                    nomeFaseLog
+            );
+
+            confronto.forEach(p -> p.setEtapaMataMata(faseInicial));
+
+            partidasGeradas.addAll(confronto);
         }
 
-        return partidas;
+        vincularProximasFases(partidasGeradas, fase);
+
+        return partidasGeradas;
     }
 
     private void posicionarEmSlotAleatorio(ParticipacaoFase[] grid, ParticipacaoFase p, List<Integer> slots, Random r) {
+        if (slots.isEmpty()) return;
         int escolhido = slots.get(r.nextInt(slots.size()));
         grid[escolhido - 1] = p;
     }

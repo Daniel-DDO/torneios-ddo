@@ -91,8 +91,7 @@ public class Jogador implements UserDetails {
 
     private LocalDateTime validadeCodigoReivindicacao;
 
-    @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.EAGER)
-    @JoinColumn(name = "jogador_id")
+    @OneToMany(mappedBy = "jogador", cascade = CascadeType.ALL, fetch = FetchType.EAGER)
     private List<Conquista> conquistas = new ArrayList<>();
 
     public Jogador(String nome, String discord) {

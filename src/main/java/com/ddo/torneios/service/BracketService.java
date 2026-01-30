@@ -156,7 +156,13 @@ public class BracketService {
         if (golsTimeB > golsTimeA) return timeB;
 
         if (volta.houvePenaltis()) {
-            return volta.getVencedor();
+            var penaltis = volta.getPenaltis();
+
+            if (penaltis.getGolsMandante() > penaltis.getGolsVisitante()) {
+                return volta.getMandante();
+            } else if (penaltis.getGolsVisitante() > penaltis.getGolsMandante()) {
+                return volta.getVisitante();
+            }
         }
 
         return null;

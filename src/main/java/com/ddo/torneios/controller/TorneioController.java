@@ -1,9 +1,10 @@
 package com.ddo.torneios.controller;
 
-import com.ddo.torneios.dto.ParametrosEconomicosDTO;
-import com.ddo.torneios.dto.TorneioDTO;
+import com.ddo.torneios.dto.*;
 import com.ddo.torneios.request.TorneioRequest;
+import com.ddo.torneios.service.ClassificacaoService;
 import com.ddo.torneios.service.EconomiaService;
+import com.ddo.torneios.service.MercadoFinanceiroService;
 import com.ddo.torneios.service.TorneioService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,6 +23,12 @@ public class TorneioController {
 
     @Autowired
     private EconomiaService economiaService;
+
+    @Autowired
+    private ClassificacaoService classificacaoService;
+
+    @Autowired
+    private MercadoFinanceiroService mercadoFinanceiroService;
 
     @PostMapping("/criar")
     public ResponseEntity<TorneioDTO> criarTorneio(@RequestBody @Valid TorneioRequest request) {
@@ -47,9 +54,23 @@ public class TorneioController {
         return ResponseEntity.ok(torneios);
     }
 
-    @GetMapping("/transparencia")
+    @GetMapping("/transparencia-economica")
     public ResponseEntity<ParametrosEconomicosDTO> getRegrasEconomicas() {
         return ResponseEntity.ok(economiaService.getParametrosTransparencia());
+    }
+
+    @GetMapping("/mercado")
+    public ResponseEntity<ResumoEconomicoDTO> getResumoMercado() {
+        ResumoEconomicoDTO resumo = mercadoFinanceiroService.consultarSituacaoAtual();
+        return ResponseEntity.ok(resumo);
+    }
+
+    @GetMapping("/transparencia")
+    public ResponseEntity<TransparenciaCompletaDTO> getTransparencia() {
+        ParametrosEconomicosDTO economico = economiaService.getParametrosTransparencia();
+        ParametrosCoeficienteDTO coeficiente = classificacaoService.getParametrosPublicos();
+
+        return ResponseEntity.ok(new TransparenciaCompletaDTO(economico, coeficiente));
     }
 
 }

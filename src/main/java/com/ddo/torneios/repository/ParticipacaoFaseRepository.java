@@ -25,4 +25,8 @@ public interface ParticipacaoFaseRepository extends JpaRepository<ParticipacaoFa
             "WHERE LOWER(p.jogadorClube.jogador.nome) LIKE LOWER(CONCAT('%', :termo, '%')) " +
             "OR LOWER(p.jogadorClube.jogador.discord) LIKE LOWER(CONCAT('%', :termo, '%'))")
     List<ParticipacaoFase> buscarTop10PorNomeOuDiscord(@Param("termo") String termo, Pageable pageable);
+
+    List<ParticipacaoFase> findByFaseIdOrderByPontosDescVitoriasDescSaldoGolsDescGolsProDesc(String faseId, Pageable pageable);
+
+    List<ParticipacaoFase> findByFaseIdOrderByPosicaoClassificacaoAsc(String faseId, Pageable pageable);
 }

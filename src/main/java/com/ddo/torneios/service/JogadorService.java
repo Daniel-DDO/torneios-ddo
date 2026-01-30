@@ -7,6 +7,7 @@ import com.ddo.torneios.exception.RegraNegocioException;
 import com.ddo.torneios.model.Avatar;
 import com.ddo.torneios.model.Cargo;
 import com.ddo.torneios.model.Jogador;
+import com.ddo.torneios.model.StatusJogador;
 import com.ddo.torneios.repository.JogadorRepository;
 import com.ddo.torneios.request.*;
 import jakarta.persistence.EntityNotFoundException;
@@ -475,4 +476,14 @@ public class JogadorService {
                 j.getPontosCoeficiente()
         );
     }
+
+    @Transactional
+    public void alterarStatusJogador(String idJogador, StatusJogador novoStatus) {
+        Jogador jogador = jogadorRepository.findById(idJogador)
+                .orElseThrow(() -> new RuntimeException("Jogador não encontrado"));
+
+        jogador.setStatusJogador(novoStatus);
+        jogadorRepository.save(jogador);
+    }
+
 }

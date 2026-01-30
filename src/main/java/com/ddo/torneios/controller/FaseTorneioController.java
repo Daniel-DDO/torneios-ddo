@@ -1,15 +1,18 @@
 package com.ddo.torneios.controller;
 
 import com.ddo.torneios.dto.*;
-import com.ddo.torneios.model.FaseTorneio;
-import com.ddo.torneios.model.ZonaFase;
+import com.ddo.torneios.model.*;
 import com.ddo.torneios.repository.FaseTorneioRepository;
+import com.ddo.torneios.repository.ParticipacaoFaseRepository;
 import com.ddo.torneios.request.FaseTorneioRequest;
 import com.ddo.torneios.service.ClassificacaoService;
 import com.ddo.torneios.service.ExportService;
 import com.ddo.torneios.service.FaseTorneioService;
+import com.ddo.torneios.service.TransicaoFaseService;
+import com.ddo.torneios.service.gerador.GeradorCopaLigaStrategy;
 import com.ddo.torneios.service.gerador.GeradorPartidasService;
 import jakarta.validation.Valid;
+import lombok.Data;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -35,6 +38,12 @@ public class FaseTorneioController {
 
     @Autowired
     private GeradorPartidasService geradorService;
+
+    @Autowired
+    private ParticipacaoFaseRepository participacaoRepository;
+
+    @Autowired
+    private TransicaoFaseService transicaoFaseService;
 
     @PostMapping("/criar")
     public ResponseEntity<FaseTorneioDTO> criarFase(@RequestBody @Valid FaseTorneioRequest request) {
@@ -124,5 +133,99 @@ public class FaseTorneioController {
         geradorService.atualizarEstadioFinalManualmente(faseId, dto.novoEstadio());
 
         return ResponseEntity.ok().build();
+    }
+
+    @Autowired
+    private TransicaoFaseService transicaoService;
+
+    @PostMapping("/{faseId}/gerar-mata-mata")
+    public ResponseEntity<String> gerarMataMata(@PathVariable String faseId) {
+        try {
+            transicaoService.inicializarFaseMataMata(faseId);
+            return ResponseEntity.ok("Processo de geração de mata-mata iniciado com sucesso.");
+        } catch (IllegalArgumentException | IllegalStateException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.internalServerError().body("Erro interno ao gerar mata-mata: " + e.getMessage());
+        }
+    }
+
+    @PostMapping("/{faseId}/confirmar-mata-mata-manual")
+    public ResponseEntity<String> confirmarMataMataManual(@PathVariable String faseId) {
+        try {
+            transicaoService.confirmarMataMataManual(faseId);
+            return ResponseEntity.ok("Partidas geradas com sucesso baseadas na configuração manual dos potes!");
+        } catch (IllegalArgumentException | IllegalStateException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.internalServerError().body("Erro ao confirmar mata-mata manual: " + e.getMessage());
+        }
+    }
+
+    @GetMapping("/{faseId}/previa-classificados")
+    public ResponseEntity<PreviaClassificadosDTO> getPreviaClassificados(@PathVariable String faseId) {
+        return ResponseEntity.ok(transicaoService.obterPreviaClassificados(faseId));
+    }
+
+    @Data
+    public static class GeracaoPartidasDTO {
+        private AlgoritmoGeracaoMataMata algoritmoMataMata;
+        private AlgoritmoGeracaoLiga algoritmoLiga;
+    }
+
+    /**
+     * Endpoint UNIVERSAL de geração.
+     * Serve para: Sorteio Total, Dirigido, Copa Real, Copa Liga, Pontos Corridos, etc.
+     * O Service cuida de limpar dados antigos e chamar a factory correta.
+     */
+    @PostMapping("/{faseId}/gerar")
+    public ResponseEntity<?> gerarPartidas(
+            @PathVariable String faseId,
+            @RequestBody(required = false) GeracaoPartidasDTO params) {
+
+        try {
+            AlgoritmoGeracaoMataMata algMata = params != null ? params.getAlgoritmoMataMata() : null;
+            AlgoritmoGeracaoLiga algLiga = params != null ? params.getAlgoritmoLiga() : null;
+
+            geradorService.gerarEstruturaFase(faseId, algMata, algLiga);
+
+            return ResponseEntity.ok("Partidas geradas com sucesso!");
+
+        } catch (IllegalArgumentException | IllegalStateException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.internalServerError().body("Erro interno ao gerar partidas: " + e.getMessage());
+        }
+    }
+
+    @PostMapping("/{faseId}/copa-liga/importar-eliminados")
+    public ResponseEntity<?> importarEliminadosCopaLiga(
+            @PathVariable String faseId,
+            @RequestBody List<String> idsParticipacoesLigaReal) {
+
+        try {
+            if (idsParticipacoesLigaReal == null || idsParticipacoesLigaReal.size() != 4) {
+                return ResponseEntity.badRequest().body("É necessário enviar exatamente 4 IDs de eliminados.");
+            }
+
+            List<ParticipacaoFase> eliminados = participacaoRepository.findAllById(idsParticipacoesLigaReal);
+
+            if (eliminados.size() != 4) {
+                return ResponseEntity.badRequest().body("Alguns IDs fornecidos não foram encontrados no banco.");
+            }
+
+            transicaoFaseService.distribuirEliminadosCopaLiga(faseId, eliminados);
+
+            return ResponseEntity.ok("Eliminados importados e distribuídos nas Quartas de Final com sucesso!");
+
+        } catch (IllegalArgumentException | IllegalStateException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.internalServerError().body("Erro ao importar eliminados: " + e.getMessage());
+        }
     }
 }

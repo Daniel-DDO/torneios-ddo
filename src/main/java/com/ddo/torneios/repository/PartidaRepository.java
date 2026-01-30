@@ -70,4 +70,10 @@ public interface PartidaRepository extends JpaRepository<Partida, String> {
     List<Partida> findPorFaseEJogador(@Param("faseId") String faseId,
                                       @Param("jogadorId") String jogadorId);
 
+    int countByFaseId(String id);
+
+    boolean existsByFaseId(String faseId);
+
+    @Query("SELECT p FROM Partida p WHERE p.fase.id = :faseId ORDER BY p.chaveIndex ASC")
+    List<Partida> findPartidasMataMataOrdenadas(@Param("faseId") String faseId);
 }

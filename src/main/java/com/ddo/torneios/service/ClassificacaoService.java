@@ -1,6 +1,7 @@
 package com.ddo.torneios.service;
 
 import com.ddo.torneios.dto.LinhaClassificacaoDTO;
+import com.ddo.torneios.dto.ParametrosCoeficienteDTO;
 import com.ddo.torneios.dto.PartidaDTO;
 import com.ddo.torneios.model.*;
 import com.ddo.torneios.repository.*;
@@ -24,8 +25,6 @@ public class ClassificacaoService {
     @Autowired
     private ParticipacaoFaseRepository participacaoRepository;
     @Autowired
-    private FaseTorneioRepository faseRepository;
-    @Autowired
     private PartidaRepository partidaRepository;
     @Autowired
     private JogadorClubeRepository jogadorClubeRepository;
@@ -39,6 +38,10 @@ public class ClassificacaoService {
     private InsigniaService insigniaService;
     @Autowired
     private BracketService bracketService;
+    @Autowired
+    private TituloService tituloService;
+    @Autowired
+    private ClubeRepository clubeRepository;
 
     @Transactional
     public void registrarResultado(PartidaDTO dto) {
@@ -92,6 +95,17 @@ public class ClassificacaoService {
         partida.setCartoesAmarelosVisitante(dto.cartoesAmarelosVisitante());
         partida.setCartoesVermelhosVisitante(dto.cartoesVermelhosVisitante());
 
+        partida.setHouveProrrogacao(dto.houveProrrogacao());
+
+        if (dto.houvePenaltis()) {
+            DisputaPenaltis penaltis = new DisputaPenaltis();
+            penaltis.setGolsMandante(dto.penaltisMandante());
+            penaltis.setGolsVisitante(dto.penaltisVisitante());
+            partida.setPenaltis(penaltis);
+        } else {
+            partida.setPenaltis(null);
+        }
+
         atribuirHistoricoJogadores(partida, pMandante, pVisitante);
 
         JogadorClube jcMandante = partida.getMandante();
@@ -105,6 +119,12 @@ public class ClassificacaoService {
         jGlobalMandante.setPontosCoeficiente(safeAdd(jGlobalMandante.getPontosCoeficiente(), coefM));
         jGlobalVisitante.setPontosCoeficiente(safeAdd(jGlobalVisitante.getPontosCoeficiente(), coefV));
 
+        partidaRepository.save(partida);
+        jogadorClubeRepository.saveAll(List.of(jcMandante, jcVisitante));
+        jogadorRepository.saveAll(List.of(jGlobalMandante, jGlobalVisitante));
+        participacaoRepository.saveAll(List.of(pMandante, pVisitante));
+        economiaService.processarEconomiaPartida(partida);
+
         if (fase.getTipoTorneio() == TipoTorneio.MATA_MATA) {
             processarMataMata(dto, pMandante, pVisitante);
             bracketService.processarAvancoVencedor(partida);
@@ -112,12 +132,39 @@ public class ClassificacaoService {
             processarLiga(dto, pMandante, pVisitante);
         }
 
-        partidaRepository.save(partida);
-        jogadorClubeRepository.saveAll(List.of(jcMandante, jcVisitante));
-        jogadorRepository.saveAll(List.of(jGlobalMandante, jGlobalVisitante));
-        participacaoRepository.saveAll(List.of(pMandante, pVisitante));
 
-        economiaService.processarEconomiaPartida(partida);
+        if (partida.getTipoPartida() == TipoPartida.FINAL_UNICA) {
+            jGlobalMandante.setFinais((jGlobalMandante.getFinais() == null ? 0 : jGlobalMandante.getFinais()) + 1);
+            jGlobalVisitante.setFinais((jGlobalVisitante.getFinais() == null ? 0 : jGlobalVisitante.getFinais()) + 1);
+
+            jogadorRepository.saveAll(List.of(jGlobalMandante, jGlobalVisitante));
+
+            JogadorClube vencedor = null;
+
+            if (dto.wo()) {
+                if (dto.golsMandante() > dto.golsVisitante()) vencedor = jcMandante;
+                else vencedor = jcVisitante;
+            } else if (dto.houvePenaltis()) {
+                if (dto.penaltisMandante() > dto.penaltisVisitante()) vencedor = jcMandante;
+                else vencedor = jcVisitante;
+            } else {
+                if (dto.golsMandante() > dto.golsVisitante()) vencedor = jcMandante;
+                else if (dto.golsVisitante() > dto.golsMandante()) vencedor = jcVisitante;
+            }
+
+            if (vencedor != null) {
+                Competicao competicao = fase.getTorneio().getCompeticao();
+
+                if (competicao != null && competicao.getTitulo() != null) {
+                    String tituloId = competicao.getTitulo().getId();
+                    String nomeEdicao = fase.getTorneio().getNome();
+
+                    tituloService.concederTituloAoJogador(vencedor.getId(), tituloId, nomeEdicao);
+                } else {
+                    log.warn("Campeão definido (Partida {}), mas não foi possível localizar o Título vinculado à Competição.", partida.getId());
+                }
+            }
+        }
 
         List<LinhaClassificacaoDTO> novaClassificacao = calcularClassificacao(fase);
         atualizarPosicoesNoBanco(novaClassificacao, fase);
@@ -319,6 +366,23 @@ public class ClassificacaoService {
         return tp == TipoPartida.MATA_MATA_VOLTA || tp == TipoPartida.FINAL_VOLTA;
     }
 
+    //coeficiente
+    private static final double TETO_GOLS = 6.0;
+    private static final double PTS_VITORIA = 4.0;
+    private static final double PTS_EMPATE = 2.0;
+    private static final double PTS_GOLEADA = 2.0;
+    private static final double PTS_CLEAN_SHEET = 2.0;
+
+    private static final double PTS_DERROTA = -1.0;
+    private static final double PENALIDADE_AMARELO = -0.5;
+    private static final int LIMITE_AMARELOS = 2;
+    private static final double PENALIDADE_VERMELHO = -2.0;
+    private static final double PENALIDADE_GOL_SOFRIDO = -0.5;
+
+    private static final double DIVISOR_NIVEL_TIME = 4.0;
+    private static final double PONTUACAO_MINIMA = -8.0;
+    private static final double PONTUACAO_MAXIMA = 14;
+
     private BigDecimal calcularCoeficiente(
             Integer golsM, Integer golsS, boolean vit, boolean emp, boolean der,
             Integer ca, Integer cv, BigDecimal estrelas, Integer valorTorneio
@@ -330,26 +394,48 @@ public class ClassificacaoService {
         double nivelTime = estrelas != null ? estrelas.doubleValue() : 1.0;
         double pesoTorneio = valorTorneio != null ? valorTorneio / 100.0 : 1.0;
 
-        double pontosGols = Math.min(gm, 6.0);
-        double pontosResultadoPos = vit ? 4.0 : (emp ? 2.0 : 0.0);
-        double pontosGoleada = (gm - gs > 3) ? 2.0 : 0.0;
-        double pontosCleanSheet = (gs == 0) ? 2.0 : 0.0;
+        double pontosGols = Math.min(gm, TETO_GOLS);
+        double pontosResultadoPos = vit ? PTS_VITORIA : (emp ? PTS_EMPATE : 0.0);
+        double pontosGoleada = (gm - gs > 3) ? PTS_GOLEADA : 0.0;
+        double pontosCleanSheet = (gs == 0) ? PTS_CLEAN_SHEET : 0.0;
 
         double positivos = pontosGols + pontosResultadoPos + pontosGoleada + pontosCleanSheet;
 
-        double pontosResultadoNeg = der ? -1.0 : 0.0;
-        double penalidadeAmarelos = Math.max(0, amt - 2) * -0.5;
-        double penalidadeVermelhos = vrm * -2.0;
-        double penalidadeGolsSofridos = gs * -0.5;
+        double pontosResultadoNeg = der ? PTS_DERROTA : 0.0;
+
+        double penalidadeAmarelos = Math.max(0, amt - LIMITE_AMARELOS) * PENALIDADE_AMARELO;
+        double penalidadeVermelhos = vrm * PENALIDADE_VERMELHO;
+        double penalidadeGolsSofridos = gs * PENALIDADE_GOL_SOFRIDO;
 
         double negativos = pontosResultadoNeg + penalidadeAmarelos + penalidadeVermelhos + penalidadeGolsSofridos;
 
-        double multiplicadorNegativos = 1.0 + (nivelTime - 1.0) / 4.0;
+        double multiplicadorNegativos = 1.0 + (nivelTime - 1.0) / DIVISOR_NIVEL_TIME;
         double negativosAjustados = negativos * multiplicadorNegativos;
 
         double pontosTotais = (positivos + negativosAjustados) * pesoTorneio;
 
-        return BigDecimal.valueOf(Math.max(pontosTotais, -8.0)).setScale(2, RoundingMode.HALF_UP);
+        pontosTotais = Math.max(pontosTotais, PONTUACAO_MINIMA);
+        pontosTotais = Math.min(pontosTotais, PONTUACAO_MAXIMA);
+
+        return BigDecimal.valueOf(pontosTotais).setScale(2, RoundingMode.HALF_UP);
+    }
+
+    public ParametrosCoeficienteDTO getParametrosPublicos() {
+        return ParametrosCoeficienteDTO.builder()
+                .tetoGols(TETO_GOLS)
+                .pontosVitoria(PTS_VITORIA)
+                .pontosEmpate(PTS_EMPATE)
+                .pontosGoleada(PTS_GOLEADA)
+                .pontosCleanSheet(PTS_CLEAN_SHEET)
+                .pontosDerrota(PTS_DERROTA)
+                .penalidadePorAmarelo(PENALIDADE_AMARELO)
+                .limiteAmarelosSemPunicao(LIMITE_AMARELOS)
+                .penalidadePorVermelho(PENALIDADE_VERMELHO)
+                .penalidadePorGolSofrido(PENALIDADE_GOL_SOFRIDO)
+                .divisorNivelTime(DIVISOR_NIVEL_TIME)
+                .pontuacaoMinima(PONTUACAO_MINIMA)
+                .pontuacaoMaxima(PONTUACAO_MAXIMA)
+                .build();
     }
 
     private StatusClassificacao definirProximoStatus(FaseMataMata etapaAtual) {

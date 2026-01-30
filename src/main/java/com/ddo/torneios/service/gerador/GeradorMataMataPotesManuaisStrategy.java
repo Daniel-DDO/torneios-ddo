@@ -10,25 +10,67 @@ public class GeradorMataMataPotesManuaisStrategy extends GeradorMataMataBase imp
 
     @Override
     public List<Partida> gerar(FaseTorneio fase, List<ParticipacaoFase> participantes) {
-        List<ParticipacaoFase> pote1 = participantes.stream()
-                .filter(p -> "Pote 1".equalsIgnoreCase(p.getGrupo())).collect(Collectors.toList());
-        List<ParticipacaoFase> pote2 = participantes.stream()
-                .filter(p -> "Pote 2".equalsIgnoreCase(p.getGrupo())).collect(Collectors.toList());
+        int n = participantes.size();
 
-        if (pote1.size() != pote2.size()) {
-            throw new IllegalArgumentException("Os potes devem ter o mesmo tamanho para o sorteio.");
+        if (n < 2 || n % 2 != 0) {
+            throw new IllegalArgumentException("Para Mata-Mata, o número total de participantes deve ser PAR.");
         }
 
-        Collections.shuffle(pote1);
-        Collections.shuffle(pote2);
+        validarQuantidadeParticipantes(n, fase);
 
-        List<Partida> partidasIniciais = new ArrayList<>();
-        for (int i = 0; i < pote1.size(); i++) {
-            partidasIniciais.addAll(criarConfronto(fase, i + 1, pote1.get(i), pote2.get(i), "Potes Manuais"));
+        List<ParticipacaoFase> poteA = new ArrayList<>();
+        List<ParticipacaoFase> poteB = new ArrayList<>();
+        List<ParticipacaoFase> semPote = new ArrayList<>();
+
+        for (ParticipacaoFase p : participantes) {
+            String grupo = p.getGrupo() != null ? p.getGrupo().trim() : "";
+
+            if (grupo.equalsIgnoreCase("Pote A") || grupo.equalsIgnoreCase("A")) {
+                poteA.add(p);
+            } else if (grupo.equalsIgnoreCase("Pote B") || grupo.equalsIgnoreCase("B")) {
+                poteB.add(p);
+            } else {
+                semPote.add(p);
+            }
         }
 
-        vincularProximasFases(partidasIniciais, fase);
+        if (!semPote.isEmpty()) {
+            throw new IllegalArgumentException("Existem participantes sem pote definido: " +
+                    semPote.stream().map(p -> p.getJogadorClube().getJogador().getNome()).collect(Collectors.joining(", ")));
+        }
 
-        return partidasIniciais;
+        if (poteA.size() != poteB.size()) {
+            throw new IllegalArgumentException(String.format("Os potes estão desbalanceados! Pote A: %d, Pote B: %d. Eles devem ter o mesmo tamanho.", poteA.size(), poteB.size()));
+        }
+
+        Collections.shuffle(poteA);
+        Collections.shuffle(poteB);
+
+        List<Partida> partidasGeradas = new ArrayList<>();
+        FaseMataMata faseInicial = fase.getFaseInicialMataMata();
+        String nomeFaseLog = faseInicial.name();
+
+        int totalConfrontos = poteA.size();
+
+        for (int i = 0; i < totalConfrontos; i++) {
+            ParticipacaoFase timeA = poteA.get(i);
+            ParticipacaoFase timeB = poteB.get(i);
+
+            List<Partida> confronto = criarConfronto(
+                    fase,
+                    i + 1,
+                    timeA,
+                    timeB,
+                    nomeFaseLog
+            );
+
+            confronto.forEach(p -> p.setEtapaMataMata(faseInicial));
+
+            partidasGeradas.addAll(confronto);
+        }
+
+        vincularProximasFases(partidasGeradas, fase);
+
+        return partidasGeradas;
     }
 }

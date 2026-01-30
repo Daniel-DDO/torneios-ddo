@@ -3,8 +3,9 @@ package com.ddo.torneios.model;
 import jakarta.persistence.*;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
-import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 @Data
 @NoArgsConstructor
@@ -16,15 +17,30 @@ public class Conquista {
     private String id;
 
     @ManyToOne
-    @JoinColumn(name = "titulo_id")
+    @JoinColumn(name = "titulo_id", nullable = false)
     private Titulo titulo;
 
-    private LocalDate dataConquista;
+    private LocalDateTime dataConquista;
     private String nomeEdicao;
 
-    public Conquista(Titulo titulo, String nomeEdicao) {
+    @Column(columnDefinition = "TEXT")
+    private String imagem;
+
+    @ManyToOne
+    @JoinColumn(name = "clube_id")
+    @JsonIgnore
+    private Clube clube;
+
+    @ManyToOne
+    @JoinColumn(name = "jogador_id")
+    @JsonIgnore
+    private Jogador jogador;
+
+    public Conquista(Titulo titulo, String nomeEdicao, Clube clube, Jogador jogador) {
         this.titulo = titulo;
-        this.dataConquista = LocalDate.now();
         this.nomeEdicao = nomeEdicao;
+        this.clube = clube;
+        this.jogador = jogador;
+        this.dataConquista = LocalDateTime.now();
     }
 }

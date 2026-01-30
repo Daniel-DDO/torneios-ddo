@@ -1,6 +1,9 @@
 package com.ddo.torneios.controller;
 
+import com.ddo.torneios.model.Conquista;
 import com.ddo.torneios.model.Titulo;
+import com.ddo.torneios.request.ConcederTituloLegadoRequest;
+import com.ddo.torneios.request.ConcederTituloRequest;
 import com.ddo.torneios.request.TituloRequest;
 import com.ddo.torneios.service.TituloService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -40,15 +43,44 @@ public class TituloController {
     }
 
     @PostMapping("/conceder")
-    public ResponseEntity<?> concederTitulo(@RequestBody Map<String, String> payload) {
+    public ResponseEntity<?> concederTitulo(@RequestBody ConcederTituloRequest request) {
         try {
-            String jogadorId = payload.get("jogadorId");
-            String nomeTitulo = payload.get("nomeTitulo");
-            String edicao = payload.get("edicao");
+            Conquista conquistaGerada = tituloService.concederTituloAoJogador(
+                    request.jogadorClubeId(),
+                    request.idTitulo(),
+                    request.edicao()
+            );
 
-            tituloService.concederTituloAoJogador(jogadorId, nomeTitulo, edicao);
+            return ResponseEntity.ok(Map.of(
+                    "mensagem", "Título concedido com sucesso!",
+                    "idConquista", conquistaGerada.getId(),
+                    "imagemGerada", conquistaGerada.getImagem() != null ? conquistaGerada.getImagem() : "",
+                    "nomeTitulo", conquistaGerada.getTitulo().getNome()
+            ));
 
-            return ResponseEntity.ok(Map.of("mensagem", "Título concedido com sucesso!"));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("erro", e.getMessage()));
+        }
+    }
+
+    @PostMapping("/conceder-legado")
+    public ResponseEntity<?> concederTituloLegado(@RequestBody ConcederTituloLegadoRequest request) {
+        try {
+            Conquista conquistaGerada = tituloService.concederTituloLegado(
+                    request.jogadorId(),
+                    request.clubeId(),
+                    request.idTitulo(),
+                    request.edicao(),
+                    request.data()
+            );
+
+            return ResponseEntity.ok(Map.of(
+                    "mensagem", "Título legado concedido com sucesso!",
+                    "idConquista", conquistaGerada.getId(),
+                    "imagemGerada", conquistaGerada.getImagem() != null ? conquistaGerada.getImagem() : "",
+                    "nomeTitulo", conquistaGerada.getTitulo().getNome()
+            ));
+
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(Map.of("erro", e.getMessage()));
         }
