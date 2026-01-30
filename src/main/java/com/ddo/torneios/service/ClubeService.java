@@ -1,5 +1,6 @@
 package com.ddo.torneios.service;
 
+import com.ddo.torneios.dto.ClubeLeilaoDTO;
 import com.ddo.torneios.dto.PaginacaoDTO;
 import com.ddo.torneios.exception.ClubeExisteException;
 import com.ddo.torneios.model.Clube;
@@ -10,11 +11,11 @@ import jakarta.persistence.EntityNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.data.domain.Pageable;
 
 import java.util.Collections;
 import java.util.List;
@@ -209,5 +210,20 @@ public class ClubeService {
 
     public LigaClube[] listarLigas() {
         return LigaClube.values();
+    }
+
+    public Page<ClubeLeilaoDTO> listarTodos(Pageable pageable) {
+        return clubeRepository.findAll(pageable)
+                .map(ClubeLeilaoDTO::new);
+    }
+
+    public Page<ClubeLeilaoDTO> listarApenasSelecoes(Pageable pageable) {
+        return clubeRepository.findByLigaClube(LigaClube.SELECAO, pageable)
+                .map(ClubeLeilaoDTO::new);
+    }
+
+    public Page<ClubeLeilaoDTO> listarClubes(Pageable pageable) {
+        return clubeRepository.findByLigaClubeNot(LigaClube.SELECAO, pageable)
+                .map(ClubeLeilaoDTO::new);
     }
 }

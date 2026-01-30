@@ -26,7 +26,7 @@ public class LeilaoService {
     private static final BigDecimal INCREMENTO_MINIMO = new BigDecimal("1000");
 
     @Transactional
-    public Leilao iniciarLeilao(String temporadaId, LocalDateTime dataFim) {
+    public Leilao iniciarLeilao(String temporadaId, LocalDateTime dataFim, boolean isSelecao) {
         Temporada temporada = temporadaRepository.findById(temporadaId)
                 .orElseThrow(() -> new RuntimeException("Temporada não encontrada"));
 
@@ -40,10 +40,15 @@ public class LeilaoService {
         leilao.setDataFim(dataFim);
         leilao.setAtivo(true);
         leilao.setDescricao("Janela de Transferências - " + temporada.getNome());
+        leilao.setSelecao(isSelecao);
 
         Leilao leilaoSalvo = leilaoRepository.save(leilao);
         messagingTemplate.convertAndSend("/topic/leilao/status", "ABERTO");
         return leilaoSalvo;
+    }
+
+    public List<HistoricoLancesClubeDTO> obterHistoricoLances(String leilaoId, String clubeId) {
+        return lanceRepository.buscarHistoricoLancesDoClube(leilaoId, clubeId);
     }
 
     @Transactional
@@ -281,5 +286,17 @@ public class LeilaoService {
                 lancesDoClube.size(),
                 ranking
         );
+    }
+
+    public List<Leilao> listarPorTemporada(String temporadaId) {
+        return leilaoRepository.findByTemporadaIdOrderByDataInicioDesc(temporadaId);
+    }
+
+    public boolean existeLeilaoParaTemporada(String temporadaId) {
+        return leilaoRepository.existsByTemporadaId(temporadaId);
+    }
+
+    public List<LanceResumoDTO> obterLancesAtuais(String leilaoId) {
+        return lanceRepository.encontrarMaioresLancesPorLeilao(leilaoId);
     }
 }

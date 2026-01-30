@@ -1,9 +1,6 @@
 package com.ddo.torneios.controller;
 
-import com.ddo.torneios.dto.DisputaClubeDTO;
-import com.ddo.torneios.dto.RealizarLanceDTO;
-import com.ddo.torneios.dto.ResultadoLeilaoDTO;
-import com.ddo.torneios.dto.StatusLanceJogadorDTO;
+import com.ddo.torneios.dto.*;
 import com.ddo.torneios.model.Leilao;
 import com.ddo.torneios.request.IniciarLeilaoRequest;
 import com.ddo.torneios.service.LeilaoService;
@@ -43,7 +40,7 @@ public class LeilaoController {
     public ResponseEntity<Leilao> iniciarLeilao(@RequestBody @Valid IniciarLeilaoRequest request) {
 
         LocalDateTime dataFim = LocalDateTime.now().plusHours(request.horasDuracao());
-        Leilao leilao = leilaoService.iniciarLeilao(request.temporadaId(), dataFim);
+        Leilao leilao = leilaoService.iniciarLeilao(request.temporadaId(), dataFim, request.isSelecao());
         return ResponseEntity.ok(leilao);
     }
 
@@ -51,6 +48,23 @@ public class LeilaoController {
     public ResponseEntity<String> finalizarLeilao(@PathVariable String id) {
         leilaoService.finalizarLeilao(id);
         return ResponseEntity.ok("Leilão finalizado e processado com sucesso. Vencedores definidos.");
+    }
+
+    @GetMapping("/{id}/lances-atuais")
+    public ResponseEntity<List<LanceResumoDTO>> verLancesAtuais(@PathVariable String id) {
+        var lances = leilaoService.obterLancesAtuais(id);
+        return ResponseEntity.ok(lances);
+    }
+
+    // --- NOVO ENDPOINT DE HISTÓRICO POR CLUBE ---
+    // Retorna: Lista de todos os jogadores que deram lance nesse clube
+    @GetMapping("/{leilaoId}/historico/{clubeId}")
+    public ResponseEntity<List<HistoricoLancesClubeDTO>> verHistoricoDoClube(
+            @PathVariable String leilaoId,
+            @PathVariable String clubeId) {
+
+        var historico = leilaoService.obterHistoricoLances(leilaoId, clubeId);
+        return ResponseEntity.ok(historico);
     }
 
     @GetMapping("/{id}/resultado-final")
@@ -70,5 +84,17 @@ public class LeilaoController {
         String jogadorId = authentication.getName();
         var status = leilaoService.obterStatusDoJogador(id, jogadorId);
         return ResponseEntity.ok(status);
+    }
+
+    @GetMapping("/temporada/{temporadaId}")
+    public ResponseEntity<List<Leilao>> listarPorTemporada(@PathVariable String temporadaId) {
+        List<Leilao> leiloes = leilaoService.listarPorTemporada(temporadaId);
+        return ResponseEntity.ok(leiloes);
+    }
+
+    @GetMapping("/temporada/{temporadaId}/existe")
+    public ResponseEntity<Boolean> verificarSeExisteLeilao(@PathVariable String temporadaId) {
+        boolean existe = leilaoService.existeLeilaoParaTemporada(temporadaId);
+        return ResponseEntity.ok(existe);
     }
 }
