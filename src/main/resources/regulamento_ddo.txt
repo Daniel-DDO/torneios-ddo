@@ -157,20 +157,27 @@ A final será disputada em PC neutro, com transmissão ao vivo, e terá duraçã
 
 Sobre a Supercopa Real:
 
-A Supercopa Real será disputada pelos finalistas da Liga Real DDO – Divisão do Rei e da Copa da Liga DDO, totalizando quatro participantes.
+    A Supercopa Real será disputada pelos finalistas da Liga Real DDO – Divisão do Rei e da Copa Real DDO, totalizando quatro participantes.
+    As semifinais terão partidas com duração de 12 minutos, e a final será realizada em jogo único de 15 minutos, no modo Copa Konami, com transmissão ao vivo para maior engajamento de jogadores e espectadores. Em caso de ausência de um ou mais participantes titulares, serão chamados suplentes seguindo a ordem de prioridade abaixo:
 
-As semifinais terão partidas com duração de 12 minutos, e a final será realizada em jogo único de 15 minutos, no modo Copa Konami, com transmissão ao vivo para maior engajamento de jogadores e espectadores. Em caso de ausência de um ou mais participantes titulares, serão chamados suplentes seguindo a ordem de prioridade abaixo:
+    Suplente de 1ª ordem: Jogador eliminado pelo ausente na fase anterior. Por exemplo, se um finalista da Liga Real DDO não puder participar, o suplente será o jogador que ele eliminou na semifinal.
+    Suplente de 2ª ordem: Caso o suplente direto também esteja indisponível, será convocado o jogador eliminado na outra semifinal (contra-chave), desde que disponível e com desempenho satisfatório.
+    Suplente de 3ª ordem: Se os dois suplentes anteriores não puderem participar, será escolhido um jogador eliminado nas quartas de final da mesma competição (Liga Real DDO ou Copa da Liga DDO), priorizando aquele com melhor desempenho individual ou com placar mais apertado na eliminação.
 
-	Suplente de 1ª ordem: Jogador eliminado pelo ausente na fase anterior. Por exemplo, se um finalista da Liga Real DDO não puder participar, o suplente será o jogador que ele eliminou na semifinal.
-	Suplente de 2ª ordem: Caso o suplente direto também esteja indisponível, será convocado o jogador eliminado na outra semifinal (contra-chave), desde que disponível e com desempenho satisfatório.
-	Suplente de 3ª ordem: Se os dois suplentes anteriores não puderem participar, será escolhido um jogador eliminado nas quartas de final da mesma competição (Liga Real DDO ou Copa da Liga DDO), priorizando aquele com melhor desempenho individual ou com placar mais apertado na eliminação.
+    Observação: essa regra dos suplentes serve para qualquer torneio/competição realizada. Exemplo: Liga Real DDO, Copa das Nações DDO, Copa Real DDO...
+    Essa regra de suplência aplica-se tanto aos ausentes oriundos da Liga Real DDO quanto da Copa Real DDO.
+    Caso haja coincidência parcial ou total entre os finalistas da Liga Real DDO – Divisão do Rei e da Copa Real DDO, a composição da Supercopa Real será ajustada da seguinte forma:
 
-Observação: essa regra dos suplentes serve para qualquer torneio/competição realizada. Exemplo: Liga Real DDO, Copa das Nações DDO, Copa Real DDO...
+Coincidência parcial:
+Se apenas um jogador for comum às duas finais, será convocado um jogador adicional, oriundo da Liga Real DDO, escolhido entre os semifinalistas eliminados, com base no melhor coeficiente ou desempenho geral na temporada.
 
-Essa regra de suplência aplica-se tanto aos ausentes oriundos da Liga Real DDO quanto da Copa da Liga DDO.
+Coincidência total:
+Se os dois finalistas da Liga Real DDO e da Copa Real DDO forem exatamente os mesmos, serão convocados dois jogadores adicionais, sendo:
+a) um da Liga Real DDO;
+b) um da Copa Real DDO;
 
-Todos os jogadores classificados para a Supercopa Real deverão confirmar sua participação junto à comissão administrativa no prazo máximo de 48 horas após a divulgação dos finalistas. Caso algum jogador não confirme sua presença dentro desse prazo, será automaticamente considerado ausente, e a substituição será realizada conforme a ordem de suplência estabelecida nesta regra. A não confirmação dentro do prazo poderá resultar em sanções disciplinares, conforme avaliação da comissão administrativa, visando garantir a organização e o bom andamento da competição.
-
+Em ambos os casos, os jogadores convidados deverão ser escolhidos entre os semifinalistas eliminados da respectiva competição, priorizando o melhor coeficiente ou desempenho geral na temporada.
+Todos os jogadores classificados para a Supercopa Real deverão confirmar sua participação junto à comissão administrativa no prazo máximo de 48 horas após a divulgação dos finalistas. Caso algum jogador não confirme sua presença dentro desse prazo, será automaticamente considerado ausente, e a substituição será realizada conforme a ordem de suplência estabelecida nesta regra. A não confirmação dentro do prazo poderá resultar em sanções disciplinares, conforme avaliação da comissão administrativa, visando garantir a organização e o bom andamento da competição. A prioridade de escolha para a supercopa é o melhor coeficiente. Em caso de empate no coeficiente, quem tiver mais vitórias. Se ainda persistir o empate, faz-se um confronto direto de repescagem, conforme regulamento.
 
 Sobre a Taça Real de Divisões:
 
@@ -450,6 +457,7 @@ Punição: Derrota por W.O. + Perda de 3 pontos adicionais na tabela.
 Reincidência gera expulsão. Na fase de mata-mata é eliminação direta.
 
 *Observação: embaixadinhas ou dribles desnecessários, mesmo dentro da área defensiva (seja no final do jogo ou não), quando realizados com a clara intenção de provocar ou humilhar o adversário, serão considerados antijogo e punidos a mesma regra de 'Pausas para esfriar o jogo' (perda de 2 pontos ou gol mandatório), podendo levar à expulsão em casos de reincidência ou má-fé evidente.
+*Não será caracterizado como ato de humilhação a utilização do goleiro na área adversária durante cobranças de falta ou de escanteio, independentemente do momento da partida, do placar ou da fase da competição, desde que a jogada ocorra exclusivamente dentro do contexto normal da cobrança e sem qualquer outra conduta antidesportiva associada.
 
 5. Decisão e Aplicação
 
@@ -954,4 +962,4 @@ ________________________________________
 Daniel DDO
 Presidente das Competições Oficiais
 Torneios DDO
-Data: 29 de dezembro 
+Data: 30 de janeiro de 2026
