@@ -56,8 +56,6 @@ public class LeilaoController {
         return ResponseEntity.ok(lances);
     }
 
-    // --- NOVO ENDPOINT DE HISTÓRICO POR CLUBE ---
-    // Retorna: Lista de todos os jogadores que deram lance nesse clube
     @GetMapping("/{leilaoId}/historico/{clubeId}")
     public ResponseEntity<List<HistoricoLancesClubeDTO>> verHistoricoDoClube(
             @PathVariable String leilaoId,
@@ -96,5 +94,18 @@ public class LeilaoController {
     public ResponseEntity<Boolean> verificarSeExisteLeilao(@PathVariable String temporadaId) {
         boolean existe = leilaoService.existeLeilaoParaTemporada(temporadaId);
         return ResponseEntity.ok(existe);
+    }
+
+    @GetMapping("/{leilaoId}/meus-lances")
+    public ResponseEntity<List<LanceDetalheDTO>> verMeusLancesParaEdicao(
+            @PathVariable String leilaoId,
+            Authentication authentication) {
+
+        String jogadorId = "";
+        jogadorId = authentication.getName();
+
+        List<LanceDetalheDTO> lances = leilaoService.buscarLancesDoJogador(leilaoId, jogadorId);
+
+        return ResponseEntity.ok(lances);
     }
 }

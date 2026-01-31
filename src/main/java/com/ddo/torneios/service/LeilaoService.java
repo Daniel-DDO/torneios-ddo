@@ -11,6 +11,7 @@ import org.springframework.stereotype.Service;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 public class LeilaoService {
@@ -67,49 +68,80 @@ public class LeilaoService {
                 .max(BigDecimal::compareTo).orElse(BigDecimal.ZERO);
 
         if (jogador.getSaldoVirtual().compareTo(maiorValorOfertado) < 0) {
-            throw new RuntimeException("Saldo insuficiente para cobrir sua maior oferta de " + maiorValorOfertado);
+            throw new RuntimeException("Saldo insuficiente. Seu saldo é " + jogador.getSaldoVirtual() +
+                    " mas sua maior oferta é " + maiorValorOfertado);
+        }
+
+        Set<Integer> prioridadesRecebidas = dto.preferencias().stream()
+                .map(ItemLanceDTO::prioridade)
+                .collect(Collectors.toSet());
+
+        List<Lance> lancesNoBanco = lanceRepository.findByLeilaoAndJogador(leilao, jogador);
+
+        for (Lance lanceAntigo : lancesNoBanco) {
+            if (!prioridadesRecebidas.contains(lanceAntigo.getPrioridade())) {
+                lanceRepository.delete(lanceAntigo);
+            }
         }
 
         for (ItemLanceDTO item : dto.preferencias()) {
-            Clube clube = clubeRepository.findById(item.clubeId())
+            Clube clubeAlvo = clubeRepository.findById(item.clubeId())
                     .orElseThrow(() -> new RuntimeException("Clube inválido: " + item.clubeId()));
 
-            if (item.valor().compareTo(clube.getLanceMinimo()) < 0) {
-                throw new RuntimeException("O lance para " + clube.getNome() + " é menor que o mínimo do clube.");
+            if (item.valor().compareTo(clubeAlvo.getLanceMinimo()) < 0) {
+                throw new RuntimeException("O lance para " + clubeAlvo.getNome() +
+                        " deve ser no mínimo " + clubeAlvo.getLanceMinimo());
             }
 
-            Optional<Lance> meuLanceOpt = lanceRepository.findByLeilaoAndJogadorAndPrioridade(leilao, jogador, item.prioridade());
+            Optional<Lance> meuLanceNessaPrioridade = lancesNoBanco.stream()
+                    .filter(l -> l.getPrioridade().equals(item.prioridade()))
+                    .findFirst();
 
-            if (meuLanceOpt.isPresent()) {
-                if (item.valor().compareTo(meuLanceOpt.get().getValor()) < 0) {
-                    throw new RuntimeException("Você não pode diminuir o valor da prioridade " + item.prioridade());
-                }
-                Lance l = meuLanceOpt.get();
-                l.setClube(clube);
-                l.setValor(item.valor());
-                l.setDataHoraLance(LocalDateTime.now());
-                lanceRepository.save(l);
-            } else {
-                Optional<Lance> liderAtualOpt = lanceRepository.findTopByLeilaoAndClubeOrderByValorDesc(leilao, clube);
+            if (meuLanceNessaPrioridade.isPresent()) {
+                Lance lanceExistente = meuLanceNessaPrioridade.get();
+                boolean mesmoClube = lanceExistente.getClube().getId().equals(clubeAlvo.getId());
 
-                if (liderAtualOpt.isPresent()) {
-                    Lance liderAtual = liderAtualOpt.get();
-                    if (!liderAtual.getJogador().getId().equals(jogadorId)) {
-                        BigDecimal valorMinimoNecessario = liderAtual.getValor().add(INCREMENTO_MINIMO);
-                        if (item.valor().compareTo(valorMinimoNecessario) < 0) {
-                            throw new RuntimeException("Para superar o líder em " + clube.getNome() +
-                                    ", você precisa ofertar pelo menos " + valorMinimoNecessario);
-                        }
+                if (mesmoClube) {
+                    if (item.valor().compareTo(lanceExistente.getValor()) < 0) {
+                        throw new RuntimeException("Na prioridade " + item.prioridade() +
+                                " (" + clubeAlvo.getNome() + "), você não pode diminuir o valor ofertado.");
                     }
+                } else {
+                    validarSeSuperaLider(leilao, clubeAlvo, jogadorId, item.valor());
                 }
 
-                Lance novoLance = new Lance(leilao, jogador, clube, item.valor(), item.prioridade());
+                lanceExistente.setClube(clubeAlvo);
+                lanceExistente.setValor(item.valor());
+                lanceExistente.setDataHoraLance(LocalDateTime.now());
+                lanceRepository.save(lanceExistente);
+
+            } else {
+                validarSeSuperaLider(leilao, clubeAlvo, jogadorId, item.valor());
+
+                Lance novoLance = new Lance(leilao, jogador, clubeAlvo, item.valor(), item.prioridade());
                 lanceRepository.save(novoLance);
             }
         }
 
         messagingTemplate.convertAndSend("/topic/leilao/" + leilao.getId() + "/feed",
                 new NotificacaoLanceDTO(jogador.getNome(), LocalDateTime.now()));
+    }
+
+    private void validarSeSuperaLider(Leilao leilao, Clube clube, String meuJogadorId, BigDecimal meuValor) {
+        Optional<Lance> liderAtualOpt = lanceRepository.findTopByLeilaoAndClubeOrderByValorDesc(leilao, clube);
+
+        if (liderAtualOpt.isPresent()) {
+            Lance liderAtual = liderAtualOpt.get();
+
+            if (!liderAtual.getJogador().getId().equals(meuJogadorId)) {
+                BigDecimal valorMinimoNecessario = liderAtual.getValor().add(INCREMENTO_MINIMO);
+
+                if (meuValor.compareTo(valorMinimoNecessario) < 0) {
+                    throw new RuntimeException("Para entrar na disputa pelo " + clube.getNome() +
+                            ", seu lance deve superar o líder atual. Mínimo: " + valorMinimoNecessario);
+                }
+            }
+        }
     }
 
     @Transactional
@@ -225,7 +257,7 @@ public class LeilaoService {
     /**
      * Simula o resultado do leilão para dizer ao jogador como ele está em cada prioridade.
      */
-    @Transactional // Apenas leitura
+    @Transactional
     public List<StatusLanceJogadorDTO> obterStatusDoJogador(String leilaoId, String jogadorId) {
         Map<String, Lance> resultadoSimulado = executarAlgoritmoGaleShapley(leilaoId);
 
@@ -298,5 +330,21 @@ public class LeilaoService {
 
     public List<LanceResumoDTO> obterLancesAtuais(String leilaoId) {
         return lanceRepository.encontrarMaioresLancesPorLeilao(leilaoId);
+    }
+
+    public List<LanceDetalheDTO> buscarLancesDoJogador(String leilaoId, String jogadorId) {
+        List<Lance> lances = lanceRepository.findByLeilaoIdAndJogadorIdOrderByPrioridadeAsc(leilaoId, jogadorId);
+
+        return lances.stream()
+                .map(lance -> new LanceDetalheDTO(
+                        lance.getId(),
+                        lance.getClube().getId(),
+                        lance.getClube().getNome(),
+                        lance.getClube().getImagem(),
+                        lance.getClube().getLanceMinimo(),
+                        lance.getValor(),
+                        lance.getPrioridade()
+                ))
+                .toList();
     }
 }

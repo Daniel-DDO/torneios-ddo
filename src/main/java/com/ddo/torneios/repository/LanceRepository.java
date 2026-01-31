@@ -53,4 +53,8 @@ public interface LanceRepository extends JpaRepository<Lance, String> {
         ORDER BY l.valor DESC
     """)
     List<HistoricoLancesClubeDTO> buscarHistoricoLancesDoClube(String leilaoId, String clubeId);
+
+    List<Lance> findByLeilaoIdAndJogadorIdOrderByPrioridadeAsc(String leilaoId, String jogadorId);
+
+    List<Lance> findByLeilaoAndJogador(Leilao leilao, Jogador jogador);
 }
