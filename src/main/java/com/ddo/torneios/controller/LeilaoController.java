@@ -118,4 +118,12 @@ public class LeilaoController {
     public ResponseEntity<List<ClubeDisputadoDTO>> getMaisDisputados(@PathVariable String leilaoId) {
         return ResponseEntity.ok(leilaoService.obterTermometro(leilaoId));
     }
+
+    @PostMapping("/lance/v2")
+    public ResponseEntity<Void> realizarLanceV2(@RequestBody @Valid RealizarLanceDTO dto,
+                                                Authentication authentication) {
+        String jogadorId = authentication.getName();
+        leilaoService.registrarLancesBlindado(jogadorId, dto);
+        return ResponseEntity.ok().build();
+    }
 }
