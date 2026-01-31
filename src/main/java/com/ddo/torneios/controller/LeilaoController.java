@@ -108,4 +108,14 @@ public class LeilaoController {
 
         return ResponseEntity.ok(lances);
     }
+
+    @GetMapping("/{leilaoId}/feed")
+    public ResponseEntity<List<FeedItemDTO>> getFeedInicial(@PathVariable String leilaoId) {
+        return ResponseEntity.ok(leilaoService.obterFeedInicial(leilaoId));
+    }
+
+    @GetMapping("/{leilaoId}/mais-disputados")
+    public ResponseEntity<List<ClubeDisputadoDTO>> getMaisDisputados(@PathVariable String leilaoId) {
+        return ResponseEntity.ok(leilaoService.obterTermometro(leilaoId));
+    }
 }

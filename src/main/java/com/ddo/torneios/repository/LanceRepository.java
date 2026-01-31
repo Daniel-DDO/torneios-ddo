@@ -1,13 +1,17 @@
 package com.ddo.torneios.repository;
 
+import com.ddo.torneios.dto.ClubeDisputadoDTO;
+import com.ddo.torneios.dto.FeedItemDTO;
 import com.ddo.torneios.dto.HistoricoLancesClubeDTO;
 import com.ddo.torneios.dto.LanceResumoDTO;
 import com.ddo.torneios.model.Clube;
 import com.ddo.torneios.model.Jogador;
 import com.ddo.torneios.model.Lance;
 import com.ddo.torneios.model.Leilao;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -57,4 +61,29 @@ public interface LanceRepository extends JpaRepository<Lance, String> {
     List<Lance> findByLeilaoIdAndJogadorIdOrderByPrioridadeAsc(String leilaoId, String jogadorId);
 
     List<Lance> findByLeilaoAndJogador(Leilao leilao, Jogador jogador);
+
+    @Query("SELECT new com.ddo.torneios.dto.FeedItemDTO(" +
+            "l.jogador.id, " +
+            "l.jogador.nome, " +
+            "l.clube.id, " +
+            "l.clube.nome, " +
+            "l.clube.imagem, " +
+            "l.valor, " +
+            "l.dataHoraLance) " +
+            "FROM Lance l " +
+            "WHERE l.leilao.id = :leilaoId " +
+            "ORDER BY l.dataHoraLance DESC LIMIT 20")
+    List<FeedItemDTO> buscarUltimosLances(@Param("leilaoId") String leilaoId);
+
+    @Query("SELECT new com.ddo.torneios.dto.ClubeDisputadoDTO(" +
+            "c.id, " +
+            "c.nome, " +
+            "c.imagem, " +
+            "COUNT(l), " +
+            "MAX(l.valor)) " +
+            "FROM Lance l JOIN l.clube c " +
+            "WHERE l.leilao.id = :leilaoId " +
+            "GROUP BY c.id, c.nome, c.imagem " +
+            "ORDER BY COUNT(l) DESC, MAX(l.valor) DESC")
+    List<ClubeDisputadoDTO> buscarClubesMaisDisputados(@Param("leilaoId") String leilaoId, Pageable pageable);
 }

@@ -5,6 +5,7 @@ import com.ddo.torneios.model.*;
 import com.ddo.torneios.repository.*;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 
@@ -346,5 +347,13 @@ public class LeilaoService {
                         lance.getPrioridade()
                 ))
                 .toList();
+    }
+
+    public List<FeedItemDTO> obterFeedInicial(String leilaoId) {
+        return lanceRepository.buscarUltimosLances(leilaoId);
+    }
+
+    public List<ClubeDisputadoDTO> obterTermometro(String leilaoId) {
+        return lanceRepository.buscarClubesMaisDisputados(leilaoId, PageRequest.of(0, 10));
     }
 }
