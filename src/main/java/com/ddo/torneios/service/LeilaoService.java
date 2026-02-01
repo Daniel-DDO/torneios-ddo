@@ -448,10 +448,13 @@ public class LeilaoService {
     }
 
     public DisputaClubeDTO obterDetalhesDisputa(String leilaoId, String clubeId) {
+        Leilao leilao = leilaoRepository.findById(leilaoId)
+                .orElseThrow(() -> new RuntimeException("Leilão não encontrado"));
+
         Clube clube = clubeRepository.findById(clubeId)
                 .orElseThrow(() -> new RuntimeException("Clube não encontrado"));
 
-        List<Lance> lancesDoClube = lanceRepository.findByLeilaoIdAndClubeIdOrderByValorDesc(leilaoId, clubeId);
+        List<Lance> lancesDoClube = lanceRepository.findByLeilaoAndClubeOrderByPrioridadeAscValorDesc(leilao, clube);
 
         List<ItemDisputaDTO> ranking = lancesDoClube.stream()
                 .map(lance -> new ItemDisputaDTO(
@@ -505,5 +508,36 @@ public class LeilaoService {
 
     public List<ClubeDisputadoDTO> obterTermometro(String leilaoId) {
         return lanceRepository.buscarClubesMaisDisputados(leilaoId, PageRequest.of(0, 15));
+    }
+
+    public List<ResultadoParcialDTO> calcularResultadosParciais(String leilaoId) {
+        Leilao leilao = leilaoRepository.findById(leilaoId)
+                .orElseThrow(() -> new RuntimeException("Leilão não encontrado"));
+
+        List<Lance> todosLances = lanceRepository.findByLeilaoOrderByPrioridadeAscValorDesc(leilao);
+
+        List<ResultadoParcialDTO> resultados = new ArrayList<>();
+        Set<String> clubesJaProcessados = new HashSet<>();
+
+        for (Lance lance : todosLances) {
+            String clubeId = lance.getClube().getId();
+
+            if (!clubesJaProcessados.contains(clubeId)) {
+
+                resultados.add(new ResultadoParcialDTO(
+                        lance.getClube().getNome(),
+                        lance.getClube().getImagem(),
+                        lance.getJogador().getNome(),
+                        lance.getValor(),
+                        lance.getPrioridade()
+                ));
+
+                clubesJaProcessados.add(clubeId);
+            }
+        }
+
+        resultados.sort(Comparator.comparing(ResultadoParcialDTO::nomeClube));
+
+        return resultados;
     }
 }

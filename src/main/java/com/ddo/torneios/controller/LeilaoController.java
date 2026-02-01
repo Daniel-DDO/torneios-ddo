@@ -133,4 +133,10 @@ public class LeilaoController {
         leilaoService.resetarLancesDoJogador(leilaoId, jogadorId);
         return ResponseEntity.noContent().build();
     }
+
+    @GetMapping("/{leilaoId}/resultados-parciais")
+    public ResponseEntity<List<ResultadoParcialDTO>> verResultadosParciais(@PathVariable String leilaoId) {
+        List<ResultadoParcialDTO> resultado = leilaoService.calcularResultadosParciais(leilaoId);
+        return ResponseEntity.ok(resultado);
+    }
 }

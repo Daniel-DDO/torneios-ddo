@@ -90,4 +90,8 @@ public interface LanceRepository extends JpaRepository<Lance, String> {
     void deleteByLeilaoIdAndJogadorId(String leilaoId, String jogadorId);
 
     Optional<Lance> findTopByLeilaoAndClubeOrderByPrioridadeAscValorDesc(Leilao leilao, Clube clube);
+
+    List<Lance> findByLeilaoAndClubeOrderByPrioridadeAscValorDesc(Leilao leilao, Clube clube);
+
+    List<Lance> findByLeilaoOrderByPrioridadeAscValorDesc(Leilao leilao);
 }
