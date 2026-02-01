@@ -88,4 +88,6 @@ public interface LanceRepository extends JpaRepository<Lance, String> {
     List<ClubeDisputadoDTO> buscarClubesMaisDisputados(@Param("leilaoId") String leilaoId, Pageable pageable);
 
     void deleteByLeilaoIdAndJogadorId(String leilaoId, String jogadorId);
+
+    Optional<Lance> findTopByLeilaoAndClubeOrderByPrioridadeAscValorDesc(Leilao leilao, Clube clube);
 }

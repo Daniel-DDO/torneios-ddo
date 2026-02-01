@@ -99,17 +99,16 @@ public class LeilaoService {
 
     private void atualizarLanceExistente(Leilao leilao, Jogador jogador, Lance lance, ItemLanceDTO novoItem, Clube clube) {
         if (novoItem.valor().compareTo(lance.getValor()) < 0) {
-            throw new RuntimeException("Não é permitido diminuir o valor para " + clube.getNome() + ". Cancele o lance se desejar.");
+            throw new RuntimeException("Não é permitido diminuir o valor...");
         }
 
-        if (novoItem.valor().compareTo(lance.getValor()) > 0) {
-            validarSeSuperaLider(leilao, clube, jogador.getId(), novoItem.valor());
+        if (novoItem.valor().compareTo(lance.getValor()) > 0 || novoItem.prioridade() != lance.getPrioridade()) {
+            validarSeSuperaLider(leilao, clube, jogador.getId(), novoItem.valor(), novoItem.prioridade());
         }
 
         lance.setPrioridade(novoItem.prioridade());
         lance.setValor(novoItem.valor());
         lance.setDataHoraLance(LocalDateTime.now());
-
         lanceRepository.save(lance);
     }
 
@@ -118,7 +117,7 @@ public class LeilaoService {
             throw new RuntimeException("O lance mínimo para " + clube.getNome() + " é " + clube.getLanceMinimo());
         }
 
-        validarSeSuperaLider(leilao, clube, jogador.getId(), item.valor());
+        validarSeSuperaLider(leilao, clube, jogador.getId(), item.valor(), item.prioridade());
 
         Lance novo = new Lance();
         novo.setLeilao(leilao);
@@ -166,15 +165,29 @@ public class LeilaoService {
         }
     }
 
-    private void validarSeSuperaLider(Leilao leilao, Clube clube, String meuJogadorId, BigDecimal meuValor) {
-        Optional<Lance> liderAtualOpt = lanceRepository.findTopByLeilaoAndClubeOrderByValorDesc(leilao, clube);
+    private void validarSeSuperaLider(Leilao leilao, Clube clube, String meuJogadorId, BigDecimal meuValor, Integer minhaPrioridade) {
+        Optional<Lance> liderAtualOpt = lanceRepository.findTopByLeilaoAndClubeOrderByPrioridadeAscValorDesc(leilao, clube);
 
         if (liderAtualOpt.isPresent()) {
             Lance lider = liderAtualOpt.get();
-            if (!lider.getJogador().getId().equals(meuJogadorId)) {
-                BigDecimal minimoNecessario = lider.getValor().add(BigDecimal.valueOf(1000)); // Incremento fixo
+
+            if (lider.getJogador().getId().equals(meuJogadorId)) {
+                return;
+            }
+
+            int prioridadeLider = lider.getPrioridade();
+            BigDecimal valorLider = lider.getValor();
+
+            if (minhaPrioridade > prioridadeLider) {
+                throw new RuntimeException("O lance atual é de um jogador que escolheu este clube como "
+                        + prioridadeLider + "ª opção. Como sua prioridade é menor (" + minhaPrioridade + "ª), você não pode cobri-lo.");
+            }
+
+            if (minhaPrioridade == prioridadeLider) {
+                BigDecimal minimoNecessario = valorLider.add(BigDecimal.valueOf(1000));
                 if (meuValor.compareTo(minimoNecessario) < 0) {
-                    throw new RuntimeException("Para " + clube.getNome() + " você precisa ofertar no mínimo " + minimoNecessario);
+                    throw new RuntimeException("Para superar o líder atual (que também tem prioridade "
+                            + prioridadeLider + "), você precisa ofertar no mínimo D$ " + minimoNecessario);
                 }
             }
         }
@@ -259,7 +272,7 @@ public class LeilaoService {
                         " deve ser no mínimo " + clubeAlvo.getLanceMinimo());
             }
 
-            validarSeSuperaLider(leilao, clubeAlvo, jogadorId, item.valor());
+            validarSeSuperaLider(leilao, clubeAlvo, jogadorId, item.valor(), item.prioridade());
 
             Lance novoLance = new Lance();
             novoLance.setLeilao(leilao);
