@@ -56,103 +56,113 @@ public class LeilaoService {
 
     @Transactional
     public void registrarLances(String jogadorId, RealizarLanceDTO dto) {
-        Leilao leilao = leilaoRepository.findById(dto.leilaoId())
-                .orElseThrow(() -> new RuntimeException("Leilão não encontrado"));
+        Leilao leilao = validarLeilao(dto.leilaoId());
+        Jogador jogador = validarJogador(jogadorId);
+        validarSaldoGlobal(jogador, dto.preferencias());
 
-        if (!leilao.isAtivo()) throw new RuntimeException("O leilão não está ativo.");
-        if (leilao.getDataFim() != null && LocalDateTime.now().isAfter(leilao.getDataFim())) {
-            throw new RuntimeException("O tempo acabou.");
-        }
+        List<Lance> lancesNoBanco = lanceRepository.findByLeilaoAndJogador(leilao, jogador);
 
-        Jogador jogador = jogadorRepository.findById(jogadorId)
-                .orElseThrow(() -> new RuntimeException("Jogador não encontrado"));
+        Set<String> idsClubesNoPayload = dto.preferencias().stream()
+                .map(ItemLanceDTO::clubeId)
+                .collect(Collectors.toSet());
 
-        Set<String> clubesNoPayload = new HashSet<>();
+        removerLancesObsoletos(lancesNoBanco, idsClubesNoPayload);
+
+        lanceRepository.flush();
+
+        Map<String, Lance> mapaLancesExistentes = lancesNoBanco.stream()
+                .collect(Collectors.toMap(l -> l.getClube().getId(), l -> l));
+
         for (ItemLanceDTO item : dto.preferencias()) {
-            if (!clubesNoPayload.add(item.clubeId())) {
-                throw new RuntimeException("Você enviou lances duplicados para o mesmo clube.");
+            Clube clube = clubeRepository.findById(item.clubeId())
+                    .orElseThrow(() -> new RuntimeException("Clube inválido"));
+
+            if (mapaLancesExistentes.containsKey(clube.getId())) {
+                atualizarLanceExistente(leilao, jogador, mapaLancesExistentes.get(clube.getId()), item, clube);
+            } else {
+                criarNovoLance(leilao, jogador, clube, item);
             }
         }
 
-        BigDecimal maiorValorOfertado = dto.preferencias().stream()
+        notificarFeed(leilao, jogador);
+    }
+
+    private void removerLancesObsoletos(List<Lance> lancesNoBanco, Set<String> idsNoPayload) {
+        List<Lance> paraDeletar = lancesNoBanco.stream()
+                .filter(lance -> !idsNoPayload.contains(lance.getClube().getId()))
+                .toList();
+
+        if (!paraDeletar.isEmpty()) {
+            lanceRepository.deleteAll(paraDeletar);
+        }
+    }
+
+    private void atualizarLanceExistente(Leilao leilao, Jogador jogador, Lance lance, ItemLanceDTO novoItem, Clube clube) {
+        if (novoItem.valor().compareTo(lance.getValor()) < 0) {
+            throw new RuntimeException("Não é permitido diminuir o valor para " + clube.getNome() + ". Cancele o lance se desejar.");
+        }
+
+        if (novoItem.valor().compareTo(lance.getValor()) > 0) {
+            validarSeSuperaLider(leilao, clube, jogador.getId(), novoItem.valor());
+        }
+
+        lance.setPrioridade(novoItem.prioridade());
+        lance.setValor(novoItem.valor());
+        lance.setDataHoraLance(LocalDateTime.now());
+
+        lanceRepository.save(lance);
+    }
+
+    private void criarNovoLance(Leilao leilao, Jogador jogador, Clube clube, ItemLanceDTO item) {
+        if (item.valor().compareTo(clube.getLanceMinimo()) < 0) {
+            throw new RuntimeException("O lance mínimo para " + clube.getNome() + " é " + clube.getLanceMinimo());
+        }
+
+        validarSeSuperaLider(leilao, clube, jogador.getId(), item.valor());
+
+        Lance novo = new Lance();
+        novo.setLeilao(leilao);
+        novo.setJogador(jogador);
+        novo.setClube(clube);
+        novo.setValor(item.valor());
+        novo.setPrioridade(item.prioridade());
+        novo.setDataHoraLance(LocalDateTime.now());
+
+        lanceRepository.save(novo);
+    }
+
+    private Leilao validarLeilao(String leilaoId) {
+        Leilao leilao = leilaoRepository.findById(leilaoId)
+                .orElseThrow(() -> new RuntimeException("Leilão não encontrado"));
+
+        if (!leilao.isAtivo()) throw new RuntimeException("Leilão encerrado.");
+        if (leilao.getDataFim() != null && LocalDateTime.now().isAfter(leilao.getDataFim())) {
+            throw new RuntimeException("Tempo esgotado.");
+        }
+        return leilao;
+    }
+
+    private Jogador validarJogador(String jogadorId) {
+        return jogadorRepository.findById(jogadorId)
+                .orElseThrow(() -> new RuntimeException("Jogador inválido."));
+    }
+
+    private void validarSaldoGlobal(Jogador jogador, List<ItemLanceDTO> itens) {
+        BigDecimal maiorOferta = itens.stream()
                 .map(ItemLanceDTO::valor)
                 .max(BigDecimal::compareTo)
                 .orElse(BigDecimal.ZERO);
 
-        if (jogador.getSaldoVirtual().compareTo(maiorValorOfertado) < 0) {
-            throw new RuntimeException("Saldo insuficiente. Seu saldo é D$ " + jogador.getSaldoVirtual() +
-                    ", mas sua maior oferta é D$ " + maiorValorOfertado);
+        if (jogador.getSaldoVirtual().compareTo(maiorOferta) < 0) {
+            throw new RuntimeException("Saldo insuficiente (D$ " + jogador.getSaldoVirtual() +
+                    ") para cobrir sua maior oferta de D$ " + maiorOferta);
         }
 
-        List<Lance> lancesNoBanco = lanceRepository.findByLeilaoAndJogador(leilao, jogador);
-
-        Map<String, Lance> mapaLancesPorClube = lancesNoBanco.stream()
-                .collect(Collectors.toMap(
-                        l -> l.getClube().getId(),
-                        l -> l,
-                        (existente, novo) -> existente
-                ));
-
-        Set<String> clubesProcessados = new HashSet<>();
-
-        for (ItemLanceDTO item : dto.preferencias()) {
-            String clubeId = item.clubeId();
-            clubesProcessados.add(clubeId);
-
-            Clube clubeAlvo = clubeRepository.findById(clubeId)
-                    .orElseThrow(() -> new RuntimeException("Clube inválido ID: " + clubeId));
-
-            if (item.valor().compareTo(clubeAlvo.getLanceMinimo()) < 0) {
-                throw new RuntimeException("O lance para " + clubeAlvo.getNome() +
-                        " deve ser no mínimo " + clubeAlvo.getLanceMinimo());
+        Set<String> checkDuplicados = new HashSet<>();
+        for(ItemLanceDTO i : itens) {
+            if(!checkDuplicados.add(i.clubeId())) {
+                throw new RuntimeException("Existem clubes duplicados na sua lista de lances.");
             }
-
-            if (mapaLancesPorClube.containsKey(clubeId)) {
-                Lance lanceExistente = mapaLancesPorClube.get(clubeId);
-
-                if (item.valor().compareTo(lanceExistente.getValor()) < 0) {
-                    throw new RuntimeException("Você não pode diminuir o valor ofertado para o " + clubeAlvo.getNome());
-                }
-
-                if (item.valor().compareTo(lanceExistente.getValor()) > 0) {
-                    validarSeSuperaLider(leilao, clubeAlvo, jogadorId, item.valor());
-                }
-
-                lanceExistente.setPrioridade(item.prioridade());
-                lanceExistente.setValor(item.valor());
-                lanceExistente.setDataHoraLance(LocalDateTime.now());
-
-                lanceRepository.save(lanceExistente);
-
-            } else {
-                validarSeSuperaLider(leilao, clubeAlvo, jogadorId, item.valor());
-
-                Lance novoLance = new Lance();
-                novoLance.setLeilao(leilao);
-                novoLance.setJogador(jogador);
-                novoLance.setClube(clubeAlvo);
-                novoLance.setValor(item.valor());
-                novoLance.setPrioridade(item.prioridade());
-                novoLance.setDataHoraLance(LocalDateTime.now());
-
-                lanceRepository.save(novoLance);
-            }
-        }
-
-        for (Lance lanceAntigo : lancesNoBanco) {
-            boolean mantido = clubesProcessados.contains(lanceAntigo.getClube().getId());
-            boolean ehOObjetoOficial = mapaLancesPorClube.get(lanceAntigo.getClube().getId()) == lanceAntigo;
-
-            if (!mantido || !ehOObjetoOficial) {
-                lanceRepository.delete(lanceAntigo);
-            }
-        }
-
-        try {
-            messagingTemplate.convertAndSend("/topic/leilao/" + leilao.getId() + "/feed",
-                    new NotificacaoLanceDTO(jogador.getNome(), LocalDateTime.now()));
-        } catch (Exception e) {
-            System.err.println("Erro socket: " + e.getMessage());
         }
     }
 
@@ -160,18 +170,44 @@ public class LeilaoService {
         Optional<Lance> liderAtualOpt = lanceRepository.findTopByLeilaoAndClubeOrderByValorDesc(leilao, clube);
 
         if (liderAtualOpt.isPresent()) {
-            Lance liderAtual = liderAtualOpt.get();
-
-            if (!liderAtual.getJogador().getId().equals(meuJogadorId)) {
-                BigDecimal incremento = BigDecimal.valueOf(1000);
-                BigDecimal valorMinimoNecessario = liderAtual.getValor().add(incremento);
-
-                if (meuValor.compareTo(valorMinimoNecessario) < 0) {
-                    throw new RuntimeException("Lance inválido para " + clube.getNome() +
-                            ". O líder atual tem " + liderAtual.getValor() +
-                            ". Mínimo necessário: " + valorMinimoNecessario);
+            Lance lider = liderAtualOpt.get();
+            if (!lider.getJogador().getId().equals(meuJogadorId)) {
+                BigDecimal minimoNecessario = lider.getValor().add(BigDecimal.valueOf(1000)); // Incremento fixo
+                if (meuValor.compareTo(minimoNecessario) < 0) {
+                    throw new RuntimeException("Para " + clube.getNome() + " você precisa ofertar no mínimo " + minimoNecessario);
                 }
             }
+        }
+    }
+
+    private void notificarFeed(Leilao leilao, Jogador jogador) {
+        try {
+            messagingTemplate.convertAndSend("/topic/leilao/" + leilao.getId() + "/feed",
+                    new NotificacaoLanceDTO(jogador.getNome(), LocalDateTime.now()));
+        } catch (Exception e) {
+        }
+    }
+
+    @Transactional
+    public void resetarLancesDoJogador(String leilaoId, String jogadorId) {
+        Leilao leilao = leilaoRepository.findById(leilaoId)
+                .orElseThrow(() -> new RuntimeException("Leilão não encontrado"));
+
+        if (!leilao.isAtivo()) {
+            throw new RuntimeException("Não é possível resetar lances de um leilão encerrado.");
+        }
+
+        Jogador jogador = jogadorRepository.findById(jogadorId)
+                .orElseThrow(() -> new RuntimeException("Jogador não encontrado"));
+
+        lanceRepository.deleteByLeilaoIdAndJogadorId(leilaoId, jogadorId);
+        lanceRepository.flush();
+
+        try {
+            messagingTemplate.convertAndSend("/topic/leilao/" + leilao.getId() + "/feed",
+                    new NotificacaoLanceDTO(jogador.getNome(), LocalDateTime.now()));
+        } catch (Exception e) {
+            System.err.println("Erro socket: " + e.getMessage());
         }
     }
 
@@ -455,6 +491,6 @@ public class LeilaoService {
     }
 
     public List<ClubeDisputadoDTO> obterTermometro(String leilaoId) {
-        return lanceRepository.buscarClubesMaisDisputados(leilaoId, PageRequest.of(0, 10));
+        return lanceRepository.buscarClubesMaisDisputados(leilaoId, PageRequest.of(0, 15));
     }
 }

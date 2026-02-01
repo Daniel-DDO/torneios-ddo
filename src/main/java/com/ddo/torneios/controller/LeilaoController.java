@@ -126,4 +126,11 @@ public class LeilaoController {
         leilaoService.registrarLancesBlindado(jogadorId, dto);
         return ResponseEntity.ok().build();
     }
+
+    @DeleteMapping("/{leilaoId}/meus-lances")
+    public ResponseEntity<Void> resetarMeusLances(@PathVariable String leilaoId, Authentication authentication) {
+        String jogadorId = authentication.getName();
+        leilaoService.resetarLancesDoJogador(leilaoId, jogadorId);
+        return ResponseEntity.noContent().build();
+    }
 }

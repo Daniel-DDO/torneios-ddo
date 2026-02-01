@@ -86,4 +86,6 @@ public interface LanceRepository extends JpaRepository<Lance, String> {
             "GROUP BY c.id, c.nome, c.imagem " +
             "ORDER BY COUNT(l) DESC, MAX(l.valor) DESC")
     List<ClubeDisputadoDTO> buscarClubesMaisDisputados(@Param("leilaoId") String leilaoId, Pageable pageable);
+
+    void deleteByLeilaoIdAndJogadorId(String leilaoId, String jogadorId);
 }
