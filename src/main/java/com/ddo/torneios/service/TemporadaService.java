@@ -103,7 +103,7 @@ public class TemporadaService {
             throw new IllegalArgumentException("Temporada não encontrada.");
         }
 
-        List<Torneio> torneios = torneioRepository.findByTemporada_IdOrderByNomeAsc(temporadaId);
+        List<Torneio> torneios = torneioRepository.findByTemporadaId(temporadaId);
 
         return torneios.stream()
                 .map(TorneioDTO::new)
