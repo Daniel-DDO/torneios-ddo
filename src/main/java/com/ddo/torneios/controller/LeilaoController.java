@@ -65,14 +65,9 @@ public class LeilaoController {
         return ResponseEntity.ok(historico);
     }
 
-    @GetMapping("/{id}/resultado-final")
-    public ResponseEntity<List<ResultadoLeilaoDTO>> verResultadoFinal(@PathVariable String id) {
-        var resultado = leilaoService.obterResultadoFinal(id);
-
-        if (resultado.isEmpty()) {
-            return ResponseEntity.ok(List.of());
-        }
-
+    @GetMapping("/{leilaoId}/resultado-oficial")
+    public ResponseEntity<List<ResultadoLeilaoDTO>> verResultadoOficial(@PathVariable String leilaoId) {
+        List<ResultadoLeilaoDTO> resultado = leilaoService.obterResultadoFinal(leilaoId);
         return ResponseEntity.ok(resultado);
     }
 
