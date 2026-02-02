@@ -166,29 +166,32 @@ public class LeilaoService {
     }
 
     private void validarSeSuperaLider(Leilao leilao, Clube clube, String meuJogadorId, BigDecimal meuValor, Integer minhaPrioridade) {
-        Optional<Lance> liderAtualOpt = lanceRepository.findTopByLeilaoAndClubeOrderByPrioridadeAscValorDesc(leilao, clube);
+        Optional<Lance> liderDessaPrioridadeOpt = lanceRepository
+                .findTopByLeilaoAndClubeAndPrioridadeOrderByValorDesc(leilao, clube, minhaPrioridade);
 
-        if (liderAtualOpt.isPresent()) {
-            Lance lider = liderAtualOpt.get();
+        if (liderDessaPrioridadeOpt.isPresent()) {
+            Lance lider = liderDessaPrioridadeOpt.get();
 
             if (lider.getJogador().getId().equals(meuJogadorId)) {
                 return;
             }
 
-            int prioridadeLider = lider.getPrioridade();
             BigDecimal valorLider = lider.getValor();
+            BigDecimal minimoNecessario = valorLider.add(BigDecimal.valueOf(1000));
 
-            if (minhaPrioridade > prioridadeLider) {
-                throw new RuntimeException("O lance atual é de um jogador que escolheu este clube como "
-                        + prioridadeLider + "ª opção. Como sua prioridade é menor (" + minhaPrioridade + "ª), você não pode cobri-lo.");
-            }
+            if (meuValor.compareTo(minimoNecessario) < 0) {
 
-            if (minhaPrioridade == prioridadeLider) {
-                BigDecimal minimoNecessario = valorLider.add(BigDecimal.valueOf(1000));
-                if (meuValor.compareTo(minimoNecessario) < 0) {
-                    throw new RuntimeException("Para superar o líder atual (que também tem prioridade "
-                            + prioridadeLider + "), você precisa ofertar no mínimo D$ " + minimoNecessario);
-                }
+                String nomeLider = lider.getJogador().getNome();
+
+                throw new RuntimeException(String.format(
+                        "Poxa! O %s já ofertou D$ %s escolhendo o %s como %ª opção. " +
+                                "Para assumir o lugar dele nessa fila, você precisa ofertar pelo menos D$ %s.",
+                        nomeLider,
+                        valorLider,
+                        clube.getNome(),
+                        minhaPrioridade,
+                        minimoNecessario
+                ));
             }
         }
     }
