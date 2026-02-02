@@ -1,6 +1,7 @@
 package com.ddo.torneios.controller;
 
 import com.ddo.torneios.dto.TemporadaDTO;
+import com.ddo.torneios.dto.TorneioDTO;
 import com.ddo.torneios.request.TemporadaRequest;
 import com.ddo.torneios.service.TemporadaService;
 import jakarta.validation.Valid;
@@ -53,6 +54,12 @@ public class TemporadaController {
     public ResponseEntity<TemporadaDTO> encerrarTemporada(@PathVariable String id) {
         TemporadaDTO temporadaEncerrada = temporadaService.encerrarTemporada(id);
         return ResponseEntity.ok(temporadaEncerrada);
+    }
+
+    @GetMapping("/{id}/torneios")
+    public ResponseEntity<List<TorneioDTO>> listarTorneiosDaTemporada(@PathVariable String id) {
+        List<TorneioDTO> torneios = temporadaService.listarTorneiosDaTemporada(id);
+        return ResponseEntity.ok(torneios);
     }
 
 }

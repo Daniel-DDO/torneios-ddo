@@ -1,9 +1,12 @@
 package com.ddo.torneios.service;
 
 import com.ddo.torneios.dto.TemporadaDTO;
+import com.ddo.torneios.dto.TorneioDTO;
 import com.ddo.torneios.exception.TemporadaJaExisteException;
 import com.ddo.torneios.model.Temporada;
+import com.ddo.torneios.model.Torneio;
 import com.ddo.torneios.repository.TemporadaRepository;
+import com.ddo.torneios.repository.TorneioRepository;
 import com.ddo.torneios.request.TemporadaRequest;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,6 +22,9 @@ public class TemporadaService {
 
     @Autowired
     private TemporadaRepository temporadaRepository;
+
+    @Autowired
+    private TorneioRepository torneioRepository;
 
     @Transactional
     public TemporadaDTO criarTemporada(TemporadaRequest request) {
@@ -90,5 +96,17 @@ public class TemporadaService {
             throw new EntityNotFoundException("Temporada não encontrada com ID: " + id);
         }
         temporadaRepository.deleteById(id);
+    }
+
+    public List<TorneioDTO> listarTorneiosDaTemporada(String temporadaId) {
+        if (!temporadaRepository.existsById(temporadaId)) {
+            throw new IllegalArgumentException("Temporada não encontrada.");
+        }
+
+        List<Torneio> torneios = torneioRepository.findByTemporada_IdOrderByNomeAsc(temporadaId);
+
+        return torneios.stream()
+                .map(TorneioDTO::new)
+                .toList();
     }
 }

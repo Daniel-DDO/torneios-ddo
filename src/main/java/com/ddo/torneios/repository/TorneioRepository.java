@@ -10,4 +10,6 @@ import java.util.List;
 public interface TorneioRepository extends JpaRepository<Torneio, String> {
     boolean existsByTemporadaIdAndCompeticaoId(String temporadaId, String competicaoId);
     List<Torneio> findByTemporadaId(String temporadaId);
+
+    List<Torneio> findByTemporada_IdOrderByNomeAsc(String temporadaId);
 }
