@@ -26,6 +26,7 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.List;
@@ -521,5 +522,34 @@ public class JogadorService {
 
             return dto;
         }).collect(Collectors.toList());
+    }
+
+    @Transactional
+    public BigDecimal atualizarSaldo(String jogadorId, MovimentacaoSaldoDTO dados) {
+        Jogador jogador = jogadorRepository.findById(jogadorId)
+                .orElseThrow(() -> new EntityNotFoundException("Jogador não encontrado"));
+
+        if (jogador.getSaldoVirtual() == null) {
+            jogador.setSaldoVirtual(BigDecimal.ZERO);
+        }
+
+        BigDecimal valorOperacao = dados.getValor();
+        String tipo = dados.getTipoOperacao().toUpperCase();
+
+        if ("ADICIONAR".equals(tipo)) {
+            jogador.setSaldoVirtual(jogador.getSaldoVirtual().add(valorOperacao));
+        }
+        else if ("REMOVER".equals(tipo)) {
+            if (jogador.getSaldoVirtual().compareTo(valorOperacao) < 0) {
+                throw new RegraNegocioException("Saldo insuficiente. Saldo atual: " + jogador.getSaldoVirtual());
+            }
+            jogador.setSaldoVirtual(jogador.getSaldoVirtual().subtract(valorOperacao));
+        }
+        else {
+            throw new RegraNegocioException("Tipo de operação inválido. Use ADICIONAR ou REMOVER.");
+        }
+
+        jogadorRepository.save(jogador);
+        return jogador.getSaldoVirtual();
     }
 }

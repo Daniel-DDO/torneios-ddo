@@ -68,7 +68,7 @@ public class Clube {
 
     public void atualizarLanceMinimo() {
         if (this.valorAvaliado != null) {
-            this.lanceMinimo = this.valorAvaliado.multiply(new BigDecimal("0.65"))
+            this.lanceMinimo = this.valorAvaliado.multiply(new BigDecimal("0.5"))
                     .setScale(2, RoundingMode.HALF_EVEN);
         }
     }

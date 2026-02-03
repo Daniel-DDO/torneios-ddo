@@ -6,6 +6,7 @@ import com.ddo.torneios.exception.ClubeExisteException;
 import com.ddo.torneios.model.Clube;
 import com.ddo.torneios.model.LigaClube;
 import com.ddo.torneios.repository.ClubeRepository;
+import com.ddo.torneios.request.AtualizarValoresClubeRequest;
 import com.ddo.torneios.request.ClubeRequest;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -34,6 +35,9 @@ public class ClubeService {
 
         Clube clube = new Clube(request.getNome(), request.getEstadio(), request.getImagem(),
                 request.getLigaClube(), request.getSigla(), request.getCorPrimaria(), request.getCorSecundaria(), request.getEstrelas());
+
+        clube.setValorAvaliado(request.getValorAvaliado());
+        clube.atualizarLanceMinimo();
 
         clubeRepository.save(clube);
     }
@@ -225,5 +229,25 @@ public class ClubeService {
     public Page<ClubeLeilaoDTO> listarClubes(Pageable pageable) {
         return clubeRepository.findByLigaClubeNot(LigaClube.SELECAO, pageable)
                 .map(ClubeLeilaoDTO::new);
+    }
+
+    @Transactional
+    public void atualizarValoresClube(String id, AtualizarValoresClubeRequest request) {
+        Clube clube = clubeRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Clube não encontrado com id: " + id));
+
+        if (request.getValorAvaliado() != null) {
+            clube.setValorAvaliado(request.getValorAvaliado());
+
+            if (request.getLanceMinimo() == null) {
+                clube.atualizarLanceMinimo();
+            }
+        }
+
+        if (request.getLanceMinimo() != null) {
+            clube.setLanceMinimo(request.getLanceMinimo());
+        }
+
+        clubeRepository.save(clube);
     }
 }

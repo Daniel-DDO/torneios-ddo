@@ -4,6 +4,7 @@ import com.ddo.torneios.dto.ClubeLeilaoDTO;
 import com.ddo.torneios.dto.PaginacaoDTO;
 import com.ddo.torneios.model.Clube;
 import com.ddo.torneios.model.LigaClube;
+import com.ddo.torneios.request.AtualizarValoresClubeRequest;
 import com.ddo.torneios.request.ClubeRequest;
 import com.ddo.torneios.service.ClubeService;
 import jakarta.validation.Valid;
@@ -128,5 +129,14 @@ public class ClubeController {
             @PageableDefault(page = 0, size = 20, sort = "valorAvaliado", direction = Sort.Direction.DESC) Pageable pageable
     ) {
         return ResponseEntity.ok(clubeService.listarApenasSelecoes(pageable));
+    }
+
+    @PatchMapping("/{id}/valores")
+    public ResponseEntity<Void> atualizarValores(
+            @PathVariable String id,
+            @RequestBody @Valid AtualizarValoresClubeRequest request) {
+
+        clubeService.atualizarValoresClube(id, request);
+        return ResponseEntity.noContent().build();
     }
 }
