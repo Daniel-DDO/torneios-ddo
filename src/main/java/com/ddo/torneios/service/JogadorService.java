@@ -4,12 +4,11 @@ import com.ddo.torneios.dto.*;
 import com.ddo.torneios.exception.EmailJaCadastradoException;
 import com.ddo.torneios.exception.JogadorExisteException;
 import com.ddo.torneios.exception.RegraNegocioException;
-import com.ddo.torneios.model.Avatar;
-import com.ddo.torneios.model.Cargo;
-import com.ddo.torneios.model.Jogador;
-import com.ddo.torneios.model.StatusJogador;
+import com.ddo.torneios.exception.SaldoInsuficienteException;
+import com.ddo.torneios.model.*;
 import com.ddo.torneios.repository.JogadorRepository;
 import com.ddo.torneios.repository.PartidaRepository;
+import com.ddo.torneios.repository.TransacaoRepository;
 import com.ddo.torneios.request.*;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.validation.constraints.NotNull;
@@ -55,6 +54,9 @@ public class JogadorService {
 
     @Autowired
     private PartidaRepository partidaRepository;
+
+    @Autowired
+    private TransacaoRepository transacaoRepository;
 
     public void cadastrarJogador(JogadorRequest request) {
         if (jogadorRepository.existsJogadorByDiscord(request.getDiscord())) {
@@ -525,32 +527,45 @@ public class JogadorService {
     }
 
     @Transactional
-    public BigDecimal atualizarSaldo(String jogadorId, MovimentacaoSaldoDTO dados) {
+    public BigDecimal atualizarSaldo(String jogadorId, MovimentacaoSaldoDTO dto, String idAdminResponsavel) {
         Jogador jogador = jogadorRepository.findById(jogadorId)
-                .orElseThrow(() -> new EntityNotFoundException("Jogador não encontrado"));
+                .orElseThrow(() -> new RuntimeException("Jogador não encontrado"));
 
-        if (jogador.getSaldoVirtual() == null) {
-            jogador.setSaldoVirtual(BigDecimal.ZERO);
-        }
+        BigDecimal saldoAtual = jogador.getSaldoVirtual();
+        BigDecimal novoSaldo;
+        TipoTransacao tipoTransacao;
 
-        BigDecimal valorOperacao = dados.getValor();
-        String tipo = dados.getTipoOperacao().toUpperCase();
+        if (dto.operacao() == MovimentacaoSaldoDTO.TipoOperacao.ADICIONAR) {
+            novoSaldo = saldoAtual.add(dto.valor());
+            tipoTransacao = TipoTransacao.CREDITO;
+        } else {
+            boolean vaiFicarNegativo = saldoAtual.compareTo(dto.valor()) < 0;
 
-        if ("ADICIONAR".equals(tipo)) {
-            jogador.setSaldoVirtual(jogador.getSaldoVirtual().add(valorOperacao));
-        }
-        else if ("REMOVER".equals(tipo)) {
-            if (jogador.getSaldoVirtual().compareTo(valorOperacao) < 0) {
-                throw new RegraNegocioException("Saldo insuficiente. Saldo atual: " + jogador.getSaldoVirtual());
+            if (vaiFicarNegativo && !dto.confirmarSaldoNegativo()) {
+                throw new SaldoInsuficienteException("O saldo ficará negativo (" +
+                        saldoAtual.subtract(dto.valor()) + "). Confirma a operação?");
             }
-            jogador.setSaldoVirtual(jogador.getSaldoVirtual().subtract(valorOperacao));
-        }
-        else {
-            throw new RegraNegocioException("Tipo de operação inválido. Use ADICIONAR ou REMOVER.");
+
+            novoSaldo = saldoAtual.subtract(dto.valor());
+            tipoTransacao = TipoTransacao.DEBITO;
         }
 
+        Transacao transacao = new Transacao(
+                jogador,
+                tipoTransacao,
+                dto.valor(),
+                saldoAtual,
+                novoSaldo,
+                dto.motivo(),
+                idAdminResponsavel
+        );
+
+        jogador.setSaldoVirtual(novoSaldo);
+
+        transacaoRepository.save(transacao);
         jogadorRepository.save(jogador);
-        return jogador.getSaldoVirtual();
+
+        return novoSaldo;
     }
 
     public List<String> obterMomentoAtual(String jogadorId) {

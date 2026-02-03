@@ -48,6 +48,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.DELETE, "/api/fases/**").hasAuthority("PROPRIETARIO")
                         .requestMatchers(HttpMethod.POST, "/api/fases/**").hasAuthority("PROPRIETARIO")
                         .requestMatchers(HttpMethod.POST, "/api/leiloes/admin/**").hasAuthority("PROPRIETARIO")
+                        .requestMatchers(HttpMethod.PATCH, "/jogador/{id}/saldo").authenticated()
                         .anyRequest().permitAll()
                 )
                 .addFilterBefore(securityFilter, UsernamePasswordAuthenticationFilter.class);

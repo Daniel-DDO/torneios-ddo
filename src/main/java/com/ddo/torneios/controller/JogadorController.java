@@ -254,9 +254,12 @@ public class JogadorController {
     @PatchMapping("/{id}/saldo")
     public ResponseEntity<BigDecimal> atualizarSaldo(
             @PathVariable String id,
-            @RequestBody @Valid MovimentacaoSaldoDTO dto) {
+            @RequestBody @Valid MovimentacaoSaldoDTO dto,
+            @AuthenticationPrincipal UserDetails userDetails) {
 
-        BigDecimal novoSaldo = jogadorService.atualizarSaldo(id, dto);
+        String responsavel = userDetails != null ? userDetails.getUsername() : "SISTEMA";
+
+        BigDecimal novoSaldo = jogadorService.atualizarSaldo(id, dto, responsavel);
         return ResponseEntity.ok(novoSaldo);
     }
 

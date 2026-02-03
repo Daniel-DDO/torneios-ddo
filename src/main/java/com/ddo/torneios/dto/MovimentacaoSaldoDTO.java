@@ -1,18 +1,16 @@
 package com.ddo.torneios.dto;
 
 import jakarta.validation.constraints.DecimalMin;
+import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
-import lombok.Data;
-
 import java.math.BigDecimal;
 
-@Data
-public class MovimentacaoSaldoDTO {
+public record MovimentacaoSaldoDTO(
+        @NotNull @DecimalMin("0.01") BigDecimal valor,
+        @NotBlank String motivo,
+        @NotNull TipoOperacao operacao,
 
-    @NotNull(message = "O valor é obrigatório")
-    @DecimalMin(value = "0.01", message = "O valor deve ser maior que zero")
-    private BigDecimal valor;
-
-    @NotNull(message = "O tipo de operação é obrigatório (ADICIONAR ou REMOVER)")
-    private String tipoOperacao;
+        boolean confirmarSaldoNegativo
+) {
+    public enum TipoOperacao { ADICIONAR, REMOVER }
 }
