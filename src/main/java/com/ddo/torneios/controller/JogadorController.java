@@ -259,4 +259,9 @@ public class JogadorController {
         BigDecimal novoSaldo = jogadorService.atualizarSaldo(id, dto);
         return ResponseEntity.ok(novoSaldo);
     }
+
+    @GetMapping("/{id}/momento")
+    public ResponseEntity<List<String>> obterMomentoAtual(@PathVariable String id) {
+        return ResponseEntity.ok(jogadorService.obterMomentoAtual(id));
+    }
 }

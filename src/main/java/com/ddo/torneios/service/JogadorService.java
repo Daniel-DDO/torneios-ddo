@@ -552,4 +552,8 @@ public class JogadorService {
         jogadorRepository.save(jogador);
         return jogador.getSaldoVirtual();
     }
+
+    public List<String> obterMomentoAtual(String jogadorId) {
+        return partidaRepository.buscarUltimos5Resultados(jogadorId);
+    }
 }

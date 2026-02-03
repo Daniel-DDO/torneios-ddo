@@ -152,4 +152,29 @@ public interface PartidaRepository extends JpaRepository<Partida, String> {
         LIMIT 3
     """, nativeQuery = true)
     List<PatoProjection> findTop3Patos(@Param("jogadorId") String jogadorId);
+
+    @Query(value = """
+        SELECT t.resultado 
+        FROM (
+            SELECT 
+                p.data_hora,
+                CASE 
+                    WHEN (jm.id = :jogadorId AND (p.gols_mandante > p.gols_visitante OR (p.gols_mandante = p.gols_visitante AND COALESCE(p.penaltis_mandante, 0) > COALESCE(p.penaltis_visitante, 0)))) THEN 'V'
+                    WHEN (jv.id = :jogadorId AND (p.gols_visitante > p.gols_mandante OR (p.gols_visitante = p.gols_mandante AND COALESCE(p.penaltis_visitante, 0) > COALESCE(p.penaltis_mandante, 0)))) THEN 'V'
+                    WHEN (p.gols_mandante = p.gols_visitante AND p.penaltis_mandante IS NULL) THEN 'E'
+                    ELSE 'D'
+                END as resultado
+            FROM partida p
+            INNER JOIN jogador_clube m ON p.mandante_id = m.id
+            INNER JOIN jogador jm ON m.jogador_id = jm.id
+            INNER JOIN jogador_clube v ON p.visitante_id = v.id
+            INNER JOIN jogador jv ON v.jogador_id = jv.id
+            WHERE (jm.id = :jogadorId OR jv.id = :jogadorId)
+              AND p.realizada = true
+            ORDER BY p.data_hora DESC
+            LIMIT 5
+        ) as t
+        ORDER BY t.data_hora ASC
+    """, nativeQuery = true)
+    List<String> buscarUltimos5Resultados(@Param("jogadorId") String jogadorId);
 }
