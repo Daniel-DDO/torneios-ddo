@@ -9,6 +9,7 @@ import com.ddo.torneios.model.Cargo;
 import com.ddo.torneios.model.Jogador;
 import com.ddo.torneios.model.StatusJogador;
 import com.ddo.torneios.repository.JogadorRepository;
+import com.ddo.torneios.repository.PartidaRepository;
 import com.ddo.torneios.request.*;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.validation.constraints.NotNull;
@@ -50,6 +51,9 @@ public class JogadorService {
 
     @Autowired
     private AvatarService avatarService;
+
+    @Autowired
+    private PartidaRepository partidaRepository;
 
     public void cadastrarJogador(JogadorRequest request) {
         if (jogadorRepository.existsJogadorByDiscord(request.getDiscord())) {
@@ -486,4 +490,36 @@ public class JogadorService {
         jogadorRepository.save(jogador);
     }
 
+    public List<RivalidadeDTO> buscarTop3Patos(String jogadorId) {
+        List<PatoProjection> projecoes = partidaRepository.findTop3Patos(jogadorId);
+
+        return projecoes.stream().map(p -> {
+            RivalidadeDTO dto = new RivalidadeDTO();
+            dto.setAdversarioId(p.getAdversarioId());
+            dto.setAdversarioNome(p.getAdversarioNome());
+            dto.setAdversarioDiscord(p.getAdversarioDiscord());
+            dto.setAdversarioImagem(p.getAdversarioImagem());
+
+            dto.setPartidasJogadas(p.getTotalJogos());
+            dto.setMinhasVitorias(p.getMinhasVitorias());
+            dto.setMeusEmpates(p.getMeusEmpates());
+
+            int derrotas = p.getTotalJogos() - p.getMinhasVitorias() - p.getMeusEmpates();
+            dto.setMinhasDerrotas(derrotas);
+
+            dto.setGolsFeitos(p.getMeusGols());
+            dto.setGolsSofridos(p.getGolsSofridos());
+            dto.setSaldoGols(p.getMeusGols() - p.getGolsSofridos());
+
+            if (p.getTotalJogos() > 0) {
+                double pontos = (p.getMinhasVitorias() * 3.0) + p.getMeusEmpates();
+                double possiveis = p.getTotalJogos() * 3.0;
+                dto.setAproveitamento(String.format("%.1f%%", (pontos / possiveis) * 100.0));
+            } else {
+                dto.setAproveitamento("0.0%");
+            }
+
+            return dto;
+        }).collect(Collectors.toList());
+    }
 }
