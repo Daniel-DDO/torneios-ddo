@@ -97,4 +97,22 @@ public class PartidaService {
                 .map(PartidaDTO::new)
                 .collect(Collectors.toList());
     }
+
+    public List<PartidaDTO> minhasPartidasPorTorneio(String jogadorId, String torneioId) {
+        Sort sort = Sort.by(Sort.Direction.DESC, "dataHora");
+
+        return partidaRepository.findByJogadorAndTorneio(jogadorId, torneioId, sort)
+                .stream()
+                .map(PartidaDTO::new)
+                .collect(Collectors.toList());
+    }
+
+    public List<PartidaDTO> minhasPartidasPorFase(String jogadorId, String faseId) {
+        Sort sort = Sort.by(Sort.Direction.DESC, "dataHora");
+
+        return partidaRepository.findByJogadorAndFase(jogadorId, faseId, sort)
+                .stream()
+                .map(PartidaDTO::new)
+                .collect(Collectors.toList());
+    }
 }

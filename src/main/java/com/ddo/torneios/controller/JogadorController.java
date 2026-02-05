@@ -10,7 +10,9 @@ import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -266,5 +268,14 @@ public class JogadorController {
     @GetMapping("/{id}/momento")
     public ResponseEntity<List<String>> obterMomentoAtual(@PathVariable String id) {
         return ResponseEntity.ok(jogadorService.obterMomentoAtual(id));
+    }
+
+    @GetMapping("/{id}/transacoes")
+    public ResponseEntity<Page<TransacaoResponseDTO>> getHistoricoFinanceiro(
+            @PathVariable String id,
+            @PageableDefault(size = 10, sort = "dataHora", direction = Sort.Direction.DESC) Pageable pageable
+    ) {
+        Page<TransacaoResponseDTO> transacoes = jogadorService.listarTransacoesDoJogador(id, pageable);
+        return ResponseEntity.ok(transacoes);
     }
 }

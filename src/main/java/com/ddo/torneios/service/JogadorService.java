@@ -571,4 +571,22 @@ public class JogadorService {
     public List<String> obterMomentoAtual(String jogadorId) {
         return partidaRepository.buscarUltimos5Resultados(jogadorId);
     }
+
+    public Page<TransacaoResponseDTO> listarTransacoesDoJogador(String jogadorId, Pageable pageable) {
+        if (!jogadorRepository.existsById(jogadorId)) {
+            throw new EntityNotFoundException("Jogador não encontrado com ID: " + jogadorId);
+        }
+
+        return transacaoRepository.findByJogadorIdOrderByDataHoraDesc(jogadorId, pageable)
+                .map(t -> new TransacaoResponseDTO(
+                        t.getId(),
+                        t.getTipo(),
+                        t.getValor(),
+                        t.getSaldoAnterior(),
+                        t.getSaldoPosterior(),
+                        t.getMotivo(),
+                        t.getResponsavel(),
+                        t.getDataHora()
+                ));
+    }
 }

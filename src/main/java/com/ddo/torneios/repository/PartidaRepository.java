@@ -180,4 +180,18 @@ public interface PartidaRepository extends JpaRepository<Partida, String> {
 
     @Query("SELECT p FROM Partida p WHERE (p.mandante.id = :jcId OR p.visitante.id = :jcId) AND p.realizada = false")
     List<Partida> findPartidasNaoRealizadasPorJogadorClube(@Param("jcId") String jogadorClubeId);
+
+    @Query("SELECT p FROM Partida p " +
+            "WHERE p.fase.torneio.id = :torneioId " +
+            "AND (p.mandante.jogador.id = :jogadorId OR p.visitante.jogador.id = :jogadorId)")
+    List<Partida> findByJogadorAndTorneio(@Param("jogadorId") String jogadorId,
+                                          @Param("torneioId") String torneioId,
+                                          Sort sort);
+
+    @Query("SELECT p FROM Partida p " +
+            "WHERE p.fase.id = :faseId " +
+            "AND (p.mandante.jogador.id = :jogadorId OR p.visitante.jogador.id = :jogadorId)")
+    List<Partida> findByJogadorAndFase(@Param("jogadorId") String jogadorId,
+                                       @Param("faseId") String faseId,
+                                       Sort sort);
 }
