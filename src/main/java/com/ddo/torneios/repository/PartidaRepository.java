@@ -177,4 +177,7 @@ public interface PartidaRepository extends JpaRepository<Partida, String> {
         ORDER BY t.data_hora ASC
     """, nativeQuery = true)
     List<String> buscarUltimos5Resultados(@Param("jogadorId") String jogadorId);
+
+    @Query("SELECT p FROM Partida p WHERE (p.mandante.id = :jcId OR p.visitante.id = :jcId) AND p.realizada = false")
+    List<Partida> findPartidasNaoRealizadasPorJogadorClube(@Param("jcId") String jogadorClubeId);
 }

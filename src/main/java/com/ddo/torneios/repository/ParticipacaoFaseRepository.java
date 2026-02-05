@@ -29,4 +29,6 @@ public interface ParticipacaoFaseRepository extends JpaRepository<ParticipacaoFa
     List<ParticipacaoFase> findByFaseIdOrderByPontosDescVitoriasDescSaldoGolsDescGolsProDesc(String faseId, Pageable pageable);
 
     List<ParticipacaoFase> findByFaseIdOrderByPosicaoClassificacaoAsc(String faseId, Pageable pageable);
+
+    List<ParticipacaoFase> findByJogadorClube(JogadorClube antigoJC);
 }

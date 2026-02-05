@@ -10,5 +10,6 @@ public enum StatusClassificacao {
     QUARTAS,
     SEMIFINALISTA,
     FINALISTA,
-    CAMPEAO
+    CAMPEAO,
+    SUBSTITUIDO
 }
