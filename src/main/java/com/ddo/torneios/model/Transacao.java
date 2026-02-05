@@ -10,11 +10,12 @@ import java.time.LocalDateTime;
 @Getter
 @Setter
 @Entity
+@Table(name = "transacao")
 public class Transacao {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private String id;
+    private Long id;
 
     @NotNull
     @ManyToOne
