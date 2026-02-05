@@ -10,7 +10,9 @@ import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -20,6 +22,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.math.BigDecimal;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -242,5 +245,37 @@ public class JogadorController {
 
         jogadorService.alterarStatusJogador(id, status);
         return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/{id}/patos")
+    public ResponseEntity<List<RivalidadeDTO>> listarTop3Patos(@PathVariable String id) {
+        List<RivalidadeDTO> ranking = jogadorService.buscarTop3Patos(id);
+        return ResponseEntity.ok(ranking);
+    }
+
+    @PatchMapping("/{id}/saldo")
+    public ResponseEntity<BigDecimal> atualizarSaldo(
+            @PathVariable String id,
+            @RequestBody @Valid MovimentacaoSaldoDTO dto,
+            @AuthenticationPrincipal UserDetails userDetails) {
+
+        String responsavel = userDetails != null ? userDetails.getUsername() : "SISTEMA";
+
+        BigDecimal novoSaldo = jogadorService.atualizarSaldo(id, dto, responsavel);
+        return ResponseEntity.ok(novoSaldo);
+    }
+
+    @GetMapping("/{id}/momento")
+    public ResponseEntity<List<String>> obterMomentoAtual(@PathVariable String id) {
+        return ResponseEntity.ok(jogadorService.obterMomentoAtual(id));
+    }
+
+    @GetMapping("/{id}/transacoes")
+    public ResponseEntity<Page<TransacaoResponseDTO>> getHistoricoFinanceiro(
+            @PathVariable String id,
+            @PageableDefault(size = 10, sort = "dataHora", direction = Sort.Direction.DESC) Pageable pageable
+    ) {
+        Page<TransacaoResponseDTO> transacoes = jogadorService.listarTransacoesDoJogador(id, pageable);
+        return ResponseEntity.ok(transacoes);
     }
 }

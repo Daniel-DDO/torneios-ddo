@@ -1,6 +1,7 @@
 package com.ddo.torneios.controller;
 
 import com.ddo.torneios.dto.JogadorClubeDTO;
+import com.ddo.torneios.dto.SubstituicaoDTO;
 import com.ddo.torneios.request.JogadorClubeRequest;
 import com.ddo.torneios.service.JogadorClubeService;
 import jakarta.validation.Valid;
@@ -57,6 +58,27 @@ public class JogadorClubeController {
     @GetMapping("/buscar-autocomplete/clube")
     public ResponseEntity<List<JogadorClubeDTO>> buscarPorNomeClube(@RequestParam String termo) {
         List<JogadorClubeDTO> resultados = jogadorClubeService.buscarAutocompletePorClube(termo);
+        return ResponseEntity.ok(resultados);
+    }
+
+    @PutMapping("/substituir-jogador")
+    public ResponseEntity<Void> substituirJogador(@RequestBody SubstituicaoDTO dto) {
+        jogadorClubeService.substituirJogador(dto.idInscricaoAntiga(), dto.idNovoAlvo());
+        return ResponseEntity.noContent().build();
+    }
+
+    @PatchMapping("/trocar-clube")
+    public ResponseEntity<Void> trocarClube(@RequestBody SubstituicaoDTO dto) {
+        jogadorClubeService.trocarClube(dto.idInscricaoAntiga(), dto.idNovoAlvo());
+        return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/buscar-autocomplete/temporada")
+    public ResponseEntity<List<JogadorClubeDTO>> buscarPorTemporada(
+            @RequestParam String termo,
+            @RequestParam String temporadaId) {
+
+        List<JogadorClubeDTO> resultados = jogadorClubeService.buscarAutocompleteNaTemporada(termo, temporadaId);
         return ResponseEntity.ok(resultados);
     }
 }

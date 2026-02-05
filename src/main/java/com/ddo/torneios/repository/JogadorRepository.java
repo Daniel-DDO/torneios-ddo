@@ -51,7 +51,6 @@ public interface JogadorRepository extends JpaRepository<Jogador, String> {
     """)
     List<JogadorResumoDTO> buscarRankingCompleto();
 
-    // Versão Top 10 Otimizada
     @Query("""
         SELECT new com.ddo.torneios.dto.JogadorResumoDTO(
             j.id, 

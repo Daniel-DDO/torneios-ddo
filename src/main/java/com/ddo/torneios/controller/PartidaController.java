@@ -149,4 +149,22 @@ public class PartidaController {
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }
+
+    @GetMapping("/{id}/partidas/torneio/{torneioId}")
+    public ResponseEntity<List<PartidaDTO>> getPartidasPorTorneio(
+            @PathVariable String id,
+            @PathVariable String torneioId) {
+
+        List<PartidaDTO> partidas = partidaService.minhasPartidasPorTorneio(id, torneioId);
+        return ResponseEntity.ok(partidas);
+    }
+
+    @GetMapping("/{id}/partidas/fase/{faseId}")
+    public ResponseEntity<List<PartidaDTO>> getPartidasPorFase(
+            @PathVariable String id,
+            @PathVariable String faseId) {
+
+        List<PartidaDTO> partidas = partidaService.minhasPartidasPorFase(id, faseId);
+        return ResponseEntity.ok(partidas);
+    }
 }

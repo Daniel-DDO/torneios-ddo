@@ -4,11 +4,11 @@ import com.ddo.torneios.dto.*;
 import com.ddo.torneios.exception.EmailJaCadastradoException;
 import com.ddo.torneios.exception.JogadorExisteException;
 import com.ddo.torneios.exception.RegraNegocioException;
-import com.ddo.torneios.model.Avatar;
-import com.ddo.torneios.model.Cargo;
-import com.ddo.torneios.model.Jogador;
-import com.ddo.torneios.model.StatusJogador;
+import com.ddo.torneios.exception.SaldoInsuficienteException;
+import com.ddo.torneios.model.*;
 import com.ddo.torneios.repository.JogadorRepository;
+import com.ddo.torneios.repository.PartidaRepository;
+import com.ddo.torneios.repository.TransacaoRepository;
 import com.ddo.torneios.request.*;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.validation.constraints.NotNull;
@@ -25,6 +25,7 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.List;
@@ -50,6 +51,12 @@ public class JogadorService {
 
     @Autowired
     private AvatarService avatarService;
+
+    @Autowired
+    private PartidaRepository partidaRepository;
+
+    @Autowired
+    private TransacaoRepository transacaoRepository;
 
     public void cadastrarJogador(JogadorRequest request) {
         if (jogadorRepository.existsJogadorByDiscord(request.getDiscord())) {
@@ -486,4 +493,100 @@ public class JogadorService {
         jogadorRepository.save(jogador);
     }
 
+    public List<RivalidadeDTO> buscarTop3Patos(String jogadorId) {
+        List<PatoProjection> projecoes = partidaRepository.findTop3Patos(jogadorId);
+
+        return projecoes.stream().map(p -> {
+            RivalidadeDTO dto = new RivalidadeDTO();
+            dto.setAdversarioId(p.getAdversarioId());
+            dto.setAdversarioNome(p.getAdversarioNome());
+            dto.setAdversarioDiscord(p.getAdversarioDiscord());
+            dto.setAdversarioImagem(p.getAdversarioImagem());
+
+            dto.setPartidasJogadas(p.getTotalJogos());
+            dto.setMinhasVitorias(p.getMinhasVitorias());
+            dto.setMeusEmpates(p.getMeusEmpates());
+
+            int derrotas = p.getTotalJogos() - p.getMinhasVitorias() - p.getMeusEmpates();
+            dto.setMinhasDerrotas(derrotas);
+
+            dto.setGolsFeitos(p.getMeusGols());
+            dto.setGolsSofridos(p.getGolsSofridos());
+            dto.setSaldoGols(p.getMeusGols() - p.getGolsSofridos());
+
+            if (p.getTotalJogos() > 0) {
+                double pontos = (p.getMinhasVitorias() * 3.0) + p.getMeusEmpates();
+                double possiveis = p.getTotalJogos() * 3.0;
+                dto.setAproveitamento(String.format("%.1f%%", (pontos / possiveis) * 100.0));
+            } else {
+                dto.setAproveitamento("0.0%");
+            }
+
+            return dto;
+        }).collect(Collectors.toList());
+    }
+
+    @Transactional
+    public BigDecimal atualizarSaldo(String jogadorId, MovimentacaoSaldoDTO dto, String idAdminResponsavel) {
+        Jogador jogador = jogadorRepository.findById(jogadorId)
+                .orElseThrow(() -> new RuntimeException("Jogador não encontrado"));
+
+        BigDecimal saldoAtual = jogador.getSaldoVirtual();
+        BigDecimal novoSaldo;
+        TipoTransacao tipoTransacao;
+
+        if (dto.operacao() == MovimentacaoSaldoDTO.TipoOperacao.ADICIONAR) {
+            novoSaldo = saldoAtual.add(dto.valor());
+            tipoTransacao = TipoTransacao.CREDITO;
+        } else {
+            boolean vaiFicarNegativo = saldoAtual.compareTo(dto.valor()) < 0;
+
+            if (vaiFicarNegativo && !dto.confirmarSaldoNegativo()) {
+                throw new SaldoInsuficienteException("O saldo ficará negativo (" +
+                        saldoAtual.subtract(dto.valor()) + "). Confirma a operação?");
+            }
+
+            novoSaldo = saldoAtual.subtract(dto.valor());
+            tipoTransacao = TipoTransacao.DEBITO;
+        }
+
+        Transacao transacao = new Transacao(
+                jogador,
+                tipoTransacao,
+                dto.valor(),
+                saldoAtual,
+                novoSaldo,
+                dto.motivo(),
+                idAdminResponsavel
+        );
+
+        jogador.setSaldoVirtual(novoSaldo);
+
+        transacaoRepository.save(transacao);
+        jogadorRepository.save(jogador);
+
+        return novoSaldo;
+    }
+
+    public List<String> obterMomentoAtual(String jogadorId) {
+        return partidaRepository.buscarUltimos5Resultados(jogadorId);
+    }
+
+    public Page<TransacaoResponseDTO> listarTransacoesDoJogador(String jogadorId, Pageable pageable) {
+        if (!jogadorRepository.existsById(jogadorId)) {
+            throw new EntityNotFoundException("Jogador não encontrado com ID: " + jogadorId);
+        }
+
+        return transacaoRepository.findByJogadorIdOrderByDataHoraDesc(jogadorId, pageable)
+                .map(t -> new TransacaoResponseDTO(
+                        t.getId(),
+                        t.getTipo(),
+                        t.getValor(),
+                        t.getSaldoAnterior(),
+                        t.getSaldoPosterior(),
+                        t.getMotivo(),
+                        t.getResponsavel(),
+                        t.getDataHora()
+                ));
+    }
 }

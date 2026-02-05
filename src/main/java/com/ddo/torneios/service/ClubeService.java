@@ -1,20 +1,22 @@
 package com.ddo.torneios.service;
 
+import com.ddo.torneios.dto.ClubeLeilaoDTO;
 import com.ddo.torneios.dto.PaginacaoDTO;
 import com.ddo.torneios.exception.ClubeExisteException;
 import com.ddo.torneios.model.Clube;
 import com.ddo.torneios.model.LigaClube;
 import com.ddo.torneios.repository.ClubeRepository;
+import com.ddo.torneios.request.AtualizarValoresClubeRequest;
 import com.ddo.torneios.request.ClubeRequest;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.data.domain.Pageable;
 
 import java.util.Collections;
 import java.util.List;
@@ -33,6 +35,9 @@ public class ClubeService {
 
         Clube clube = new Clube(request.getNome(), request.getEstadio(), request.getImagem(),
                 request.getLigaClube(), request.getSigla(), request.getCorPrimaria(), request.getCorSecundaria(), request.getEstrelas());
+
+        clube.setValorAvaliado(request.getValorAvaliado());
+        clube.atualizarLanceMinimo();
 
         clubeRepository.save(clube);
     }
@@ -209,5 +214,40 @@ public class ClubeService {
 
     public LigaClube[] listarLigas() {
         return LigaClube.values();
+    }
+
+    public Page<ClubeLeilaoDTO> listarTodos(Pageable pageable) {
+        return clubeRepository.findAll(pageable)
+                .map(ClubeLeilaoDTO::new);
+    }
+
+    public Page<ClubeLeilaoDTO> listarApenasSelecoes(Pageable pageable) {
+        return clubeRepository.findByLigaClube(LigaClube.SELECAO, pageable)
+                .map(ClubeLeilaoDTO::new);
+    }
+
+    public Page<ClubeLeilaoDTO> listarClubes(Pageable pageable) {
+        return clubeRepository.findByLigaClubeNot(LigaClube.SELECAO, pageable)
+                .map(ClubeLeilaoDTO::new);
+    }
+
+    @Transactional
+    public void atualizarValoresClube(String id, AtualizarValoresClubeRequest request) {
+        Clube clube = clubeRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Clube não encontrado com id: " + id));
+
+        if (request.getValorAvaliado() != null) {
+            clube.setValorAvaliado(request.getValorAvaliado());
+
+            if (request.getLanceMinimo() == null) {
+                clube.atualizarLanceMinimo();
+            }
+        }
+
+        if (request.getLanceMinimo() != null) {
+            clube.setLanceMinimo(request.getLanceMinimo());
+        }
+
+        clubeRepository.save(clube);
     }
 }

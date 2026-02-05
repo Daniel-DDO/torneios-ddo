@@ -48,4 +48,7 @@ public class JogadorClube {
 
     @Enumerated(EnumType.STRING)
     private StatusClassificacao statusTemporada;
+
+    @Column(name = "id_de_quem_me_substituiu")
+    private String idDeQuemMeSubstituiu;
 }

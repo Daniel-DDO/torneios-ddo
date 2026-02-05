@@ -24,6 +24,10 @@ public class ClubeRequest {
     @NotNull(message = "A liga é obrigatória")
     private LigaClube ligaClube;
 
+    @NotNull(message = "O valor avaliado é obrigatório")
+    @PositiveOrZero(message = "O valor avaliado não pode ser negativo")
+    private BigDecimal valorAvaliado;
+
     @DecimalMin(value = "0.5", message = "O mínimo é 0.5 estrelas")
     @DecimalMax(value = "5.0", message = "O máximo é 5.0 estrelas")
     private BigDecimal estrelas;

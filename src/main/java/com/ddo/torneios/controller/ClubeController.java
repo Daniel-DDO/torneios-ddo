@@ -1,12 +1,18 @@
 package com.ddo.torneios.controller;
 
+import com.ddo.torneios.dto.ClubeLeilaoDTO;
 import com.ddo.torneios.dto.PaginacaoDTO;
 import com.ddo.torneios.model.Clube;
 import com.ddo.torneios.model.LigaClube;
+import com.ddo.torneios.request.AtualizarValoresClubeRequest;
 import com.ddo.torneios.request.ClubeRequest;
 import com.ddo.torneios.service.ClubeService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -102,5 +108,35 @@ public class ClubeController {
     @GetMapping("/ligas")
     public ResponseEntity<LigaClube[]> getLigas() {
         return ResponseEntity.ok(clubeService.listarLigas());
+    }
+
+    @GetMapping("/leilao/todos")
+    public ResponseEntity<Page<ClubeLeilaoDTO>> listarTodos(
+            @PageableDefault(page = 0, size = 20, sort = "valorAvaliado", direction = Sort.Direction.DESC) Pageable pageable
+    ) {
+        return ResponseEntity.ok(clubeService.listarTodos(pageable));
+    }
+
+    @GetMapping("/leilao/clubes")
+    public ResponseEntity<Page<ClubeLeilaoDTO>> listarApenasClubes(
+            @PageableDefault(page = 0, size = 20, sort = "valorAvaliado", direction = Sort.Direction.DESC) Pageable pageable
+    ) {
+        return ResponseEntity.ok(clubeService.listarClubes(pageable));
+    }
+
+    @GetMapping("/leilao/selecoes")
+    public ResponseEntity<Page<ClubeLeilaoDTO>> listarApenasSelecoes(
+            @PageableDefault(page = 0, size = 20, sort = "valorAvaliado", direction = Sort.Direction.DESC) Pageable pageable
+    ) {
+        return ResponseEntity.ok(clubeService.listarApenasSelecoes(pageable));
+    }
+
+    @PatchMapping("/{id}/valores")
+    public ResponseEntity<Void> atualizarValores(
+            @PathVariable String id,
+            @RequestBody @Valid AtualizarValoresClubeRequest request) {
+
+        clubeService.atualizarValoresClube(id, request);
+        return ResponseEntity.noContent().build();
     }
 }

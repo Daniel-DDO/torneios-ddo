@@ -6,6 +6,7 @@ import com.ddo.torneios.repository.*;
 import com.ddo.torneios.request.JogadorClubeRequest;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -30,6 +31,12 @@ public class JogadorClubeService {
 
     @Autowired
     private TorneioRepository torneioRepository;
+
+    @Autowired
+    private ParticipacaoFaseRepository participacaoFaseRepository;
+
+    @Autowired
+    private PartidaRepository partidaRepository;
 
     @Transactional
     public JogadorClubeDTO inscreverJogador(JogadorClubeRequest request) {
@@ -116,6 +123,94 @@ public class JogadorClubeService {
             return Collections.emptyList();
         }
         return jogadorClubeRepository.findTop10ByClubeNomeContainingIgnoreCase(termo.trim())
+                .stream()
+                .map(JogadorClubeDTO::new)
+                .toList();
+    }
+
+    @Transactional
+    public void substituirJogador(String idJogadorClubeAntigo, String idNovoJogador) {
+        JogadorClube antigoJC = jogadorClubeRepository.findById(idJogadorClubeAntigo)
+                .orElseThrow(() -> new EntityNotFoundException("Inscrição antiga não encontrada."));
+
+        Jogador novoJogador = jogadorRepository.findById(idNovoJogador)
+                .orElseThrow(() -> new EntityNotFoundException("Novo jogador não encontrado."));
+
+        if (jogadorClubeRepository.existsByJogadorIdAndTemporadaId(idNovoJogador, antigoJC.getTemporada().getId())) {
+            throw new IllegalArgumentException("O novo jogador já está inscrito nesta temporada.");
+        }
+
+        JogadorClube novoJC = new JogadorClube();
+        novoJC.setJogador(novoJogador);
+        novoJC.setClube(antigoJC.getClube());
+        novoJC.setTemporada(antigoJC.getTemporada());
+
+        novoJC.setBalancoFinanceiro(BigDecimal.ZERO);
+        novoJC.setPontosCoeficiente(BigDecimal.ZERO);
+        novoJC.setTotalGolsMarcados(0);
+        novoJC.setTotalGolsSofridos(0);
+        novoJC.setPartidasJogadas(0);
+        novoJC.setVitorias(0);
+        novoJC.setEmpates(0);
+        novoJC.setDerrotas(0);
+        novoJC.setAproveitamento(0.0);
+
+        novoJC.setStatusTemporada(StatusClassificacao.ATIVO);
+
+        novoJC = jogadorClubeRepository.save(novoJC);
+
+        List<ParticipacaoFase> participacoes = participacaoFaseRepository.findByJogadorClube(antigoJC);
+
+        for (ParticipacaoFase participacao : participacoes) {
+            participacao.setJogadorClube(novoJC);
+            participacaoFaseRepository.save(participacao);
+        }
+
+        List<Partida> partidasPendentes = partidaRepository.findPartidasNaoRealizadasPorJogadorClube(antigoJC.getId());
+
+        for (Partida partida : partidasPendentes) {
+            boolean atualizado = false;
+
+            if (partida.getMandante() != null && partida.getMandante().equals(antigoJC)) {
+                partida.setMandante(novoJC);
+                atualizado = true;
+            }
+
+            if (partida.getVisitante() != null && partida.getVisitante().equals(antigoJC)) {
+                partida.setVisitante(novoJC);
+                atualizado = true;
+            }
+
+            if (atualizado) {
+                partidaRepository.save(partida);
+            }
+        }
+
+        antigoJC.setStatusTemporada(StatusClassificacao.SUBSTITUIDO);
+        antigoJC.setIdDeQuemMeSubstituiu(novoJC.getId());
+        jogadorClubeRepository.save(antigoJC);
+    }
+
+    @Transactional
+    public void trocarClube(String idJogadorClube, String idNovoClube) {
+        JogadorClube jogadorClube = jogadorClubeRepository.findById(idJogadorClube)
+                .orElseThrow(() -> new EntityNotFoundException("Inscrição não encontrada."));
+
+        Clube novoClube = clubeRepository.findById(idNovoClube)
+                .orElseThrow(() -> new EntityNotFoundException("Clube não encontrado."));
+
+        jogadorClube.setClube(novoClube);
+        jogadorClubeRepository.save(jogadorClube);
+    }
+
+    public List<JogadorClubeDTO> buscarAutocompleteNaTemporada(String termo, String temporadaId) {
+        if (termo == null || termo.trim().length() < 3) {
+            return Collections.emptyList();
+        }
+
+        PageRequest limit = PageRequest.of(0, 10);
+
+        return jogadorClubeRepository.buscarPorTermoETemporada(termo.trim(), temporadaId, limit)
                 .stream()
                 .map(JogadorClubeDTO::new)
                 .toList();

@@ -5,5 +5,6 @@ import jakarta.validation.constraints.Positive;
 
 public record IniciarLeilaoRequest(
         @NotNull String temporadaId,
-        @NotNull @Positive Integer horasDuracao
+        @NotNull @Positive Integer horasDuracao,
+        boolean isSelecao
 ) {}

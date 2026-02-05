@@ -1,5 +1,6 @@
 package com.ddo.torneios.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
@@ -26,10 +27,17 @@ public class Lance {
 
     @ManyToOne
     @JoinColumn(name = "jogador_id", nullable = false)
+    @JsonIgnoreProperties({
+            "conquistas", "insignias", "historico", "titulos", "codigoReivindicacao", "validadeCodigoReivindicacao",
+            "senha", "password", "email", "pin", "authorities", "suspensoAte", "cartoesVermelhos", "cartoesAmarelos", "finais",
+            "accountNonExpired", "accountNonLocked", "credentialsNonExpired", "enabled",
+            "criacaoConta", "modificacaoConta", "golsMarcados", "golsSofridos", "partidasJogadas", "vitorias", "empates", "derrotas"
+    })
     private Jogador jogador;
 
     @ManyToOne
     @JoinColumn(name = "clube_id", nullable = false)
+    @JsonIgnoreProperties({"conquistas", "titulos", "elenco", "historico", "lanceMinimo", "valorAvaliado"})
     private Clube clube;
 
     @NotNull
@@ -39,6 +47,15 @@ public class Lance {
     private Integer prioridade;
 
     private LocalDateTime dataHoraLance;
+
+    private LocalDateTime dataLance;
+
+    @PrePersist
+    public void prePersist() {
+        if (this.dataLance == null) {
+            this.dataLance = LocalDateTime.now();
+        }
+    }
 
     public Lance(Leilao leilao, Jogador jogador, Clube clube, BigDecimal valor, Integer prioridade) {
         this.leilao = leilao;

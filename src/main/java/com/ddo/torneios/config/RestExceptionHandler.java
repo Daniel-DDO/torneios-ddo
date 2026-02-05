@@ -25,7 +25,7 @@ public class RestExceptionHandler extends ResponseEntityExceptionHandler {
         return new ResponseEntity<>(body, HttpStatus.BAD_REQUEST);
     }
 
-    @ExceptionHandler({IllegalStateException.class, IllegalArgumentException.class})
+    @ExceptionHandler({IllegalStateException.class, IllegalArgumentException.class, RuntimeException.class})
     public ResponseEntity<Object> handleValidacaoEstado(RuntimeException ex) {
         Map<String, Object> body = new LinkedHashMap<>();
         body.put("timestamp", LocalDateTime.now());

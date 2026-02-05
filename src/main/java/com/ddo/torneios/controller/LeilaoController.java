@@ -1,9 +1,6 @@
 package com.ddo.torneios.controller;
 
-import com.ddo.torneios.dto.DisputaClubeDTO;
-import com.ddo.torneios.dto.RealizarLanceDTO;
-import com.ddo.torneios.dto.ResultadoLeilaoDTO;
-import com.ddo.torneios.dto.StatusLanceJogadorDTO;
+import com.ddo.torneios.dto.*;
 import com.ddo.torneios.model.Leilao;
 import com.ddo.torneios.request.IniciarLeilaoRequest;
 import com.ddo.torneios.service.LeilaoService;
@@ -43,7 +40,7 @@ public class LeilaoController {
     public ResponseEntity<Leilao> iniciarLeilao(@RequestBody @Valid IniciarLeilaoRequest request) {
 
         LocalDateTime dataFim = LocalDateTime.now().plusHours(request.horasDuracao());
-        Leilao leilao = leilaoService.iniciarLeilao(request.temporadaId(), dataFim);
+        Leilao leilao = leilaoService.iniciarLeilao(request.temporadaId(), dataFim, request.isSelecao());
         return ResponseEntity.ok(leilao);
     }
 
@@ -53,14 +50,24 @@ public class LeilaoController {
         return ResponseEntity.ok("Leilão finalizado e processado com sucesso. Vencedores definidos.");
     }
 
-    @GetMapping("/{id}/resultado-final")
-    public ResponseEntity<List<ResultadoLeilaoDTO>> verResultadoFinal(@PathVariable String id) {
-        var resultado = leilaoService.obterResultadoFinal(id);
+    @GetMapping("/{id}/lances-atuais")
+    public ResponseEntity<List<LanceResumoDTO>> verLancesAtuais(@PathVariable String id) {
+        var lances = leilaoService.obterLancesAtuais(id);
+        return ResponseEntity.ok(lances);
+    }
 
-        if (resultado.isEmpty()) {
-            return ResponseEntity.ok(List.of());
-        }
+    @GetMapping("/{leilaoId}/historico/{clubeId}")
+    public ResponseEntity<List<HistoricoLancesClubeDTO>> verHistoricoDoClube(
+            @PathVariable String leilaoId,
+            @PathVariable String clubeId) {
 
+        var historico = leilaoService.obterHistoricoLances(leilaoId, clubeId);
+        return ResponseEntity.ok(historico);
+    }
+
+    @GetMapping("/{leilaoId}/resultado-oficial")
+    public ResponseEntity<List<ResultadoLeilaoDTO>> verResultadoOficial(@PathVariable String leilaoId) {
+        List<ResultadoLeilaoDTO> resultado = leilaoService.obterResultadoFinal(leilaoId);
         return ResponseEntity.ok(resultado);
     }
 
@@ -70,5 +77,61 @@ public class LeilaoController {
         String jogadorId = authentication.getName();
         var status = leilaoService.obterStatusDoJogador(id, jogadorId);
         return ResponseEntity.ok(status);
+    }
+
+    @GetMapping("/temporada/{temporadaId}")
+    public ResponseEntity<List<Leilao>> listarPorTemporada(@PathVariable String temporadaId) {
+        List<Leilao> leiloes = leilaoService.listarPorTemporada(temporadaId);
+        return ResponseEntity.ok(leiloes);
+    }
+
+    @GetMapping("/temporada/{temporadaId}/existe")
+    public ResponseEntity<Boolean> verificarSeExisteLeilao(@PathVariable String temporadaId) {
+        boolean existe = leilaoService.existeLeilaoParaTemporada(temporadaId);
+        return ResponseEntity.ok(existe);
+    }
+
+    @GetMapping("/{leilaoId}/meus-lances")
+    public ResponseEntity<List<LanceDetalheDTO>> verMeusLancesParaEdicao(
+            @PathVariable String leilaoId,
+            Authentication authentication) {
+
+        String jogadorId = "";
+        jogadorId = authentication.getName();
+
+        List<LanceDetalheDTO> lances = leilaoService.buscarLancesDoJogador(leilaoId, jogadorId);
+
+        return ResponseEntity.ok(lances);
+    }
+
+    @GetMapping("/{leilaoId}/feed")
+    public ResponseEntity<List<FeedItemDTO>> getFeedInicial(@PathVariable String leilaoId) {
+        return ResponseEntity.ok(leilaoService.obterFeedInicial(leilaoId));
+    }
+
+    @GetMapping("/{leilaoId}/mais-disputados")
+    public ResponseEntity<List<ClubeDisputadoDTO>> getMaisDisputados(@PathVariable String leilaoId) {
+        return ResponseEntity.ok(leilaoService.obterTermometro(leilaoId));
+    }
+
+    @PostMapping("/lance/v2")
+    public ResponseEntity<Void> realizarLanceV2(@RequestBody @Valid RealizarLanceDTO dto,
+                                                Authentication authentication) {
+        String jogadorId = authentication.getName();
+        leilaoService.registrarLancesBlindado(jogadorId, dto);
+        return ResponseEntity.ok().build();
+    }
+
+    @DeleteMapping("/{leilaoId}/meus-lances")
+    public ResponseEntity<Void> resetarMeusLances(@PathVariable String leilaoId, Authentication authentication) {
+        String jogadorId = authentication.getName();
+        leilaoService.resetarLancesDoJogador(leilaoId, jogadorId);
+        return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/{leilaoId}/resultados-parciais")
+    public ResponseEntity<List<ResultadoParcialDTO>> verResultadosParciais(@PathVariable String leilaoId) {
+        List<ResultadoParcialDTO> resultado = leilaoService.calcularResultadosParciais(leilaoId);
+        return ResponseEntity.ok(resultado);
     }
 }
