@@ -187,6 +187,7 @@ public class JogadorClubeService {
         }
 
         antigoJC.setStatusTemporada(StatusClassificacao.SUBSTITUIDO);
+        antigoJC.setIdDeQuemMeSubstituiu(novoJC.getId());
         jogadorClubeRepository.save(antigoJC);
     }
 

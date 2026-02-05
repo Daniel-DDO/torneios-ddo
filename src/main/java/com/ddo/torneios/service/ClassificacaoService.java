@@ -490,56 +490,93 @@ public class ClassificacaoService {
                     if (b.getVitorias() != a.getVitorias()) return b.getVitorias() - a.getVitorias();
                     //Gols Pró
                     if (b.getGolsPro() != a.getGolsPro()) return b.getGolsPro() - a.getGolsPro();
-                    //Gols Contra (Menos é melhor)
+                    //Gols Contra (menos é melhor)
                     if (a.getGolsContra() != b.getGolsContra()) return a.getGolsContra() - b.getGolsContra();
-                    //Cartões Amarelos (Menos é melhor)
+                    //Cartões Amarelos (menos é melhor)
                     if (a.getAmarelos() != b.getAmarelos()) return a.getAmarelos() - b.getAmarelos();
-                    //Cartões Vermelhos (Menos é melhor)
+                    //Cartões Vermelhos (menos é melhor)
                     if (a.getVermelhos() != b.getVermelhos()) return a.getVermelhos() - b.getVermelhos();
 
-                    //confronto Direto (se tudo acima empatar)
-                    return compararConfrontoDireto(a, b, partidas);
+                    // Confronto Direto
+                    return compararConfrontoDireto(a, b, partidas, mapa);
                 })
                 .toList();
 
         return atribuirZonasEPosicao(ordenados, fase);
     }
 
+    private AcumuladorStatus resolverAcumulador(Map<String, AcumuladorStatus> mapa, JogadorClube jogador) {
+        if (jogador == null) return null;
+
+        if (mapa.containsKey(jogador.getId())) {
+            return mapa.get(jogador.getId());
+        }
+
+        if (jogador.getIdDeQuemMeSubstituiu() != null) {
+            return mapa.get(jogador.getIdDeQuemMeSubstituiu());
+        }
+
+        return null;
+    }
+
     private void acumularPartida(Map<String, AcumuladorStatus> mapa, Partida p) {
-        AcumuladorStatus m = mapa.get(p.getMandante().getId());
-        AcumuladorStatus v = mapa.get(p.getVisitante().getId());
+        AcumuladorStatus m = resolverAcumulador(mapa, p.getMandante());
+        AcumuladorStatus v = resolverAcumulador(mapa, p.getVisitante());
+
+        if (m == null || v == null) return;
 
         int gM = p.getGolsMandante() != null ? p.getGolsMandante() : 0;
         int gV = p.getGolsVisitante() != null ? p.getGolsVisitante() : 0;
 
-        //gols e jogos
-        m.jogos++; v.jogos++;
-        m.golsPro += gM; m.golsContra += gV;
-        v.golsPro += gV; v.golsContra += gM;
+        m.setJogos(m.getJogos() + 1);
+        v.setJogos(v.getJogos() + 1);
 
-        //cartões (Null-safe)
-        m.amarelos += (p.getCartoesAmarelosMandante() != null ? p.getCartoesAmarelosMandante() : 0);
-        m.vermelhos += (p.getCartoesVermelhosMandante() != null ? p.getCartoesVermelhosMandante() : 0);
-        v.amarelos += (p.getCartoesAmarelosVisitante() != null ? p.getCartoesAmarelosVisitante() : 0);
-        v.vermelhos += (p.getCartoesVermelhosVisitante() != null ? p.getCartoesVermelhosVisitante() : 0);
+        m.setGolsPro(m.getGolsPro() + gM);
+        m.setGolsContra(m.getGolsContra() + gV);
 
-        //pontuação
+        v.setGolsPro(v.getGolsPro() + gV);
+        v.setGolsContra(v.getGolsContra() + gM);
+
+        int amM = p.getCartoesAmarelosMandante() != null ? p.getCartoesAmarelosMandante() : 0;
+        int verM = p.getCartoesVermelhosMandante() != null ? p.getCartoesVermelhosMandante() : 0;
+
+        int amV = p.getCartoesAmarelosVisitante() != null ? p.getCartoesAmarelosVisitante() : 0;
+        int verV = p.getCartoesVermelhosVisitante() != null ? p.getCartoesVermelhosVisitante() : 0;
+
+        m.setAmarelos(m.getAmarelos() + amM);
+        m.setVermelhos(m.getVermelhos() + verM);
+
+        v.setAmarelos(v.getAmarelos() + amV);
+        v.setVermelhos(v.getVermelhos() + verV);
+
         if (gM > gV) {
-            m.pontos += 3; m.vitorias++; v.derrotas++;
+            m.setPontos(m.getPontos() + 3);
+            m.setVitorias(m.getVitorias() + 1);
+            v.setDerrotas(v.getDerrotas() + 1);
         } else if (gV > gM) {
-            v.pontos += 3; v.vitorias++; m.derrotas++;
+            v.setPontos(v.getPontos() + 3);
+            v.setVitorias(v.getVitorias() + 1);
+            m.setDerrotas(m.getDerrotas() + 1);
         } else {
-            m.pontos += 1; v.pontos += 1; m.empates++; v.empates++;
+            m.setPontos(m.getPontos() + 1);
+            v.setPontos(v.getPontos() + 1);
+            m.setEmpates(m.getEmpates() + 1);
+            v.setEmpates(v.getEmpates() + 1);
         }
     }
 
-    private int compararConfrontoDireto(AcumuladorStatus a, AcumuladorStatus b, List<Partida> partidas) {
+    private int compararConfrontoDireto(AcumuladorStatus a, AcumuladorStatus b, List<Partida> partidas, Map<String, AcumuladorStatus> mapa) {
         int pontosA = 0;
         int pontosB = 0;
 
         for (Partida p : partidas) {
-            String mId = p.getMandante().getId();
-            String vId = p.getVisitante().getId();
+            AcumuladorStatus realMandanteAcc = resolverAcumulador(mapa, p.getMandante());
+            AcumuladorStatus realVisitanteAcc = resolverAcumulador(mapa, p.getVisitante());
+
+            if (realMandanteAcc == null || realVisitanteAcc == null) continue;
+
+            String mId = realMandanteAcc.getJogadorClubeId();
+            String vId = realVisitanteAcc.getJogadorClubeId();
 
             if ((mId.equals(a.getJogadorClubeId()) && vId.equals(b.getJogadorClubeId())) ||
                     (mId.equals(b.getJogadorClubeId()) && vId.equals(a.getJogadorClubeId()))) {
