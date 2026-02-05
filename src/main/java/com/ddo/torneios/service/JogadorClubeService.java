@@ -6,6 +6,7 @@ import com.ddo.torneios.repository.*;
 import com.ddo.torneios.request.JogadorClubeRequest;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -199,5 +200,18 @@ public class JogadorClubeService {
 
         jogadorClube.setClube(novoClube);
         jogadorClubeRepository.save(jogadorClube);
+    }
+
+    public List<JogadorClubeDTO> buscarAutocompleteNaTemporada(String termo, String temporadaId) {
+        if (termo == null || termo.trim().length() < 3) {
+            return Collections.emptyList();
+        }
+
+        PageRequest limit = PageRequest.of(0, 10);
+
+        return jogadorClubeRepository.buscarPorTermoETemporada(termo.trim(), temporadaId, limit)
+                .stream()
+                .map(JogadorClubeDTO::new)
+                .toList();
     }
 }

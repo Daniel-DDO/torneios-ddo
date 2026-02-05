@@ -72,4 +72,13 @@ public class JogadorClubeController {
         jogadorClubeService.trocarClube(dto.idInscricaoAntiga(), dto.idNovoAlvo());
         return ResponseEntity.noContent().build();
     }
+
+    @GetMapping("/buscar-autocomplete/temporada")
+    public ResponseEntity<List<JogadorClubeDTO>> buscarPorTemporada(
+            @RequestParam String termo,
+            @RequestParam String temporadaId) {
+
+        List<JogadorClubeDTO> resultados = jogadorClubeService.buscarAutocompleteNaTemporada(termo, temporadaId);
+        return ResponseEntity.ok(resultados);
+    }
 }
