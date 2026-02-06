@@ -3,6 +3,7 @@ package com.ddo.torneios.service;
 import com.ddo.torneios.dto.*;
 import com.ddo.torneios.model.*;
 import com.ddo.torneios.repository.*;
+import com.ddo.torneios.request.JogadorClubeRequest;
 import jakarta.persistence.EntityManager;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -26,6 +27,7 @@ public class LeilaoService {
     @Autowired private TemporadaRepository temporadaRepository;
     @Autowired private SimpMessagingTemplate messagingTemplate;
     @Autowired private TransferenciaRepository transferenciaRepository;
+    @Autowired private JogadorClubeService jogadorClubeService;
 
     private static final BigDecimal INCREMENTO_MINIMO = new BigDecimal("1000");
 
@@ -317,6 +319,19 @@ public class LeilaoService {
             jogadorRepository.save(jogador);
 
             logs.add("O jogador " + jogador.getNome() + " assumiu o " + clube.getNome() + " por D$ " + valorFinal);
+
+            //inscrevendo jogador
+            try {
+                JogadorClubeRequest request = new JogadorClubeRequest();
+                request.setJogadorId(jogador.getId());
+                request.setClubeId(clube.getId());
+                request.setTemporadaId(leilao.getTemporada().getId());
+
+                jogadorClubeService.inscreverJogador(request);
+
+            } catch (Exception e) {
+                logs.add("ATENÇÃO: Transferência realizada, mas falha ao associar jogador com clube na temporada. " + e.getMessage());
+            }
         }
 
         leilao.setAtivo(false);
@@ -335,7 +350,7 @@ public class LeilaoService {
         return transferencias.stream()
                 .map(t -> new ResultadoLeilaoDTO(
                         t.getClube().getNome(),
-                        t.getClube().getImagem(), // Assumindo que seu Clube tem esse campo
+                        t.getClube().getImagem(),
                         t.getJogador().getNome(),
                         t.getValorPago()
                 ))
