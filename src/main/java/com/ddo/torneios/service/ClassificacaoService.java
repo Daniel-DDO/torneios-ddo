@@ -12,6 +12,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -42,6 +44,8 @@ public class ClassificacaoService {
     private TituloService tituloService;
     @Autowired
     private ClubeRepository clubeRepository;
+    @Autowired
+    private NoticiaService noticiaService;
 
     @Transactional
     public void registrarResultado(PartidaDTO dto) {
@@ -171,6 +175,19 @@ public class ClassificacaoService {
 
         insigniaService.processarPosPartida(jGlobalMandante,dto.golsMandante());
         insigniaService.processarPosPartida(jGlobalVisitante, dto.golsVisitante());
+
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+            @Override
+            public void afterCommit() {
+                new Thread(() -> {
+                    try {
+                        noticiaService.gerarNoticiaSeRelevante(partida);
+                    } catch (Exception e) {
+                        log.error("Erro ao gerar notícia em background: {}", e.getMessage());
+                    }
+                }).start();
+            }
+        });
 
         try {
 

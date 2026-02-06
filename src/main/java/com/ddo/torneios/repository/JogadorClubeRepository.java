@@ -1,6 +1,7 @@
 package com.ddo.torneios.repository;
 
 import com.ddo.torneios.model.JogadorClube;
+import com.ddo.torneios.model.Temporada;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -31,4 +32,6 @@ public interface JogadorClubeRepository extends JpaRepository<JogadorClube, Stri
             @Param("temporadaId") String temporadaId,
             Pageable pageable
     );
+
+    List<JogadorClube> findTop5ByTemporadaOrderByPontosCoeficienteDesc(Temporada temporada);
 }
