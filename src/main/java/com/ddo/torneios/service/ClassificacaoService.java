@@ -367,7 +367,8 @@ public class ClassificacaoService {
     }
 
     //coeficiente
-    private static final double TETO_GOLS = 6.0;
+    private static final double TETO_GOLS = 100;
+
     private static final double PTS_VITORIA = 4.0;
     private static final double PTS_EMPATE = 2.0;
     private static final double PTS_GOLEADA = 2.0;
@@ -380,7 +381,7 @@ public class ClassificacaoService {
     private static final double PENALIDADE_GOL_SOFRIDO = -0.5;
 
     private static final double DIVISOR_NIVEL_TIME = 4.0;
-    private static final double PONTUACAO_MINIMA = -8.0;
+    private static final double PONTUACAO_MINIMA = -6.0;
     private static final double PONTUACAO_MAXIMA = 14;
 
     private BigDecimal calcularCoeficiente(
@@ -394,7 +395,8 @@ public class ClassificacaoService {
         double nivelTime = estrelas != null ? estrelas.doubleValue() : 1.0;
         double pesoTorneio = valorTorneio != null ? valorTorneio / 100.0 : 1.0;
 
-        double pontosGols = Math.min(gm, TETO_GOLS);
+        double pontosGols = gm;
+
         double pontosResultadoPos = vit ? PTS_VITORIA : (emp ? PTS_EMPATE : 0.0);
         double pontosGoleada = (gm - gs > 3) ? PTS_GOLEADA : 0.0;
         double pontosCleanSheet = (gs == 0) ? PTS_CLEAN_SHEET : 0.0;
