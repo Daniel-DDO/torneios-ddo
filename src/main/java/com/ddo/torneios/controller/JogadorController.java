@@ -278,4 +278,14 @@ public class JogadorController {
         Page<TransacaoResponseDTO> transacoes = jogadorService.listarTransacoesDoJogador(id, pageable);
         return ResponseEntity.ok(transacoes);
     }
+
+    @PatchMapping("/{id}/status")
+    public ResponseEntity<Void> atualizarStatus(
+            @PathVariable String id,
+            @RequestBody @Valid AtualizarStatusRequest request) {
+
+        jogadorService.alterarStatusJogador(id, request.getStatus());
+
+        return ResponseEntity.noContent().build();
+    }
 }

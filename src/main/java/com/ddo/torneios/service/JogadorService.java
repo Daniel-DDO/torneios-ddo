@@ -487,7 +487,11 @@ public class JogadorService {
     @Transactional
     public void alterarStatusJogador(String idJogador, StatusJogador novoStatus) {
         Jogador jogador = jogadorRepository.findById(idJogador)
-                .orElseThrow(() -> new RuntimeException("Jogador não encontrado"));
+                .orElseThrow(() -> new EntityNotFoundException("Jogador não encontrado com ID: " + idJogador));
+
+        if (novoStatus == StatusJogador.ATIVO) {
+            jogador.setSuspensoAte(null);
+        }
 
         jogador.setStatusJogador(novoStatus);
         jogadorRepository.save(jogador);

@@ -82,8 +82,8 @@ public class NotificacaoController {
 
     @DeleteMapping("/antigas")
     public ResponseEntity<String> apagarAntigasManual() {
-        int count = notificacaoService.apagarMaisAntigasQue(13);
-        return ResponseEntity.ok("Removidas " + count + " notificações antigas (+13 dias).");
+        int count = notificacaoService.apagarMaisAntigasQue(7);
+        return ResponseEntity.ok("Removidas " + count + " notificações antigas (+7 dias).");
     }
 
     @DeleteMapping("/geral")
