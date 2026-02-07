@@ -238,15 +238,6 @@ public class JogadorController {
         return ResponseEntity.ok(jogadorService.obterResumoHistoria(id));
     }
 
-    @PatchMapping("/{id}/status")
-    public ResponseEntity<Void> alterarStatus(
-            @PathVariable String id,
-            @RequestParam StatusJogador status) {
-
-        jogadorService.alterarStatusJogador(id, status);
-        return ResponseEntity.noContent().build();
-    }
-
     @GetMapping("/{id}/patos")
     public ResponseEntity<List<RivalidadeDTO>> listarTop3Patos(@PathVariable String id) {
         List<RivalidadeDTO> ranking = jogadorService.buscarTop3Patos(id);
