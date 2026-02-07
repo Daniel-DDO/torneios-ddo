@@ -64,5 +64,5 @@ public interface JogadorRepository extends JpaRepository<Jogador, String> {
     """)
     List<JogadorResumoDTO> buscarTop10Ranking();
 
-    List<Jogador> findTop8ByOrderByTitulosDescFinaisDescVitoriasDesc();
+    List<Jogador> findTop10ByOrderByPontosCoeficienteDescTitulosDescFinaisDescVitoriasDesc();
 }

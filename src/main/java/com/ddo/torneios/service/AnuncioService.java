@@ -5,6 +5,7 @@ import com.ddo.torneios.model.Anuncio;
 import com.ddo.torneios.repository.AnuncioRepository;
 import com.ddo.torneios.request.AnuncioRequest;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -18,6 +19,10 @@ import java.util.List;
 public class AnuncioService {
 
     private final AnuncioRepository anuncioRepository;
+    private final NotificacaoService notificacaoService;
+
+    @Value("${app.frontend.url}")
+    private String frontendUrl;
 
     @Transactional
     public AnuncioDTO criarAnuncio(AnuncioRequest request) {
@@ -27,7 +32,20 @@ public class AnuncioService {
             anuncio.setDataPostagem(LocalDateTime.now());
         }
 
-        anuncioRepository.save(anuncio);
+        anuncio = anuncioRepository.save(anuncio);
+
+        try {
+            String linkAnuncio = frontendUrl +"/anuncios/" + anuncio.getId();
+
+            notificacaoService.enviarParaTodos(
+                    anuncio.getTitulo(),
+                    anuncio.getMensagem(),
+                    linkAnuncio
+            );
+        } catch (Exception e) {
+            System.err.println("Erro ao enviar notificação de anúncio: " + e.getMessage());
+        }
+
         return entityToResponse(anuncio);
     }
 

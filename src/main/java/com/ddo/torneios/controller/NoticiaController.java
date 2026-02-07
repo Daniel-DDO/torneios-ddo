@@ -2,6 +2,7 @@ package com.ddo.torneios.controller;
 
 import com.ddo.torneios.model.Noticia;
 import com.ddo.torneios.model.Partida;
+import com.ddo.torneios.repository.NoticiaRepository;
 import com.ddo.torneios.repository.PartidaRepository;
 import com.ddo.torneios.service.NoticiaService;
 import lombok.RequiredArgsConstructor;
@@ -18,20 +19,29 @@ public class NoticiaController {
 
     private final NoticiaService noticiaService;
     private final PartidaRepository partidaRepository;
+    private final NoticiaRepository noticiaRepository;
 
     @GetMapping
     public ResponseEntity<List<Noticia>> listarUltimas() {
         return ResponseEntity.ok(noticiaService.listarUltimas());
     }
 
+    @GetMapping("/{id}")
+    public ResponseEntity<Noticia> buscarPorId(@PathVariable String id) {
+        return noticiaRepository.findById(id)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
+    }
+
     @PostMapping("/gerar/{idPartida}")
     public ResponseEntity<String> forcarGeracao(@PathVariable String idPartida) {
         return partidaRepository.findById(idPartida)
                 .map(partida -> {
-                    noticiaService.gerarNoticiaSeRelevante(partida);
-                    return ResponseEntity.ok("Solicitação enviada para o serviço de IA.");
+                    new Thread(() -> noticiaService.gerarNoticiaSeRelevante(partida)).start();
+                    return ResponseEntity.ok("Solicitação de análise de notícia enviada para a IA.");
                 })
                 .orElse(ResponseEntity.notFound().build());
     }
+
 
 }

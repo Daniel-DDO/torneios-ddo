@@ -33,5 +33,5 @@ public interface JogadorClubeRepository extends JpaRepository<JogadorClube, Stri
             Pageable pageable
     );
 
-    List<JogadorClube> findTop5ByTemporadaOrderByPontosCoeficienteDesc(Temporada temporada);
+    List<JogadorClube> findTop6ByTemporadaOrderByPontosCoeficienteDesc(Temporada temporada);
 }
