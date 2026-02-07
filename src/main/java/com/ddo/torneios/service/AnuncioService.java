@@ -114,7 +114,10 @@ public class AnuncioService {
                 anuncio.getId(),
                 anuncio.getTitulo(),
                 anuncio.getMensagem(),
-                anuncio.getDataPostagem()
+                anuncio.getDataPostagem(),
+                anuncio.getTipoMensagem(),
+                anuncio.getImagem(),
+                anuncio.getCorMensagem()
         );
     }
 }
