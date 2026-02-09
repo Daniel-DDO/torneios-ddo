@@ -1,6 +1,7 @@
 package com.ddo.torneios.service;
 
 import com.ddo.torneios.dto.LinhaClassificacaoDTO;
+import com.ddo.torneios.dto.MovimentacaoSaldoDTO;
 import com.ddo.torneios.dto.ParametrosCoeficienteDTO;
 import com.ddo.torneios.dto.PartidaDTO;
 import com.ddo.torneios.model.*;
@@ -46,6 +47,8 @@ public class ClassificacaoService {
     private ClubeRepository clubeRepository;
     @Autowired
     private NoticiaService noticiaService;
+    @Autowired
+    private JogadorService jogadorService;
 
     @Transactional
     public void registrarResultado(PartidaDTO dto) {
@@ -137,33 +140,104 @@ public class ClassificacaoService {
         }
 
 
+        // ... trecho anterior do método ...
+
         if (partida.getTipoPartida() == TipoPartida.FINAL_UNICA) {
+            // Atualiza contagem de finais
             jGlobalMandante.setFinais((jGlobalMandante.getFinais() == null ? 0 : jGlobalMandante.getFinais()) + 1);
             jGlobalVisitante.setFinais((jGlobalVisitante.getFinais() == null ? 0 : jGlobalVisitante.getFinais()) + 1);
 
             jogadorRepository.saveAll(List.of(jGlobalMandante, jGlobalVisitante));
 
             JogadorClube vencedor = null;
+            JogadorClube perdedor = null;
 
+            // 1. Definição de Vencedor e Perdedor
             if (dto.wo()) {
-                if (dto.golsMandante() > dto.golsVisitante()) vencedor = jcMandante;
-                else vencedor = jcVisitante;
+                if (dto.golsMandante() > dto.golsVisitante()) {
+                    vencedor = jcMandante;
+                    perdedor = jcVisitante;
+                } else {
+                    vencedor = jcVisitante;
+                    perdedor = jcMandante;
+                }
             } else if (dto.houvePenaltis()) {
-                if (dto.penaltisMandante() > dto.penaltisVisitante()) vencedor = jcMandante;
-                else vencedor = jcVisitante;
+                if (dto.penaltisMandante() > dto.penaltisVisitante()) {
+                    vencedor = jcMandante;
+                    perdedor = jcVisitante;
+                } else {
+                    vencedor = jcVisitante;
+                    perdedor = jcMandante;
+                }
             } else {
-                if (dto.golsMandante() > dto.golsVisitante()) vencedor = jcMandante;
-                else if (dto.golsVisitante() > dto.golsMandante()) vencedor = jcVisitante;
+                // Tempo normal
+                if (dto.golsMandante() > dto.golsVisitante()) {
+                    vencedor = jcMandante;
+                    perdedor = jcVisitante;
+                } else if (dto.golsVisitante() > dto.golsMandante()) {
+                    vencedor = jcVisitante;
+                    perdedor = jcMandante;
+                }
+                // Se empatou no tempo normal e não teve pênaltis, vencedor continua null (correto, pois evita pagar prêmio indevido)
             }
 
-            if (vencedor != null) {
+            // 2. Pagamento da Premiação
+            if (vencedor != null && perdedor != null) {
                 Competicao competicao = fase.getTorneio().getCompeticao();
 
-                if (competicao != null && competicao.getTitulo() != null) {
-                    String tituloId = competicao.getTitulo().getId();
-                    String nomeEdicao = fase.getTorneio().getNome();
+                // Pega o valor ou usa 15% como padrão se for nulo
+                int pctValor = (competicao != null && competicao.getValor() != null) ? competicao.getValor() : 15;
 
-                    tituloService.concederTituloAoJogador(vencedor.getId(), tituloId, nomeEdicao);
+                // Garante o mínimo de 15%
+                if (pctValor < 15) pctValor = 15;
+
+                // Bases de cálculo
+                BigDecimal baseCampeao = new BigDecimal("100000");
+                BigDecimal baseVice = new BigDecimal("60000");
+
+                // Multiplicador: converte inteiro (ex: 60) para porcentagem (0.60)
+                BigDecimal multiplicador = BigDecimal.valueOf(pctValor).movePointLeft(2);
+
+                BigDecimal premioCampeao = baseCampeao.multiply(multiplicador);
+                BigDecimal premioVice = baseVice.multiply(multiplicador);
+
+                try {
+                    // VERIFIQUE A ORDEM DO SEU CONSTRUTOR DTO AQUI
+                    MovimentacaoSaldoDTO dtoCampeao = new MovimentacaoSaldoDTO(
+                            premioCampeao,
+                            "Premiação Campeão - " + fase.getTorneio().getNome(),
+                            MovimentacaoSaldoDTO.TipoOperacao.ADICIONAR,
+                            false
+                    );
+                    jogadorService.atualizarSaldo(vencedor.getJogador().getId(), dtoCampeao, "SISTEMA");
+
+                    MovimentacaoSaldoDTO dtoVice = new MovimentacaoSaldoDTO(
+                            premioVice,
+                            "Premiação Vice - " + fase.getTorneio().getNome(),
+                            MovimentacaoSaldoDTO.TipoOperacao.ADICIONAR,
+                            false
+                    );
+                    jogadorService.atualizarSaldo(perdedor.getJogador().getId(), dtoVice, "SISTEMA");
+
+                    log.info("Premiação paga. Campeão: {}, Vice: {}", premioCampeao, premioVice);
+                } catch (Exception e) {
+                    log.error("Erro ao pagar premiação da final", e);
+                }
+
+                String logMsg = String.format(
+                        "\nFINAL ENCERRADA\n\nCampeão: %s (Prêmio: %s)\nVice: %s (Prêmio: %s)\nValor Competição: %d%%",
+                        vencedor.getClube().getNome(),
+                        java.text.NumberFormat.getCurrencyInstance().format(premioCampeao),
+                        perdedor.getClube().getNome(),
+                        java.text.NumberFormat.getCurrencyInstance().format(premioVice),
+                        pctValor
+                );
+
+                String logAtual = partida.getLogEventos() != null ? partida.getLogEventos() : "";
+                partida.setLogEventos(logAtual + logMsg);
+
+                if (competicao != null && competicao.getTitulo() != null) {
+                    tituloService.concederTituloAoJogador(vencedor.getId(), competicao.getTitulo().getId(), fase.getTorneio().getNome());
                 } else {
                     log.warn("Campeão definido (Partida {}), mas não foi possível localizar o Título vinculado à Competição.", partida.getId());
                 }
