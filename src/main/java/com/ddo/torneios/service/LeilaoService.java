@@ -32,6 +32,7 @@ public class LeilaoService {
     @Autowired private TransferenciaRepository transferenciaRepository;
     @Autowired private JogadorClubeService jogadorClubeService;
     @Autowired private NotificacaoService notificacaoService;
+    @Autowired private JogadorService jogadorService;
 
     private static final BigDecimal INCREMENTO_MINIMO = new BigDecimal("1000");
 
@@ -326,7 +327,19 @@ public class LeilaoService {
             Clube clube = lance.getClube();
             BigDecimal valorFinal = lance.getValor();
 
-            jogador.setSaldoVirtual(jogador.getSaldoVirtual().subtract(valorFinal));
+            try {
+                MovimentacaoSaldoDTO debitoDTO = new MovimentacaoSaldoDTO(
+                        valorFinal,
+                        "Compra do time " + clube.getNome() + " (Leilão)",
+                        MovimentacaoSaldoDTO.TipoOperacao.REMOVER,
+                        true
+                );
+
+                jogadorService.atualizarSaldo(jogador.getId(), debitoDTO, "SISTEMA_LEILAO");
+
+            } catch (Exception e) {
+                logs.add("ERRO CRÍTICO: Falha ao debitar saldo do jogador " + jogador.getNome() + ": " + e.getMessage());
+            }
 
             Transferencia transferencia = new Transferencia();
             transferencia.setLeilao(leilao);
@@ -365,7 +378,7 @@ public class LeilaoService {
                         nomeTemporada
                 );
 
-                String link = linkFront+leilao.getTemporada().getId()+"/torneios/jogadores";
+                String link = linkFront+"/"+leilao.getTemporada().getId()+"/torneios/jogadores";
 
                 notificacaoService.enviarParaJogador(
                         jogador,
