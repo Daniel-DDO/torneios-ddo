@@ -12,7 +12,9 @@ import com.ddo.torneios.repository.TransacaoRepository;
 import com.ddo.torneios.request.*;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.validation.constraints.NotNull;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -34,6 +36,7 @@ import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 public class JogadorService {
 
@@ -57,6 +60,9 @@ public class JogadorService {
 
     @Autowired
     private TransacaoRepository transacaoRepository;
+
+    @Autowired
+    private NotificacaoService notificacaoService;
 
     public void cadastrarJogador(JogadorRequest request) {
         if (jogadorRepository.existsJogadorByDiscord(request.getDiscord())) {
@@ -569,6 +575,8 @@ public class JogadorService {
         transacaoRepository.save(transacao);
         jogadorRepository.save(jogador);
 
+        enviarNotificacaoSaldo(jogador, dto);
+
         return novoSaldo;
     }
 
@@ -592,5 +600,41 @@ public class JogadorService {
                         t.getResponsavel(),
                         t.getDataHora()
                 ));
+    }
+
+    @Value("${app.frontend.url}")
+    private String linkFront;
+
+    private void enviarNotificacaoSaldo(Jogador jogador, MovimentacaoSaldoDTO dto) {
+        try {
+            String valorFormatado = java.text.NumberFormat.getCurrencyInstance(new java.util.Locale("pt", "BR"))
+                    .format(dto.valor());
+
+            String titulo;
+            String mensagem;
+            TipoNotificacao tipo;
+
+            if (dto.operacao() == MovimentacaoSaldoDTO.TipoOperacao.ADICIONAR) {
+                titulo = "Saldo Recebido!";
+                mensagem = String.format("Você recebeu %s. Motivo: %s", valorFormatado, dto.motivo());
+                tipo = TipoNotificacao.INFORMACAO;
+            } else {
+                titulo = "Pagamento Realizado";
+                mensagem = String.format("Foi debitado %s da sua conta. Motivo: %s", valorFormatado, dto.motivo());
+                tipo = TipoNotificacao.INFORMACAO;
+            }
+
+            String link = linkFront + "/minha-conta/financeiro";
+
+            notificacaoService.enviarParaJogador(
+                    jogador,
+                    titulo,
+                    mensagem,
+                    link,
+                    tipo
+            );
+        } catch (Exception e) {
+            log.error("Erro ao enviar notificação de saldo para o jogador {}", jogador.getId(), e);
+        }
     }
 }

@@ -6,7 +6,9 @@ import com.ddo.torneios.repository.*;
 import com.ddo.torneios.request.JogadorClubeRequest;
 import jakarta.persistence.EntityManager;
 import jakarta.transaction.Transactional;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
@@ -17,6 +19,7 @@ import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 public class LeilaoService {
 
@@ -28,6 +31,7 @@ public class LeilaoService {
     @Autowired private SimpMessagingTemplate messagingTemplate;
     @Autowired private TransferenciaRepository transferenciaRepository;
     @Autowired private JogadorClubeService jogadorClubeService;
+    @Autowired private NotificacaoService notificacaoService;
 
     private static final BigDecimal INCREMENTO_MINIMO = new BigDecimal("1000");
 
@@ -64,6 +68,8 @@ public class LeilaoService {
         validarSaldoGlobal(jogador, dto.preferencias());
 
         List<Lance> lancesBanco = lanceRepository.findByLeilaoAndJogador(leilao, jogador);
+
+        Map<String, Lance> vencedoresAntes = executarAlgoritmoGaleShapley(dto.leilaoId());
 
         Map<String, ItemLanceDTO> payloadMap = dto.preferencias().stream()
                 .collect(Collectors.toMap(ItemLanceDTO::clubeId, Function.identity()));
@@ -116,11 +122,20 @@ public class LeilaoService {
             novosLances.add(lance);
         }
 
+        notificarFeed(leilao, jogador);
+
         if (!novosLances.isEmpty()) {
             lanceRepository.saveAll(novosLances);
+            lanceRepository.flush();
         }
 
-        notificarFeed(leilao, jogador);
+        Map<String, Lance> vencedoresDepois = executarAlgoritmoGaleShapley(dto.leilaoId());
+
+        try {
+            verificarEEnviarNotificacoesDePerda(dto.leilaoId(), vencedoresAntes, vencedoresDepois, jogadorId);
+        } catch (Exception e) {
+            log.error("Erro ao calcular notificações de perda", e);
+        }
     }
 
     private Leilao validarLeilao(String leilaoId) {
@@ -291,6 +306,9 @@ public class LeilaoService {
         }
     }
 
+    @Value("${app.frontend.url}")
+    private String linkFront;
+
     @Transactional
     public void finalizarLeilao(String leilaoId) {
         Leilao leilao = leilaoRepository.findById(leilaoId)
@@ -300,6 +318,8 @@ public class LeilaoService {
 
         Map<String, Lance> vencedores = executarAlgoritmoGaleShapley(leilaoId);
         List<String> logs = new ArrayList<>();
+
+        java.text.NumberFormat nf = java.text.NumberFormat.getCurrencyInstance(new java.util.Locale("pt", "BR"));
 
         for (Lance lance : vencedores.values()) {
             Jogador jogador = lance.getJogador();
@@ -331,6 +351,32 @@ public class LeilaoService {
 
             } catch (Exception e) {
                 logs.add("ATENÇÃO: Transferência realizada, mas falha ao associar jogador com clube na temporada. " + e.getMessage());
+            }
+
+            try {
+                String valorFormatado = nf.format(valorFinal);
+                String nomeTemporada = leilao.getTemporada().getNome();
+
+                String titulo = "Clube Conquistado!";
+                String mensagem = String.format(
+                        "Parabéns! Você venceu o leilão e assumiu o %s por %s na %s.",
+                        clube.getNome(),
+                        valorFormatado,
+                        nomeTemporada
+                );
+
+                String link = linkFront+leilao.getTemporada().getId()+"/torneios/jogadores";
+
+                notificacaoService.enviarParaJogador(
+                        jogador,
+                        titulo,
+                        mensagem,
+                        link,
+                        TipoNotificacao.LEILAO
+                );
+
+            } catch (Exception e) {
+                log.error("Erro ao notificar vencedor do leilão: {}", jogador.getNome(), e);
             }
         }
 
@@ -551,5 +597,52 @@ public class LeilaoService {
                         lance.getPrioridade()
                 ))
                 .collect(Collectors.toList());
+    }
+
+    private void verificarEEnviarNotificacoesDePerda(
+            String leilaoId,
+            Map<String, Lance> antes,
+            Map<String, Lance> depois,
+            String jogadorQueDeuLanceAgoraId) {
+
+        Optional<Leilao> leilao = leilaoRepository.findById(leilaoId);
+
+        for (Map.Entry<String, Lance> entryAntes : antes.entrySet()) {
+            String clubeId = entryAntes.getKey();
+            Lance lanceGanhadorAntigo = entryAntes.getValue();
+            String jogadorAntigoId = lanceGanhadorAntigo.getJogador().getId();
+
+            if (jogadorAntigoId.equals(jogadorQueDeuLanceAgoraId)) {
+                continue;
+            }
+
+            Lance lanceGanhadorNovo = depois.get(clubeId);
+
+            boolean perdeuPosicao = false;
+
+            if (lanceGanhadorNovo == null) {
+                perdeuPosicao = true;
+            } else if (!lanceGanhadorNovo.getJogador().getId().equals(jogadorAntigoId)) {
+                perdeuPosicao = true;
+            }
+
+            if (perdeuPosicao) {
+                String nomeClube = lanceGanhadorAntigo.getClube().getNome();
+                String titulo = "Atenção: Você perdeu " + nomeClube;
+                String msg = "A configuração do leilão mudou e você não é mais o vencedor provisório do " + nomeClube + ".";
+                String link = linkFront+"/"+leilao.get().getTemporada().getId()+"/torneios/leilao";
+
+                notificacaoService.enviarParaJogador(
+                        lanceGanhadorAntigo.getJogador(),
+                        titulo,
+                        msg,
+                        link,
+                        TipoNotificacao.ALERTA
+                );
+
+                log.info("Notificação de perda enviada para {} sobre o clube {}",
+                        lanceGanhadorAntigo.getJogador().getNome(), nomeClube);
+            }
+        }
     }
 }
