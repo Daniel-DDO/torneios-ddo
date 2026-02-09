@@ -637,4 +637,56 @@ public class JogadorService {
             log.error("Erro ao enviar notificação de saldo para o jogador {}", jogador.getId(), e);
         }
     }
+
+    public Page<JogadorRankingDTO> listarRankingFinanceiro(Pageable pageable) {
+        return jogadorRepository.findAllByOrderBySaldoVirtualDesc(pageable)
+                .map(jogador -> new JogadorRankingDTO(
+                        jogador.getId(),
+                        jogador.getNome(),
+                        jogador.getDiscord(),
+                        jogador.getImagem(),
+                        jogador.getCargo().name(),
+                        jogador.getSaldoVirtual() != null ? jogador.getSaldoVirtual() : BigDecimal.ZERO
+                ));
+    }
+
+    public ComparacaoJogadoresDTO compararJogadores(String idJogador1, String idJogador2) {
+        Jogador j1 = jogadorRepository.findById(idJogador1)
+                .orElseThrow(() -> new RuntimeException("Jogador 1 não encontrado (ID: " + idJogador1 + ")"));
+
+        Jogador j2 = jogadorRepository.findById(idJogador2)
+                .orElseThrow(() -> new RuntimeException("Jogador 2 não encontrado (ID: " + idJogador2 + ")"));
+
+        return new ComparacaoJogadoresDTO(
+                mapearDadosComparacao(j1),
+                mapearDadosComparacao(j2)
+        );
+    }
+
+    private ComparacaoJogadoresDTO.DadosJogadorComparacao mapearDadosComparacao(Jogador j) {
+        int jogos = j.getPartidasJogadas() != null ? j.getPartidasJogadas() : 0;
+        int vitorias = j.getVitorias() != null ? j.getVitorias() : 0;
+
+        String aproveitamento = "0.0%";
+        if (jogos > 0) {
+            double pct = ((double) vitorias / jogos) * 100;
+            aproveitamento = String.format("%.1f%%", pct);
+        }
+
+        return new ComparacaoJogadoresDTO.DadosJogadorComparacao(
+                j.getId(),
+                j.getNome(),
+                j.getDiscord(),
+                j.getImagem(),
+                j.getTitulos() != null ? j.getTitulos() : 0,
+                j.getFinais() != null ? j.getFinais() : 0,
+                jogos,
+                vitorias,
+                j.getGolsMarcados() != null ? j.getGolsMarcados() : 0,
+                j.getGolsSofridos() != null ? j.getGolsSofridos() : 0,
+                aproveitamento,
+                j.getSaldoVirtual() != null ? j.getSaldoVirtual() : BigDecimal.ZERO,
+                j.getPontosCoeficiente() != null ? j.getPontosCoeficiente() : BigDecimal.ZERO
+        );
+    }
 }

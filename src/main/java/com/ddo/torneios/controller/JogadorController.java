@@ -279,4 +279,17 @@ public class JogadorController {
 
         return ResponseEntity.noContent().build();
     }
+
+    @GetMapping("/ranking-financeiro")
+    public ResponseEntity<Page<JogadorRankingDTO>> getRankingFinanceiro(
+            @PageableDefault(size = 20) Pageable pageable) {
+        return ResponseEntity.ok(jogadorService.listarRankingFinanceiro(pageable));
+    }
+
+    @GetMapping("/comparar")
+    public ResponseEntity<ComparacaoJogadoresDTO> comparar(
+            @RequestParam String id1,
+            @RequestParam String id2) {
+        return ResponseEntity.ok(jogadorService.compararJogadores(id1, id2));
+    }
 }
