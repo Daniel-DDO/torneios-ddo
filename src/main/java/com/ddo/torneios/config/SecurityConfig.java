@@ -49,6 +49,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/api/fases/**").hasAuthority("PROPRIETARIO")
                         .requestMatchers(HttpMethod.POST, "/api/leiloes/admin/**").hasAuthority("PROPRIETARIO")
                         .requestMatchers(HttpMethod.PATCH, "/jogador/{id}/saldo").authenticated()
+                        .requestMatchers(HttpMethod.POST, "/titulos/**").hasAuthority("PROPRIETARIO")
                         .anyRequest().permitAll()
                 )
                 .addFilterBefore(securityFilter, UsernamePasswordAuthenticationFilter.class);

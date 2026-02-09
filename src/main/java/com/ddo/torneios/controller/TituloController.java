@@ -85,4 +85,16 @@ public class TituloController {
             return ResponseEntity.badRequest().body(Map.of("erro", e.getMessage()));
         }
     }
+
+    @GetMapping("/ativos")
+    public ResponseEntity<List<Titulo>> listarAtivos() {
+        List<Titulo> titulosAtivos = tituloService.listarAtivos();
+        return ResponseEntity.ok(titulosAtivos);
+    }
+
+    @GetMapping("/inativos")
+    public ResponseEntity<List<Titulo>> listarInativos() {
+        List<Titulo> titulosInativos = tituloService.listarInativos();
+        return ResponseEntity.ok(titulosInativos);
+    }
 }

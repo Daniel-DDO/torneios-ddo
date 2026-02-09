@@ -10,7 +10,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -139,6 +138,16 @@ public class TituloService {
         return tituloRepository.findAll();
     }
 
+    @Transactional(readOnly = true)
+    public List<Titulo> listarAtivos() {
+        return tituloRepository.findByAtivoTrue();
+    }
+
+    @Transactional(readOnly = true)
+    public List<Titulo> listarInativos() {
+        return tituloRepository.findByAtivoFalse();
+    }
+
     private Titulo converterDto(TituloRequest req) {
         Titulo t = new Titulo();
         t.setNome(req.nome());
@@ -146,6 +155,8 @@ public class TituloService {
         t.setDescricao(req.descricao());
         t.setImagem(req.imagem());
         t.setImagemGerarPost(req.imagemGerarPost());
+        t.setAtivo(req.ativo() != null ? req.ativo() : true);
+
         return t;
     }
 
