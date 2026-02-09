@@ -192,7 +192,7 @@ public class NoticiaService {
             - 'JOGO_QUENTE': Outros casos interessantes.
             
             SAÍDA JSON:
-            { "titulo": "Manchete curta e impactante (com emoji)", "mensagem": "Resumo jornalístico sensacionalista (max 120 chars)", "tipo": "..." }
+            { "titulo": "Manchete curta e impactante (com emoji)", "mensagem": "Resumo jornalístico sensacionalista (max 200 chars)", "tipo": "..." }
             """,
                 torneio, nomeFase,
                 dadosMandante,
