@@ -282,7 +282,7 @@ public class JogadorController {
 
     @GetMapping("/ranking-financeiro")
     public ResponseEntity<Page<JogadorRankingDTO>> getRankingFinanceiro(
-            @PageableDefault(size = 20) Pageable pageable) {
+            @PageableDefault(size = 20, sort = "saldoVirtual", direction = Sort.Direction.DESC) Pageable pageable) {
         return ResponseEntity.ok(jogadorService.listarRankingFinanceiro(pageable));
     }
 
