@@ -4,6 +4,7 @@ import com.ddo.torneios.dto.PatoProjection;
 import com.ddo.torneios.model.FaseMataMata;
 import com.ddo.torneios.model.FaseTorneio;
 import com.ddo.torneios.model.Partida;
+import com.ddo.torneios.model.TipoPartida;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -13,6 +14,7 @@ import org.springframework.data.repository.query.Param;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 
 public interface PartidaRepository extends JpaRepository<Partida, String> {
     List<Partida> findByFaseIdOrderByDataHoraAsc(String faseId);
@@ -194,4 +196,13 @@ public interface PartidaRepository extends JpaRepository<Partida, String> {
     List<Partida> findByJogadorAndFase(@Param("jogadorId") String jogadorId,
                                        @Param("faseId") String faseId,
                                        Sort sort);
+
+    @Query("SELECT p FROM Partida p WHERE p.fase.id = :faseId " +
+            "AND p.chaveIndex = :chaveIndex " +
+            "AND p.tipoPartida = :tipoIda")
+    Optional<Partida> findPartidaIda(
+            @Param("faseId") String faseId,
+            @Param("chaveIndex") Integer chaveIndex,
+            @Param("tipoIda") TipoPartida tipoIda
+    );
 }

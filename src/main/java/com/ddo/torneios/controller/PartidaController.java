@@ -2,7 +2,9 @@ package com.ddo.torneios.controller;
 
 import com.ddo.torneios.dto.DadosPartidaDTO;
 import com.ddo.torneios.dto.PartidaDTO;
+import com.ddo.torneios.dto.ProbabilidadePartidaDTO;
 import com.ddo.torneios.dto.ReportPartidaDTO;
+import com.ddo.torneios.model.Partida;
 import com.ddo.torneios.model.ReportPartida;
 import com.ddo.torneios.repository.PartidaRepository;
 import com.ddo.torneios.repository.ReportPartidaRepository;
@@ -10,6 +12,7 @@ import com.ddo.torneios.request.RelatoProblemaRequest;
 import com.ddo.torneios.service.ClassificacaoService;
 import com.ddo.torneios.service.JuizVirtualService;
 import com.ddo.torneios.service.PartidaService;
+import com.ddo.torneios.service.ProbabilidadeService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -35,6 +38,9 @@ public class PartidaController {
 
     @Autowired
     private ReportPartidaRepository reportPartidaRepository;
+
+    @Autowired
+    private ProbabilidadeService probabilidadeService;
 
     @PostMapping("/registrar-resultado")
     public ResponseEntity<String> registrarResultado(@RequestBody PartidaDTO dto) {
@@ -166,5 +172,15 @@ public class PartidaController {
 
         List<PartidaDTO> partidas = partidaService.minhasPartidasPorFase(id, faseId);
         return ResponseEntity.ok(partidas);
+    }
+
+    @GetMapping("/{id}/probabilidade")
+    public ResponseEntity<ProbabilidadePartidaDTO> getProbabilidadePartida(@PathVariable String id) {
+        Partida partida = partidaRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Partida não encontrada: " + id));
+
+        ProbabilidadePartidaDTO probabilidade = probabilidadeService.calcularProbabilidade(partida);
+
+        return ResponseEntity.ok(probabilidade);
     }
 }
