@@ -1,5 +1,6 @@
 package com.ddo.torneios.repository;
 
+import com.ddo.torneios.dto.HistoricoConfrontoProjection;
 import com.ddo.torneios.dto.PatoProjection;
 import com.ddo.torneios.model.FaseMataMata;
 import com.ddo.torneios.model.FaseTorneio;
@@ -204,5 +205,40 @@ public interface PartidaRepository extends JpaRepository<Partida, String> {
             @Param("faseId") String faseId,
             @Param("chaveIndex") Integer chaveIndex,
             @Param("tipoIda") TipoPartida tipoIda
+    );
+
+    @Query(value = """
+        SELECT 
+            COUNT(*) as totalJogos,
+            SUM(CASE 
+                WHEN (m.jogador_id = :idMandanteAtual AND (p.gols_mandante > p.gols_visitante OR (p.gols_mandante = p.gols_visitante AND p.penaltis_mandante > p.penaltis_visitante))) THEN 1
+                WHEN (v.jogador_id = :idMandanteAtual AND (p.gols_visitante > p.gols_mandante OR (p.gols_visitante = p.gols_mandante AND p.penaltis_visitante > p.penaltis_mandante))) THEN 1
+                ELSE 0 
+            END) as vitoriasMandanteAtual,
+            
+            SUM(CASE 
+                WHEN (p.gols_mandante = p.gols_visitante AND p.penaltis_mandante IS NULL) THEN 1 
+                ELSE 0 
+            END) as empates,
+            
+            SUM(CASE 
+                WHEN (m.jogador_id = :idVisitanteAtual AND (p.gols_mandante > p.gols_visitante OR (p.gols_mandante = p.gols_visitante AND p.penaltis_mandante > p.penaltis_visitante))) THEN 1
+                WHEN (v.jogador_id = :idVisitanteAtual AND (p.gols_visitante > p.gols_mandante OR (p.gols_visitante = p.gols_mandante AND p.penaltis_visitante > p.penaltis_mandante))) THEN 1
+                ELSE 0 
+            END) as vitoriasVisitanteAtual
+            
+        FROM partida p
+        JOIN jogador_clube m ON p.mandante_id = m.id
+        JOIN jogador_clube v ON p.visitante_id = v.id
+        WHERE p.realizada = true
+        AND (
+            (m.jogador_id = :idMandanteAtual AND v.jogador_id = :idVisitanteAtual) 
+            OR 
+            (m.jogador_id = :idVisitanteAtual AND v.jogador_id = :idMandanteAtual)
+        )
+    """, nativeQuery = true)
+    HistoricoConfrontoProjection findResumoConfrontoDireto(
+            @Param("idMandanteAtual") String idMandanteAtual,
+            @Param("idVisitanteAtual") String idVisitanteAtual
     );
 }
