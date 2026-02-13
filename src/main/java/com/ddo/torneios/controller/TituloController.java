@@ -2,6 +2,7 @@ package com.ddo.torneios.controller;
 
 import com.ddo.torneios.model.Conquista;
 import com.ddo.torneios.model.Titulo;
+import com.ddo.torneios.request.ConcederTituloColetivoRequest;
 import com.ddo.torneios.request.ConcederTituloLegadoRequest;
 import com.ddo.torneios.request.ConcederTituloRequest;
 import com.ddo.torneios.request.TituloRequest;
@@ -96,5 +97,26 @@ public class TituloController {
     public ResponseEntity<List<Titulo>> listarInativos() {
         List<Titulo> titulosInativos = tituloService.listarInativos();
         return ResponseEntity.ok(titulosInativos);
+    }
+
+    @PostMapping("/conceder-coletivo")
+    public ResponseEntity<?> concederTituloColetivo(@RequestBody ConcederTituloColetivoRequest request) {
+        try {
+            List<Conquista> conquistas = tituloService.concederTituloColetivo(request);
+
+            return ResponseEntity.ok(Map.of(
+                    "mensagem", "Títulos concedidos com sucesso!",
+                    "totalJogadoresPremiados", conquistas.size(),
+                    "clubePremiado", request.getClubeId(),
+                    "imagensGeradas", conquistas.stream()
+                            .filter(c -> c.getImagem() != null)
+                            .map(Conquista::getImagem)
+                            .toList()
+            ));
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.badRequest().body(Map.of("erro", e.getMessage()));
+        }
     }
 }
