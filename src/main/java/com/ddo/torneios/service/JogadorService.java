@@ -279,6 +279,11 @@ public class JogadorService {
         return jogadorRepository.findByDiscordContainingIgnoreCase(termo);
     }
 
+    public List<JogadorResumo> buscarAutocomplete(String termo) {
+        Pageable limit = PageRequest.of(0, 5);
+        return jogadorRepository.findByDiscordContainingIgnoreCaseOrNomeContainingIgnoreCase(termo, termo, limit);
+    }
+
     public Page<Jogador> listarTodosPaginado(Pageable pageable) {
         return jogadorRepository.findAll(pageable);
     }

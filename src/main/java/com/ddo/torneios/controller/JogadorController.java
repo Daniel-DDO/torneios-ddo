@@ -103,25 +103,12 @@ public class JogadorController {
     }
 
     @GetMapping("/buscar-autocomplete")
-    public ResponseEntity<List<Map<String, String>>> buscarJogadoresAutocomplete(@RequestParam String termo) {
+    public ResponseEntity<List<JogadorResumo>> buscarJogadoresAutocomplete(@RequestParam String termo) {
         if (termo == null || termo.length() < 3) {
             return ResponseEntity.badRequest().build();
         }
 
-        List<Jogador> jogadores = jogadorService.findByDiscordContainingIgnoreCase(termo);
-
-        List<Map<String, String>> resultado = jogadores.stream()
-                .limit(5)
-                .map(j -> {
-                    Map<String, String> map = new HashMap<>();
-                    map.put("id", String.valueOf(j.getId()));
-                    map.put("discord", j.getDiscord());
-                    map.put("nome", j.getNome());
-                    map.put("imagem", j.getImagem());
-                    return map;
-                })
-                .collect(Collectors.toList());
-
+        List<JogadorResumo> resultado = jogadorService.buscarAutocomplete(termo);
         return ResponseEntity.ok(resultado);
     }
 

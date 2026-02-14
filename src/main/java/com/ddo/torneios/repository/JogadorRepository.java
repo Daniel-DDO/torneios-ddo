@@ -1,5 +1,6 @@
 package com.ddo.torneios.repository;
 
+import com.ddo.torneios.dto.JogadorResumo;
 import com.ddo.torneios.dto.JogadorResumoDTO;
 import com.ddo.torneios.model.Cargo;
 import com.ddo.torneios.model.Jogador;
@@ -67,4 +68,10 @@ public interface JogadorRepository extends JpaRepository<Jogador, String> {
     List<Jogador> findTop10ByOrderByPontosCoeficienteDescTitulosDescFinaisDescVitoriasDesc();
 
     Page<Jogador> findAllByOrderBySaldoVirtualDesc(Pageable pageable);
+
+    List<JogadorResumo> findByDiscordContainingIgnoreCaseOrNomeContainingIgnoreCase(
+            String discord,
+            String nome,
+            Pageable pageable
+    );
 }
