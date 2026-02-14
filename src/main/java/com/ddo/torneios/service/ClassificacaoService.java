@@ -707,6 +707,8 @@ public class ClassificacaoService {
     private List<LinhaClassificacaoDTO> atribuirZonasEPosicao(List<AcumuladorStatus> lista, FaseTorneio fase) {
         List<LinhaClassificacaoDTO> resultado = new ArrayList<>();
 
+        List<ParticipacaoFase> paraAtualizar = new ArrayList<>();
+
         for (int i = 0; i < lista.size(); i++) {
             int pos = i + 1;
             AcumuladorStatus acc = lista.get(i);
@@ -722,7 +724,35 @@ public class ClassificacaoService {
                     zona != null ? zona.getNome() : "",
                     zona != null ? zona.getCorHex() : "#FFFFFF"
             ));
+
+            ParticipacaoFase p = fase.getParticipacoes().stream()
+                    .filter(part -> part.getJogadorClube().getId().equals(acc.jogadorClubeId))
+                    .findFirst()
+                    .orElse(null);
+
+            if (p != null) {
+                boolean mudou = false;
+
+                if (p.getPosicaoClassificacao() == null || p.getPosicaoClassificacao() != pos) {
+                    p.setPosicaoClassificacao(pos);
+                    mudou = true;
+                }
+
+                if (!Objects.equals(p.getPontos(), acc.pontos)) {
+                    p.setPontos(acc.pontos);
+                    mudou = true;
+                }
+
+                if (mudou) {
+                    paraAtualizar.add(p);
+                }
+            }
         }
+
+        if (!paraAtualizar.isEmpty()) {
+            participacaoRepository.saveAll(paraAtualizar);
+        }
+
         return resultado;
     }
 
