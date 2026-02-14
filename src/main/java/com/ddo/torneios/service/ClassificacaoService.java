@@ -49,6 +49,9 @@ public class ClassificacaoService {
     private NoticiaService noticiaService;
     @Autowired
     private JogadorService jogadorService;
+    @Autowired
+    private PunicaoRepository punicaoRepository;
+
 
     @Transactional
     public void registrarResultado(PartidaDTO dto) {
@@ -566,6 +569,7 @@ public class ClassificacaoService {
             acc.setNomeJogador(p.getJogadorClube().getJogador().getNome());
             acc.setNomeClube(p.getJogadorClube().getClube().getNome());
             acc.setImagemClube(p.getJogadorClube().getClube().getImagem());
+            acc.setPontos(0);
             mapa.put(id, acc);
         });
 
@@ -573,6 +577,17 @@ public class ClassificacaoService {
             acumularPartida(mapa, p);
         }
 
+        List<Punicao> punicoes = punicaoRepository.findByParticipacaoFase_FaseId(fase.getId());
+
+        for (Punicao punicao : punicoes) {
+            String jogadorClubeId = punicao.getParticipacaoFase().getJogadorClube().getId();
+
+            AcumuladorStatus acc = mapa.get(jogadorClubeId);
+            if (acc != null) {
+                int novaPontuacao = acc.getPontos() + punicao.getPontos();
+                acc.setPontos(novaPontuacao);
+            }
+        }
         List<AcumuladorStatus> ordenados = mapa.values().stream()
                 .sorted((a, b) -> {
                     //Pontos

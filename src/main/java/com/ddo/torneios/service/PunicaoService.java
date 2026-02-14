@@ -8,6 +8,7 @@ import com.ddo.torneios.repository.PunicaoRepository;
 import com.ddo.torneios.request.PunicaoRequest;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -20,7 +21,11 @@ public class PunicaoService {
     private PunicaoRepository punicaoRepository;
 
     @Autowired
-    private ParticipacaoFaseRepository participacaoFaseRepository; // Você precisará criar ou injetar este repositório
+    private ParticipacaoFaseRepository participacaoFaseRepository;
+
+    @Autowired
+    @Lazy
+    private ClassificacaoService classificacaoService;
 
     @Transactional
     public PunicaoDTO aplicarPunicao(PunicaoRequest request) {
@@ -29,10 +34,10 @@ public class PunicaoService {
 
         Punicao punicao = new Punicao(participacao, request.getPontos(), request.getMotivo());
         Punicao punicaoSalva = punicaoRepository.save(punicao);
-
         int novaPontuacao = participacao.getPontos() + request.getPontos();
         participacao.setPontos(novaPontuacao);
         participacaoFaseRepository.save(participacao);
+        classificacaoService.calcularClassificacao(participacao.getFase());
 
         return new PunicaoDTO(punicaoSalva);
     }
@@ -47,8 +52,8 @@ public class PunicaoService {
         int pontuacaoRevertida = participacao.getPontos() - punicao.getPontos();
         participacao.setPontos(pontuacaoRevertida);
         participacaoFaseRepository.save(participacao);
-
         punicaoRepository.delete(punicao);
+        classificacaoService.calcularClassificacao(participacao.getFase());
     }
 
     public List<PunicaoDTO> listarPorParticipacao(String participacaoFaseId) {
