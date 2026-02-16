@@ -27,6 +27,9 @@ public class NoticiaService {
     @Autowired
     private JogadorRepository jogadorRepository;
 
+    @Autowired
+    private DiscordNotificationService discordService;
+
     @Value("${gemini.api.key.noticia}")
     private String apiKey;
 
@@ -90,6 +93,8 @@ public class NoticiaService {
 
                 noticiaRepository.save(noticia);
                 log.info("- SUCESSO! Notícia salva: {}", mancheteJson.titulo);
+
+                discordService.enviarNoticia(noticia);
             }
 
         } catch (Exception e) {
