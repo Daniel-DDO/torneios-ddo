@@ -279,4 +279,9 @@ public class JogadorController {
             @RequestParam String id2) {
         return ResponseEntity.ok(jogadorService.compararJogadores(id1, id2));
     }
+
+    @GetMapping("/{id}/resumo")
+    public ResponseEntity<JogadorResumoDTO> buscarJogadorResumo(@PathVariable String id) {
+        return ResponseEntity.ok(jogadorService.buscarResumoPorId(id));
+    }
 }

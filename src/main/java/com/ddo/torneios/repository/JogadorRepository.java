@@ -42,10 +42,11 @@ public interface JogadorRepository extends JpaRepository<Jogador, String> {
 
     @Query("""
         SELECT new com.ddo.torneios.dto.JogadorResumoDTO(
-            j.id, 
-            j.nome, 
-            j.discord, 
-            j.pontosCoeficiente
+            j.id,
+            j.nome,
+            j.discord,
+            j.pontosCoeficiente,
+            j.imagem
         )
         FROM Jogador j
         ORDER BY j.pontosCoeficiente DESC NULLS LAST
@@ -54,10 +55,11 @@ public interface JogadorRepository extends JpaRepository<Jogador, String> {
 
     @Query("""
         SELECT new com.ddo.torneios.dto.JogadorResumoDTO(
-            j.id, 
-            j.nome, 
-            j.discord, 
-            j.pontosCoeficiente
+            j.id,
+            j.nome,
+            j.discord,
+            j.pontosCoeficiente,
+            j.imagem
         )
         FROM Jogador j
         ORDER BY j.pontosCoeficiente DESC NULLS LAST
@@ -74,4 +76,17 @@ public interface JogadorRepository extends JpaRepository<Jogador, String> {
             String nome,
             Pageable pageable
     );
+
+    @Query("""
+        SELECT new com.ddo.torneios.dto.JogadorResumoDTO(
+            j.id,
+            j.nome,
+            j.discord,
+            j.pontosCoeficiente,
+            j.imagem
+        )
+        FROM Jogador j
+        WHERE j.id = :id
+    """)
+    Optional<JogadorResumoDTO> findResumoById(@Param("id") String id);
 }

@@ -443,7 +443,7 @@ public class JogadorService {
     public List<JogadorResumoDTO> buscarJogadoresParaSelect(String termo) {
         return jogadorRepository.findByNomeContainingIgnoreCaseOrDiscordContainingIgnoreCase(termo, termo)
                 .stream()
-                .map(j -> new JogadorResumoDTO(j.getId(), j.getNome(), j.getDiscord(), j.getPontosCoeficiente())) // DTO leve só com o necessário
+                .map(j -> new JogadorResumoDTO(j.getId(), j.getNome(), j.getDiscord(), j.getPontosCoeficiente(), j.getImagem()))
                 .collect(Collectors.toList());
     }
 
@@ -693,5 +693,10 @@ public class JogadorService {
                 j.getSaldoVirtual() != null ? j.getSaldoVirtual() : BigDecimal.ZERO,
                 j.getPontosCoeficiente() != null ? j.getPontosCoeficiente() : BigDecimal.ZERO
         );
+    }
+
+    public JogadorResumoDTO buscarResumoPorId(String id) {
+        return jogadorRepository.findResumoById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Jogador não encontrado com ID: " + id));
     }
 }
