@@ -10,6 +10,7 @@ import com.ddo.torneios.service.ClassificacaoService;
 import com.ddo.torneios.service.JuizVirtualService;
 import com.ddo.torneios.service.PartidaService;
 import com.ddo.torneios.service.ProbabilidadeService;
+import jakarta.persistence.EntityNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -99,10 +100,11 @@ public class PartidaController {
 
     @GetMapping("/{id}")
     public ResponseEntity<PartidaDTO> buscarPorId(@PathVariable String id) {
-        return partidaRepository.findById(id)
-                .map(PartidaDTO::new)
-                .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
+        try {
+            return ResponseEntity.ok(partidaService.buscarPorId(id));
+        } catch (EntityNotFoundException e) {
+            return ResponseEntity.notFound().build();
+        }
     }
 
     @GetMapping("/buscar")

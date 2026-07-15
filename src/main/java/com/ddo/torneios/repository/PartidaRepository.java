@@ -1,8 +1,6 @@
 package com.ddo.torneios.repository;
 
-import com.ddo.torneios.dto.HistoricoConfrontoProjection;
-import com.ddo.torneios.dto.PartidaHistoricoDTO;
-import com.ddo.torneios.dto.PatoProjection;
+import com.ddo.torneios.dto.*;
 import com.ddo.torneios.model.FaseMataMata;
 import com.ddo.torneios.model.FaseTorneio;
 import com.ddo.torneios.model.Partida;
@@ -279,4 +277,49 @@ public interface PartidaRepository extends JpaRepository<Partida, String> {
             @Param("idMandanteAtual") String idMandanteAtual,
             @Param("idVisitanteAtual") String idVisitanteAtual
     );
+
+    @Query("""
+    SELECT new com.ddo.torneios.dto.PartidaDetalheProjection(
+        p.id, f.id, r.id, r.numero,
+        p.etapaMataMata, p.chaveIndex,
+        p.dataHora, p.estadio, p.linkPartida,
+        new com.ddo.torneios.dto.JogadorClubeDTO(
+            m.id, mj.id, mj.nome, mj.imagem,
+            mc.id, mc.nome, mc.imagem, mc.sigla,
+            mt.id, mt.nome,
+            m.totalGolsMarcados, m.totalGolsSofridos, m.partidasJogadas,
+            m.pontosCoeficiente, m.statusTemporada,
+            m.vitorias, m.empates, m.derrotas,
+            m.totalCartoesAmarelos, m.totalCartoesVermelhos, m.balancoFinanceiro
+        ),
+        new com.ddo.torneios.dto.JogadorClubeDTO(
+            v.id, vj.id, vj.nome, vj.imagem,
+            vc.id, vc.nome, vc.imagem, vc.sigla,
+            vt.id, vt.nome,
+            v.totalGolsMarcados, v.totalGolsSofridos, v.partidasJogadas,
+            v.pontosCoeficiente, v.statusTemporada,
+            v.vitorias, v.empates, v.derrotas,
+            v.totalCartoesAmarelos, v.totalCartoesVermelhos, v.balancoFinanceiro
+        ),
+        p.golsMandante, p.golsVisitante,
+        p.realizada, p.wo, p.houveProrrogacao,
+        p.penaltis.golsMandante, p.penaltis.golsVisitante,
+        p.logEventos,
+        p.cartoesAmarelosMandante, p.cartoesVermelhosMandante,
+        p.cartoesAmarelosVisitante, p.cartoesVermelhosVisitante,
+        p.coeficienteMandante, p.coeficienteVisitante,
+        p.tipoPartida,
+        pp.id, p.slotNaProxima,
+        p.receitaMandante, p.receitaVisitante
+    )
+    FROM Partida p
+    JOIN p.fase f
+    LEFT JOIN p.rodada r
+    LEFT JOIN p.mandante m LEFT JOIN m.jogador mj LEFT JOIN m.clube mc LEFT JOIN m.temporada mt
+    LEFT JOIN p.visitante v LEFT JOIN v.jogador vj LEFT JOIN v.clube vc LEFT JOIN v.temporada vt
+    LEFT JOIN p.proximaPartida pp
+    WHERE p.id = :id
+    """)
+    Optional<PartidaDetalheProjection> buscarDetalhePorId(@Param("id") String id);
+
 }
