@@ -1,5 +1,6 @@
 package com.ddo.torneios.repository;
 
+import aj.org.objectweb.asm.commons.Remapper;
 import com.ddo.torneios.model.JogadorClube;
 import com.ddo.torneios.model.Temporada;
 import org.springframework.data.domain.Pageable;
@@ -34,4 +35,7 @@ public interface JogadorClubeRepository extends JpaRepository<JogadorClube, Stri
     );
 
     List<JogadorClube> findTop6ByTemporadaOrderByPontosCoeficienteDesc(Temporada temporada);
+
+    @Query("SELECT jc.idDeQuemMeSubstituiu FROM JogadorClube jc WHERE jc.id = :id")
+    Optional<String> buscarIdSubstituto(@Param("id") String id);
 }

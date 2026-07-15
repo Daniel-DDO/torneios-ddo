@@ -322,4 +322,14 @@ public interface PartidaRepository extends JpaRepository<Partida, String> {
     """)
     Optional<PartidaDetalheProjection> buscarDetalhePorId(@Param("id") String id);
 
+    @Query("""
+    SELECT new com.ddo.torneios.dto.PartidaClassificacaoProjection(
+        p.mandante.id, p.visitante.id, p.golsMandante, p.golsVisitante,
+        p.cartoesAmarelosMandante, p.cartoesVermelhosMandante,
+        p.cartoesAmarelosVisitante, p.cartoesVermelhosVisitante
+    )
+    FROM Partida p
+    WHERE p.fase = :fase AND p.realizada = true
+    """)
+    List<PartidaClassificacaoProjection> buscarDadosClassificacao(@Param("fase") FaseTorneio fase);
 }
