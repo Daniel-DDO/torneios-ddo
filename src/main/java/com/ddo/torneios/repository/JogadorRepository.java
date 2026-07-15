@@ -7,6 +7,7 @@ import com.ddo.torneios.model.Jogador;
 import jakarta.validation.constraints.NotBlank;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -89,4 +90,7 @@ public interface JogadorRepository extends JpaRepository<Jogador, String> {
         WHERE j.id = :id
     """)
     Optional<JogadorResumoDTO> findResumoById(@Param("id") String id);
+
+    @EntityGraph(attributePaths = {}, type = EntityGraph.EntityGraphType.FETCH)
+    Optional<Jogador> findParaAutenticacaoById(String id);
 }

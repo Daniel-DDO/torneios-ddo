@@ -32,7 +32,7 @@ public class SecurityFilter extends OncePerRequestFilter {
             String idJogador = tokenService.validarTokenEObterId(token);
 
             if (idJogador != null) {
-                Jogador jogador = jogadorRepository.findById(idJogador).orElse(null);
+                Jogador jogador = jogadorRepository.findParaAutenticacaoById(idJogador).orElse(null);
 
                 if (jogador != null) {
                     UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
