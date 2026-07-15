@@ -1,11 +1,13 @@
 package com.ddo.torneios.repository;
 
 import com.ddo.torneios.dto.HistoricoConfrontoProjection;
+import com.ddo.torneios.dto.PartidaHistoricoDTO;
 import com.ddo.torneios.dto.PatoProjection;
 import com.ddo.torneios.model.FaseMataMata;
 import com.ddo.torneios.model.FaseTorneio;
 import com.ddo.torneios.model.Partida;
 import com.ddo.torneios.model.TipoPartida;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -58,13 +60,49 @@ public interface PartidaRepository extends JpaRepository<Partida, String> {
 
     List<Partida> findByFase(FaseTorneio fase);
 
-    @Query("SELECT p FROM Partida p " +
-            "WHERE (p.mandante.jogador.id = :jogadorId OR p.visitante.jogador.id = :jogadorId) " +
-            "AND p.realizada = :realizada")
-    List<Partida> findPorJogadorIdEStatus(
+    @Query(value = """
+    SELECT new com.ddo.torneios.dto.PartidaHistoricoDTO(
+        p.id,
+        f.id,
+        r.id,
+        r.numero,
+        p.dataHora,
+        p.estadio,
+        new com.ddo.torneios.dto.JogadorClubeResumoDTO(
+            m.id, mj.id, mj.nome, mj.imagem, mc.id, mc.nome, mc.imagem, mc.sigla
+        ),
+        new com.ddo.torneios.dto.JogadorClubeResumoDTO(
+            v.id, vj.id, vj.nome, vj.imagem, vc.id, vc.nome, vc.imagem, vc.sigla
+        ),
+        p.golsMandante,
+        p.golsVisitante,
+        p.realizada,
+        p.wo,
+        CASE WHEN p.penaltis.golsMandante IS NOT NULL AND p.penaltis.golsVisitante IS NOT NULL
+             THEN true ELSE false END,
+        p.penaltis.golsMandante,
+        p.penaltis.golsVisitante
+    )
+    FROM Partida p
+    JOIN p.fase f
+    LEFT JOIN p.rodada r
+    JOIN p.mandante m JOIN m.jogador mj JOIN m.clube mc
+    JOIN p.visitante v JOIN v.jogador vj JOIN v.clube vc
+    WHERE (mj.id = :jogadorId OR vj.id = :jogadorId)
+    AND p.realizada = :realizada
+    """,
+            countQuery = """
+    SELECT count(p)
+    FROM Partida p
+    JOIN p.mandante m JOIN m.jogador mj
+    JOIN p.visitante v JOIN v.jogador vj
+    WHERE (mj.id = :jogadorId OR vj.id = :jogadorId)
+    AND p.realizada = :realizada
+    """)
+    Page<PartidaHistoricoDTO> findPorJogadorIdEStatus(
             @Param("jogadorId") String jogadorId,
             @Param("realizada") boolean realizada,
-            Sort sort
+            Pageable pageable
     );
 
     @Query("SELECT p FROM Partida p " +

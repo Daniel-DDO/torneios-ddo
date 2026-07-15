@@ -1,9 +1,6 @@
 package com.ddo.torneios.controller;
 
-import com.ddo.torneios.dto.DadosPartidaDTO;
-import com.ddo.torneios.dto.PartidaDTO;
-import com.ddo.torneios.dto.ProbabilidadePartidaDTO;
-import com.ddo.torneios.dto.ReportPartidaDTO;
+import com.ddo.torneios.dto.*;
 import com.ddo.torneios.model.Partida;
 import com.ddo.torneios.model.ReportPartida;
 import com.ddo.torneios.repository.PartidaRepository;
@@ -83,13 +80,21 @@ public class PartidaController {
     }
 
     @GetMapping("/jogador/{jogadorId}/feitas")
-    public ResponseEntity<List<PartidaDTO>> minhasPartidasFeitas(@PathVariable String jogadorId) {
-        return ResponseEntity.ok(partidaService.minhasPartidasFeitas(jogadorId));
+    public ResponseEntity<PaginacaoDTO<PartidaHistoricoDTO>> minhasPartidasFeitas(
+            @PathVariable String jogadorId,
+            @RequestParam(defaultValue = "0") int pagina,
+            @RequestParam(defaultValue = "10") int tamanho
+    ) {
+        return ResponseEntity.ok(partidaService.minhasPartidasFeitas(jogadorId, pagina, tamanho));
     }
 
     @GetMapping("/jogador/{jogadorId}/pendentes")
-    public ResponseEntity<List<PartidaDTO>> minhasPartidasParaFazer(@PathVariable String jogadorId) {
-        return ResponseEntity.ok(partidaService.minhasPartidasParaFazer(jogadorId));
+    public ResponseEntity<PaginacaoDTO<PartidaHistoricoDTO>> minhasPartidasPendentes(
+            @PathVariable String jogadorId,
+            @RequestParam(defaultValue = "0") int pagina,
+            @RequestParam(defaultValue = "10") int tamanho
+    ) {
+        return ResponseEntity.ok(partidaService.minhasPartidasParaFazer(jogadorId, pagina, tamanho));
     }
 
     @GetMapping("/{id}")
