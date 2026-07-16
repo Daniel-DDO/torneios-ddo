@@ -1,6 +1,7 @@
 package com.ddo.torneios.service;
 
 import com.ddo.torneios.dto.JogadorClubeDTO;
+import com.ddo.torneios.dto.JogadorClubeInscritoDTO;
 import com.ddo.torneios.dto.SorteioResultadoDTO;
 import com.ddo.torneios.exception.RegraNegocioException;
 import com.ddo.torneios.model.*;
@@ -98,6 +99,10 @@ public class JogadorClubeService {
             throw new EntityNotFoundException("Inscrição não encontrada com ID: " + id);
         }
         jogadorClubeRepository.deleteById(id);
+    }
+
+    public List<JogadorClubeInscritoDTO> listarInscritosResumoPorTemporada(String temporadaId) {
+        return jogadorClubeRepository.buscarInscritosResumo(temporadaId);
     }
 
     public List<JogadorClubeDTO> listarTodos() {

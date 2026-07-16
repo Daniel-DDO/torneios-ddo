@@ -1,6 +1,7 @@
 package com.ddo.torneios.controller;
 
 import com.ddo.torneios.dto.JogadorClubeDTO;
+import com.ddo.torneios.dto.JogadorClubeInscritoDTO;
 import com.ddo.torneios.dto.SorteioResultadoDTO;
 import com.ddo.torneios.dto.SubstituicaoDTO;
 import com.ddo.torneios.request.ConfirmacaoSorteioRequest;
@@ -32,6 +33,11 @@ public class JogadorClubeController {
     public ResponseEntity<List<JogadorClubeDTO>> listarInscritos(@PathVariable String temporadaId) {
         List<JogadorClubeDTO> inscritos = jogadorClubeService.listarInscritosPorTemporada(temporadaId);
         return ResponseEntity.ok(inscritos);
+    }
+
+    @GetMapping("/temporada/{temporadaId}/resumo")
+    public ResponseEntity<List<JogadorClubeInscritoDTO>> listarInscritosResumo(@PathVariable String temporadaId) {
+        return ResponseEntity.ok(jogadorClubeService.listarInscritosResumoPorTemporada(temporadaId));
     }
 
     @DeleteMapping("/{id}")
