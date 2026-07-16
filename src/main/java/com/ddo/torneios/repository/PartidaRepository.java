@@ -375,4 +375,74 @@ public interface PartidaRepository extends JpaRepository<Partida, String> {
     List<PartidaConfrontoDTO> buscarDetalhesConfronto(@Param("fase") FaseTorneio fase,
                                                       @Param("etapa") FaseMataMata etapa,
                                                       @Param("chaveIndex") Integer chaveIndex);
+
+    @Query(value = """
+    SELECT
+        t.adversarioId,
+        t.adversarioNome,
+        t.adversarioDiscord,
+        t.adversarioImagem,
+        SUM(t.jogos) as totalJogos,
+        SUM(t.vitoria) as minhasVitorias,
+        SUM(t.empate) as meusEmpates,
+        SUM(t.golsFeitos) as meusGols,
+        SUM(t.golsSofridos) as golsSofridos
+    FROM (
+        SELECT
+            jv.id as adversarioId,
+            jv.nome as adversarioNome,
+            jv.discord as adversarioDiscord,
+            jv.imagem as adversarioImagem,
+            1 as jogos,
+            CASE 
+                WHEN p.gols_mandante > p.gols_visitante THEN 1
+                WHEN p.gols_mandante = p.gols_visitante AND COALESCE(p.penaltis_mandante, 0) > COALESCE(p.penaltis_visitante, 0) THEN 1
+                ELSE 0 
+            END as vitoria,
+            CASE 
+                WHEN p.gols_mandante = p.gols_visitante AND p.penaltis_mandante IS NULL THEN 1
+                ELSE 0 
+            END as empate,
+            p.gols_mandante as golsFeitos,
+            p.gols_visitante as golsSofridos
+        FROM partida p
+        INNER JOIN jogador_clube m ON p.mandante_id = m.id
+        INNER JOIN jogador jm ON m.jogador_id = jm.id
+        INNER JOIN jogador_clube v ON p.visitante_id = v.id
+        INNER JOIN jogador jv ON v.jogador_id = jv.id
+        WHERE jm.id = :jogadorId AND p.realizada = true
+
+        UNION ALL
+
+        SELECT
+            jm.id as adversarioId,
+            jm.nome as adversarioNome,
+            jm.discord as adversarioDiscord,
+            jm.imagem as adversarioImagem,
+            1 as jogos,
+            CASE 
+                WHEN p.gols_visitante > p.gols_mandante THEN 1
+                WHEN p.gols_visitante = p.gols_mandante AND COALESCE(p.penaltis_visitante, 0) > COALESCE(p.penaltis_mandante, 0) THEN 1
+                ELSE 0 
+            END as vitoria,
+            CASE 
+                WHEN p.gols_visitante = p.gols_mandante AND p.penaltis_mandante IS NULL THEN 1
+                ELSE 0 
+            END as empate,
+            p.gols_visitante as golsFeitos,
+            p.gols_mandante as golsSofridos
+        FROM partida p
+        INNER JOIN jogador_clube m ON p.mandante_id = m.id
+        INNER JOIN jogador jm ON m.jogador_id = jm.id
+        INNER JOIN jogador_clube v ON p.visitante_id = v.id
+        INNER JOIN jogador jv ON v.jogador_id = jv.id
+        WHERE jv.id = :jogadorId AND p.realizada = true
+    ) as t
+    GROUP BY t.adversarioId, t.adversarioNome, t.adversarioDiscord, t.adversarioImagem
+    ORDER BY (SUM(t.jogos) - SUM(t.vitoria) - SUM(t.empate)) DESC,
+             (SUM(t.golsSofridos) - SUM(t.golsFeitos)) DESC
+    LIMIT 3
+""", nativeQuery = true)
+    List<PatoProjection> findTop3Carrascos(@Param("jogadorId") String jogadorId);
+
 }

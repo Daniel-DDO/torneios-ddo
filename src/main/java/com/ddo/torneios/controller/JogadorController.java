@@ -225,10 +225,14 @@ public class JogadorController {
         return ResponseEntity.ok(jogadorService.obterResumoHistoria(id));
     }
 
-    @GetMapping("/{id}/patos")
-    public ResponseEntity<List<RivalidadeDTO>> listarTop3Patos(@PathVariable String id) {
-        List<RivalidadeDTO> ranking = jogadorService.buscarTop3Patos(id);
-        return ResponseEntity.ok(ranking);
+    @GetMapping("/{jogadorId}/patos")
+    public ResponseEntity<List<RivalidadeDTO>> buscarTop3Patos(@PathVariable String jogadorId) {
+        return ResponseEntity.ok(jogadorService.buscarTop3Patos(jogadorId));
+    }
+
+    @GetMapping("/{jogadorId}/carrascos")
+    public ResponseEntity<List<RivalidadeDTO>> buscarTop3Carrascos(@PathVariable String jogadorId) {
+        return ResponseEntity.ok(jogadorService.buscarTop3Carrascos(jogadorId));
     }
 
     @PatchMapping("/{id}/saldo")

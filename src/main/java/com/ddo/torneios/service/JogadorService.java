@@ -509,8 +509,14 @@ public class JogadorService {
     }
 
     public List<RivalidadeDTO> buscarTop3Patos(String jogadorId) {
-        List<PatoProjection> projecoes = partidaRepository.findTop3Patos(jogadorId);
+        return mapearRivalidades(partidaRepository.findTop3Patos(jogadorId));
+    }
 
+    public List<RivalidadeDTO> buscarTop3Carrascos(String jogadorId) {
+        return mapearRivalidades(partidaRepository.findTop3Carrascos(jogadorId));
+    }
+
+    private List<RivalidadeDTO> mapearRivalidades(List<PatoProjection> projecoes) {
         return projecoes.stream().map(p -> {
             RivalidadeDTO dto = new RivalidadeDTO();
             dto.setAdversarioId(p.getAdversarioId());
@@ -521,24 +527,23 @@ public class JogadorService {
             dto.setPartidasJogadas(p.getTotalJogos());
             dto.setMinhasVitorias(p.getMinhasVitorias());
             dto.setMeusEmpates(p.getMeusEmpates());
-
-            int derrotas = p.getTotalJogos() - p.getMinhasVitorias() - p.getMeusEmpates();
-            dto.setMinhasDerrotas(derrotas);
+            dto.setMinhasDerrotas(p.getTotalJogos() - p.getMinhasVitorias() - p.getMeusEmpates());
 
             dto.setGolsFeitos(p.getMeusGols());
             dto.setGolsSofridos(p.getGolsSofridos());
             dto.setSaldoGols(p.getMeusGols() - p.getGolsSofridos());
 
-            if (p.getTotalJogos() > 0) {
-                double pontos = (p.getMinhasVitorias() * 3.0) + p.getMeusEmpates();
-                double possiveis = p.getTotalJogos() * 3.0;
-                dto.setAproveitamento(String.format("%.1f%%", (pontos / possiveis) * 100.0));
-            } else {
-                dto.setAproveitamento("0.0%");
-            }
+            dto.setAproveitamento(calcularAproveitamento(p.getMinhasVitorias(), p.getMeusEmpates(), p.getTotalJogos()));
 
             return dto;
         }).collect(Collectors.toList());
+    }
+
+    private String calcularAproveitamento(int vitorias, int empates, int totalJogos) {
+        if (totalJogos == 0) return "0.0%";
+        double pontos = (vitorias * 3.0) + empates;
+        double possiveis = totalJogos * 3.0;
+        return String.format("%.1f%%", (pontos / possiveis) * 100.0);
     }
 
     @Transactional
