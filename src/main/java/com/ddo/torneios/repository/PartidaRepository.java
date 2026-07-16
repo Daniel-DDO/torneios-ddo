@@ -351,4 +351,28 @@ public interface PartidaRepository extends JpaRepository<Partida, String> {
     WHERE p.fase = :fase AND p.etapaMataMata IS NOT NULL
     """)
     List<PartidaBracketProjection> buscarBracketPorFase(@Param("fase") FaseTorneio fase);
+
+    @Query("""
+    SELECT new com.ddo.torneios.dto.PartidaConfrontoDTO(
+        p.id, p.tipoPartida, p.realizada, p.dataHora, p.estadio,
+        new com.ddo.torneios.dto.JogadorClubeResumoDTO(
+            m.id, mj.id, mj.nome, mj.imagem, mc.id, mc.nome, mc.imagem, mc.sigla
+        ),
+        new com.ddo.torneios.dto.JogadorClubeResumoDTO(
+            v.id, vj.id, vj.nome, vj.imagem, vc.id, vc.nome, vc.imagem, vc.sigla
+        ),
+        p.golsMandante, p.golsVisitante,
+        p.penaltis.golsMandante, p.penaltis.golsVisitante,
+        CASE WHEN p.penaltis.golsMandante IS NOT NULL AND p.penaltis.golsVisitante IS NOT NULL
+             THEN true ELSE false END
+    )
+    FROM Partida p
+    LEFT JOIN p.mandante m LEFT JOIN m.jogador mj LEFT JOIN m.clube mc
+    LEFT JOIN p.visitante v LEFT JOIN v.jogador vj LEFT JOIN v.clube vc
+    WHERE p.fase = :fase AND p.etapaMataMata = :etapa AND p.chaveIndex = :chaveIndex
+    ORDER BY p.tipoPartida ASC
+    """)
+    List<PartidaConfrontoDTO> buscarDetalhesConfronto(@Param("fase") FaseTorneio fase,
+                                                      @Param("etapa") FaseMataMata etapa,
+                                                      @Param("chaveIndex") Integer chaveIndex);
 }

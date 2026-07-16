@@ -2,6 +2,7 @@ package com.ddo.torneios.service;
 
 import com.ddo.torneios.dto.PartidaBracketDTO;
 import com.ddo.torneios.dto.PartidaBracketProjection;
+import com.ddo.torneios.dto.PartidaConfrontoDTO;
 import com.ddo.torneios.dto.PartidaDTO;
 import com.ddo.torneios.model.*;
 import com.ddo.torneios.repository.PartidaRepository;
@@ -221,10 +222,7 @@ public class BracketService {
         return tp == TipoPartida.MATA_MATA_VOLTA || tp == TipoPartida.FINAL_VOLTA;
     }
 
-    public List<PartidaDTO> obterDetalhesConfronto(FaseTorneio fase, FaseMataMata etapa, Integer chaveIndex) {
-        return partidaRepository.findByFaseAndEtapaMataMataAndChaveIndex(fase, etapa, chaveIndex)
-                .stream()
-                .map(PartidaDTO::new)
-                .collect(Collectors.toList());
+    public List<PartidaConfrontoDTO> obterDetalhesConfronto(FaseTorneio fase, FaseMataMata etapa, Integer chaveIndex) {
+        return partidaRepository.buscarDetalhesConfronto(fase, etapa, chaveIndex);
     }
 }
