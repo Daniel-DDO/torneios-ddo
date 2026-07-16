@@ -332,4 +332,23 @@ public interface PartidaRepository extends JpaRepository<Partida, String> {
     WHERE p.fase = :fase AND p.realizada = true
     """)
     List<PartidaClassificacaoProjection> buscarDadosClassificacao(@Param("fase") FaseTorneio fase);
+
+    @Query("""
+    SELECT new com.ddo.torneios.dto.PartidaBracketProjection(
+        p.id, p.etapaMataMata, p.chaveIndex, p.tipoPartida, p.realizada,
+        new com.ddo.torneios.dto.JogadorClubeResumoDTO(
+            m.id, mj.id, mj.nome, mj.imagem, mc.id, mc.nome, mc.imagem, mc.sigla
+        ),
+        new com.ddo.torneios.dto.JogadorClubeResumoDTO(
+            v.id, vj.id, vj.nome, vj.imagem, vc.id, vc.nome, vc.imagem, vc.sigla
+        ),
+        p.golsMandante, p.golsVisitante,
+        p.penaltis.golsMandante, p.penaltis.golsVisitante
+    )
+    FROM Partida p
+    LEFT JOIN p.mandante m LEFT JOIN m.jogador mj LEFT JOIN m.clube mc
+    LEFT JOIN p.visitante v LEFT JOIN v.jogador vj LEFT JOIN v.clube vc
+    WHERE p.fase = :fase AND p.etapaMataMata IS NOT NULL
+    """)
+    List<PartidaBracketProjection> buscarBracketPorFase(@Param("fase") FaseTorneio fase);
 }

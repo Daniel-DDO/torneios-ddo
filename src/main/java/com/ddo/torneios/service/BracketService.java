@@ -1,5 +1,7 @@
 package com.ddo.torneios.service;
 
+import com.ddo.torneios.dto.PartidaBracketDTO;
+import com.ddo.torneios.dto.PartidaBracketProjection;
 import com.ddo.torneios.dto.PartidaDTO;
 import com.ddo.torneios.model.*;
 import com.ddo.torneios.repository.PartidaRepository;
@@ -18,43 +20,86 @@ public class BracketService {
 
     private final PartidaRepository partidaRepository;
 
-    public Map<String, List<PartidaDTO>> obterBracket(FaseTorneio fase) {
-        List<Partida> todasPartidas = partidaRepository.findByFase(fase);
+    public Map<String, List<PartidaBracketDTO>> obterBracket(FaseTorneio fase) {
+        List<PartidaBracketProjection> partidas = partidaRepository.buscarBracketPorFase(fase);
 
-        List<Partida> partidasMataMata = todasPartidas.stream()
-                .filter(p -> p.getEtapaMataMata() != null)
-                .toList();
+        List<PartidaBracketDTO> dtos = new ArrayList<>();
 
-        List<PartidaDTO> dtos = new ArrayList<>();
+        for (PartidaBracketProjection p : partidas) {
+            PartidaBracketProjection ida = null;
 
-        for (Partida p : partidasMataMata) {
-            Partida partidaIda = null;
-
-            if (isVolta(p.getTipoPartida())) {
-                partidaIda = partidasMataMata.stream()
+            if (isVolta(p.tipoPartida())) {
+                ida = partidas.stream()
                         .filter(other ->
-                                other.getEtapaMataMata() == p.getEtapaMataMata() &&
-                                        other.getChaveIndex().equals(p.getChaveIndex()) &&
-                                        isIda(other.getTipoPartida())
+                                other.etapaMataMata() == p.etapaMataMata() &&
+                                        Objects.equals(other.chaveIndex(), p.chaveIndex()) &&
+                                        isIda(other.tipoPartida())
                         )
                         .findFirst()
                         .orElse(null);
             }
 
-            dtos.add(new PartidaDTO(p, partidaIda));
+            dtos.add(montarDTO(p, ida));
         }
 
         return dtos.stream()
                 .collect(Collectors.groupingBy(
-                        PartidaDTO::etapaMataMata,
+                        PartidaBracketDTO::etapaMataMata,
                         LinkedHashMap::new,
                         Collectors.collectingAndThen(
                                 Collectors.toList(),
                                 list -> list.stream()
-                                        .sorted(Comparator.comparing(PartidaDTO::chaveIndex))
+                                        .sorted(Comparator.comparing(PartidaBracketDTO::chaveIndex))
                                         .collect(Collectors.toList())
                         )
                 ));
+    }
+
+    private PartidaBracketDTO montarDTO(PartidaBracketProjection atual, PartidaBracketProjection ida) {
+        boolean houvePenaltis = atual.penaltisMandante() != null && atual.penaltisVisitante() != null;
+
+        return new PartidaBracketDTO(
+                atual.id(),
+                atual.etapaMataMata() != null ? atual.etapaMataMata().name() : null,
+                atual.chaveIndex(),
+                atual.tipoPartida() != null ? atual.tipoPartida().name() : null,
+                atual.realizada(),
+                atual.mandante(),
+                atual.visitante(),
+                atual.golsMandante(),
+                atual.golsVisitante(),
+                calcularAgregadoMandante(atual, ida),
+                calcularAgregadoVisitante(atual, ida),
+                atual.penaltisMandante(),
+                atual.penaltisVisitante(),
+                houvePenaltis
+        );
+    }
+
+    private Integer calcularAgregadoMandante(PartidaBracketProjection atual, PartidaBracketProjection ida) {
+        if (atual.golsMandante() == null) return null;
+        if (ida == null || ida.golsVisitante() == null) return atual.golsMandante();
+
+        String idaVisitanteId = ida.visitante() != null ? ida.visitante().id() : null;
+        String atualMandanteId = atual.mandante() != null ? atual.mandante().id() : null;
+
+        if (Objects.equals(idaVisitanteId, atualMandanteId)) {
+            return atual.golsMandante() + ida.golsVisitante();
+        }
+        return atual.golsMandante() + ida.golsMandante();
+    }
+
+    private Integer calcularAgregadoVisitante(PartidaBracketProjection atual, PartidaBracketProjection ida) {
+        if (atual.golsVisitante() == null) return null;
+        if (ida == null || ida.golsMandante() == null) return atual.golsVisitante();
+
+        String idaMandanteId = ida.mandante() != null ? ida.mandante().id() : null;
+        String atualVisitanteId = atual.visitante() != null ? atual.visitante().id() : null;
+
+        if (Objects.equals(idaMandanteId, atualVisitanteId)) {
+            return atual.golsVisitante() + ida.golsMandante();
+        }
+        return atual.golsVisitante() + ida.golsVisitante();
     }
 
     @Transactional
