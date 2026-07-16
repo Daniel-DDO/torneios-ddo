@@ -1,5 +1,6 @@
 package com.ddo.torneios.service;
 
+import com.ddo.torneios.dto.TituloResumoDTO;
 import com.ddo.torneios.model.*;
 import com.ddo.torneios.repository.*;
 import com.ddo.torneios.request.ConcederTituloColetivoRequest;
@@ -7,6 +8,7 @@ import com.ddo.torneios.request.TituloRequest;
 import com.ddo.torneios.util.ByteArrayMultipartFile;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -305,5 +307,12 @@ public class TituloService {
         clubeRepository.save(clube);
 
         return conquistasGeradas;
+    }
+
+    public List<TituloResumoDTO> buscarAutocomplete(String termo) {
+        if (termo == null || termo.trim().length() < 3) {
+            return List.of();
+        }
+        return tituloRepository.buscarAutocomplete(termo.trim(), PageRequest.of(0, 10));
     }
 }

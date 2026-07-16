@@ -1,5 +1,6 @@
 package com.ddo.torneios.controller;
 
+import com.ddo.torneios.dto.TituloResumoDTO;
 import com.ddo.torneios.model.Conquista;
 import com.ddo.torneios.model.Titulo;
 import com.ddo.torneios.request.ConcederTituloColetivoRequest;
@@ -118,5 +119,10 @@ public class TituloController {
             e.printStackTrace();
             return ResponseEntity.badRequest().body(Map.of("erro", e.getMessage()));
         }
+    }
+
+    @GetMapping("/buscar-autocomplete")
+    public ResponseEntity<List<TituloResumoDTO>> autocomplete(@RequestParam String termo) {
+        return ResponseEntity.ok(tituloService.buscarAutocomplete(termo));
     }
 }
