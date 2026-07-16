@@ -78,9 +78,6 @@ public class TorneioService {
     }
 
     public List<TorneioDTO> listarPorTemporada(String temporadaId) {
-        return torneioRepository.findByTemporadaId(temporadaId)
-                .stream()
-                .map(TorneioDTO::new)
-                .toList();
+        return torneioRepository.buscarResumoPorTemporada(temporadaId);
     }
 }
