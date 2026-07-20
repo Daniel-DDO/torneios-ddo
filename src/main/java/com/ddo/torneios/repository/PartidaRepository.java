@@ -445,4 +445,46 @@ public interface PartidaRepository extends JpaRepository<Partida, String> {
 """, nativeQuery = true)
     List<PatoProjection> findTop3Carrascos(@Param("jogadorId") String jogadorId);
 
+    @Query("""
+    SELECT new com.ddo.torneios.dto.RecordePartidaDTO(
+        p.id,
+        new com.ddo.torneios.dto.JogadorClubeResumoDTO(
+            m.id, mj.id, mj.nome, mj.imagem, mc.id, mc.nome, mc.imagem, mc.sigla
+        ),
+        new com.ddo.torneios.dto.JogadorClubeResumoDTO(
+            v.id, vj.id, vj.nome, vj.imagem, vc.id, vc.nome, vc.imagem, vc.sigla
+        ),
+        p.golsMandante, p.golsVisitante, p.dataHora, p.estadio
+    )
+    FROM Partida p
+    LEFT JOIN p.mandante m LEFT JOIN m.jogador mj LEFT JOIN m.clube mc
+    LEFT JOIN p.visitante v LEFT JOIN v.jogador vj LEFT JOIN v.clube vc
+    WHERE p.realizada = true
+    AND (p.golsMandante + p.golsVisitante) = (
+        SELECT MAX(p2.golsMandante + p2.golsVisitante) FROM Partida p2 WHERE p2.realizada = true
+    )
+""")
+    List<RecordePartidaDTO> findPartidaComMaisGols();
+
+    @Query("""
+    SELECT new com.ddo.torneios.dto.RecordePartidaDTO(
+        p.id,
+        new com.ddo.torneios.dto.JogadorClubeResumoDTO(
+            m.id, mj.id, mj.nome, mj.imagem, mc.id, mc.nome, mc.imagem, mc.sigla
+        ),
+        new com.ddo.torneios.dto.JogadorClubeResumoDTO(
+            v.id, vj.id, vj.nome, vj.imagem, vc.id, vc.nome, vc.imagem, vc.sigla
+        ),
+        p.golsMandante, p.golsVisitante, p.dataHora, p.estadio
+    )
+    FROM Partida p
+    LEFT JOIN p.mandante m LEFT JOIN m.jogador mj LEFT JOIN m.clube mc
+    LEFT JOIN p.visitante v LEFT JOIN v.jogador vj LEFT JOIN v.clube vc
+    WHERE p.realizada = true
+    AND ABS(p.golsMandante - p.golsVisitante) = (
+        SELECT MAX(ABS(p2.golsMandante - p2.golsVisitante)) FROM Partida p2 WHERE p2.realizada = true
+    )
+""")
+    List<RecordePartidaDTO> findMaiorGoleada();
+
 }

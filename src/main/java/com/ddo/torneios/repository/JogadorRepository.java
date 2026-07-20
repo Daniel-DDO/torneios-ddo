@@ -1,7 +1,7 @@
 package com.ddo.torneios.repository;
 
-import com.ddo.torneios.dto.JogadorResumo;
-import com.ddo.torneios.dto.JogadorResumoDTO;
+import com.ddo.torneios.dto.AproveitamentoProjection;
+import com.ddo.torneios.dto.*;
 import com.ddo.torneios.model.Cargo;
 import com.ddo.torneios.model.Jogador;
 import jakarta.validation.constraints.NotBlank;
@@ -93,4 +93,54 @@ public interface JogadorRepository extends JpaRepository<Jogador, String> {
 
     @EntityGraph(attributePaths = {}, type = EntityGraph.EntityGraphType.FETCH)
     Optional<Jogador> findParaAutenticacaoById(String id);
+
+    @Query("""
+    SELECT new com.ddo.torneios.dto.RecordeJogadorDTO(
+        j.id, j.nome, j.imagem, CONCAT(j.golsMarcados, ' gols'), j.golsMarcados
+    )
+    FROM Jogador j
+    WHERE j.golsMarcados = (SELECT MAX(j2.golsMarcados) FROM Jogador j2)
+""")
+    List<RecordeJogadorDTO> findArtilheiroMaximo();
+
+    @Query("""
+    SELECT new com.ddo.torneios.dto.RecordeJogadorDTO(
+        j.id, j.nome, j.imagem, CONCAT(j.titulos, ' títulos'), j.titulos
+    )
+    FROM Jogador j
+    WHERE j.titulos = (SELECT MAX(j2.titulos) FROM Jogador j2)
+""")
+    List<RecordeJogadorDTO> findMaisTitulos();
+
+    @Query("""
+    SELECT new com.ddo.torneios.dto.RecordeJogadorDTO(
+        j.id, j.nome, j.imagem, CONCAT(j.finais, ' finais'), j.finais
+    )
+    FROM Jogador j
+    WHERE j.finais = (SELECT MAX(j2.finais) FROM Jogador j2)
+""")
+    List<RecordeJogadorDTO> findMaisFinais();
+
+    @Query("""
+    SELECT new com.ddo.torneios.dto.RecordeJogadorDTO(
+        j.id, j.nome, j.imagem, CONCAT(j.partidasJogadas, ' partidas'), j.partidasJogadas
+    )
+    FROM Jogador j
+    WHERE j.partidasJogadas = (SELECT MAX(j2.partidasJogadas) FROM Jogador j2)
+""")
+    List<RecordeJogadorDTO> findMaisPartidas();
+
+    @Query(value = """
+    SELECT
+        j.id as jogadorId,
+        j.nome as jogadorNome,
+        j.imagem as jogadorImagem,
+        ROUND(((j.vitorias * 3.0 + j.empates) / (j.partidas_jogadas * 3.0)) * 100, 1) as aproveitamento,
+        j.partidas_jogadas as partidasJogadas
+    FROM jogador j
+    WHERE j.partidas_jogadas >= :minimoPartidas
+    ORDER BY aproveitamento DESC
+    LIMIT 1
+""", nativeQuery = true)
+    Optional<AproveitamentoProjection> findMelhorAproveitamento(@Param("minimoPartidas") int minimoPartidas);
 }

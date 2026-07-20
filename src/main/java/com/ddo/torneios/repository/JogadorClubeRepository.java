@@ -1,7 +1,6 @@
 package com.ddo.torneios.repository;
 
-import aj.org.objectweb.asm.commons.Remapper;
-import com.ddo.torneios.dto.JogadorClubeInscritoDTO;
+import com.ddo.torneios.dto.*;
 import com.ddo.torneios.model.JogadorClube;
 import com.ddo.torneios.model.Temporada;
 import org.springframework.data.domain.Pageable;
@@ -53,4 +52,27 @@ public interface JogadorClubeRepository extends JpaRepository<JogadorClube, Stri
     ORDER BY jc.pontosCoeficiente DESC
     """)
     List<JogadorClubeInscritoDTO> buscarInscritosResumo(@Param("temporadaId") String temporadaId);
+
+    @Query("""
+    SELECT new com.ddo.torneios.dto.RecordeTemporadaDTO(
+        jc.jogador.id, jc.jogador.nome, jc.jogador.imagem,
+        jc.temporada.nome, jc.totalGolsMarcados, jc.partidasJogadas
+    )
+    FROM JogadorClube jc
+    WHERE jc.totalGolsMarcados = (SELECT MAX(jc2.totalGolsMarcados) FROM JogadorClube jc2)
+""")
+    List<RecordeTemporadaDTO> findMelhorAtaqueTemporada();
+
+    @Query("""
+    SELECT new com.ddo.torneios.dto.RecordeTemporadaDTO(
+        jc.jogador.id, jc.jogador.nome, jc.jogador.imagem,
+        jc.temporada.nome, jc.totalGolsSofridos, jc.partidasJogadas
+    )
+    FROM JogadorClube jc
+    WHERE jc.partidasJogadas >= :minimoPartidas
+    AND jc.totalGolsSofridos = (
+        SELECT MIN(jc2.totalGolsSofridos) FROM JogadorClube jc2 WHERE jc2.partidasJogadas >= :minimoPartidas
+    )
+""")
+    List<RecordeTemporadaDTO> findMelhorDefesaTemporada(@Param("minimoPartidas") int minimoPartidas);
 }
