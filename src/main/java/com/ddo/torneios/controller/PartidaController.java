@@ -1,8 +1,7 @@
 package com.ddo.torneios.controller;
 
-import com.ddo.torneios.dto.DadosPartidaDTO;
-import com.ddo.torneios.dto.PartidaDTO;
-import com.ddo.torneios.dto.ReportPartidaDTO;
+import com.ddo.torneios.dto.*;
+import com.ddo.torneios.model.Partida;
 import com.ddo.torneios.model.ReportPartida;
 import com.ddo.torneios.repository.PartidaRepository;
 import com.ddo.torneios.repository.ReportPartidaRepository;
@@ -10,6 +9,8 @@ import com.ddo.torneios.request.RelatoProblemaRequest;
 import com.ddo.torneios.service.ClassificacaoService;
 import com.ddo.torneios.service.JuizVirtualService;
 import com.ddo.torneios.service.PartidaService;
+import com.ddo.torneios.service.ProbabilidadeService;
+import jakarta.persistence.EntityNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -35,6 +36,9 @@ public class PartidaController {
 
     @Autowired
     private ReportPartidaRepository reportPartidaRepository;
+
+    @Autowired
+    private ProbabilidadeService probabilidadeService;
 
     @PostMapping("/registrar-resultado")
     public ResponseEntity<String> registrarResultado(@RequestBody PartidaDTO dto) {
@@ -77,21 +81,30 @@ public class PartidaController {
     }
 
     @GetMapping("/jogador/{jogadorId}/feitas")
-    public ResponseEntity<List<PartidaDTO>> minhasPartidasFeitas(@PathVariable String jogadorId) {
-        return ResponseEntity.ok(partidaService.minhasPartidasFeitas(jogadorId));
+    public ResponseEntity<PaginacaoDTO<PartidaHistoricoDTO>> minhasPartidasFeitas(
+            @PathVariable String jogadorId,
+            @RequestParam(defaultValue = "0") int pagina,
+            @RequestParam(defaultValue = "10") int tamanho
+    ) {
+        return ResponseEntity.ok(partidaService.minhasPartidasFeitas(jogadorId, pagina, tamanho));
     }
 
     @GetMapping("/jogador/{jogadorId}/pendentes")
-    public ResponseEntity<List<PartidaDTO>> minhasPartidasParaFazer(@PathVariable String jogadorId) {
-        return ResponseEntity.ok(partidaService.minhasPartidasParaFazer(jogadorId));
+    public ResponseEntity<PaginacaoDTO<PartidaHistoricoDTO>> minhasPartidasPendentes(
+            @PathVariable String jogadorId,
+            @RequestParam(defaultValue = "0") int pagina,
+            @RequestParam(defaultValue = "10") int tamanho
+    ) {
+        return ResponseEntity.ok(partidaService.minhasPartidasParaFazer(jogadorId, pagina, tamanho));
     }
 
     @GetMapping("/{id}")
     public ResponseEntity<PartidaDTO> buscarPorId(@PathVariable String id) {
-        return partidaRepository.findById(id)
-                .map(PartidaDTO::new)
-                .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
+        try {
+            return ResponseEntity.ok(partidaService.buscarPorId(id));
+        } catch (EntityNotFoundException e) {
+            return ResponseEntity.notFound().build();
+        }
     }
 
     @GetMapping("/buscar")
@@ -166,5 +179,15 @@ public class PartidaController {
 
         List<PartidaDTO> partidas = partidaService.minhasPartidasPorFase(id, faseId);
         return ResponseEntity.ok(partidas);
+    }
+
+    @GetMapping("/{id}/probabilidade")
+    public ResponseEntity<ProbabilidadePartidaDTO> getProbabilidadePartida(@PathVariable String id) {
+        Partida partida = partidaRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Partida não encontrada: " + id));
+
+        ProbabilidadePartidaDTO probabilidade = probabilidadeService.calcularProbabilidade(partida);
+
+        return ResponseEntity.ok(probabilidade);
     }
 }

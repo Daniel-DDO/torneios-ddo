@@ -1,5 +1,6 @@
 package com.ddo.torneios.controller;
 
+import com.ddo.torneios.dto.PaginacaoDTO;
 import com.ddo.torneios.dto.TemporadaDTO;
 import com.ddo.torneios.dto.TorneioDTO;
 import com.ddo.torneios.request.TemporadaRequest;
@@ -26,9 +27,12 @@ public class TemporadaController {
     }
 
     @GetMapping("/all")
-    public ResponseEntity<List<TemporadaDTO>> listarTodas() {
-        List<TemporadaDTO> temporadas = temporadaService.listarTodas();
-        return ResponseEntity.ok(temporadas);
+    public ResponseEntity<PaginacaoDTO<TemporadaDTO>> listarTodas(
+            @RequestParam(defaultValue = "0") int pagina,
+            @RequestParam(defaultValue = "10") int tamanho,
+            @RequestParam(required = false) String busca
+    ) {
+        return ResponseEntity.ok(temporadaService.listarTodas(pagina, tamanho, busca));
     }
 
     @GetMapping("/{id}")

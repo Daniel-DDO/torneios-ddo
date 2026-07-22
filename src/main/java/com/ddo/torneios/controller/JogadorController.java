@@ -103,25 +103,12 @@ public class JogadorController {
     }
 
     @GetMapping("/buscar-autocomplete")
-    public ResponseEntity<List<Map<String, String>>> buscarJogadoresAutocomplete(@RequestParam String termo) {
+    public ResponseEntity<List<JogadorResumo>> buscarJogadoresAutocomplete(@RequestParam String termo) {
         if (termo == null || termo.length() < 3) {
             return ResponseEntity.badRequest().build();
         }
 
-        List<Jogador> jogadores = jogadorService.findByDiscordContainingIgnoreCase(termo);
-
-        List<Map<String, String>> resultado = jogadores.stream()
-                .limit(5)
-                .map(j -> {
-                    Map<String, String> map = new HashMap<>();
-                    map.put("id", String.valueOf(j.getId()));
-                    map.put("discord", j.getDiscord());
-                    map.put("nome", j.getNome());
-                    map.put("imagem", j.getImagem());
-                    return map;
-                })
-                .collect(Collectors.toList());
-
+        List<JogadorResumo> resultado = jogadorService.buscarAutocomplete(termo);
         return ResponseEntity.ok(resultado);
     }
 
@@ -238,19 +225,14 @@ public class JogadorController {
         return ResponseEntity.ok(jogadorService.obterResumoHistoria(id));
     }
 
-    @PatchMapping("/{id}/status")
-    public ResponseEntity<Void> alterarStatus(
-            @PathVariable String id,
-            @RequestParam StatusJogador status) {
-
-        jogadorService.alterarStatusJogador(id, status);
-        return ResponseEntity.noContent().build();
+    @GetMapping("/{jogadorId}/patos")
+    public ResponseEntity<List<RivalidadeDTO>> buscarTop3Patos(@PathVariable String jogadorId) {
+        return ResponseEntity.ok(jogadorService.buscarTop3Patos(jogadorId));
     }
 
-    @GetMapping("/{id}/patos")
-    public ResponseEntity<List<RivalidadeDTO>> listarTop3Patos(@PathVariable String id) {
-        List<RivalidadeDTO> ranking = jogadorService.buscarTop3Patos(id);
-        return ResponseEntity.ok(ranking);
+    @GetMapping("/{jogadorId}/carrascos")
+    public ResponseEntity<List<RivalidadeDTO>> buscarTop3Carrascos(@PathVariable String jogadorId) {
+        return ResponseEntity.ok(jogadorService.buscarTop3Carrascos(jogadorId));
     }
 
     @PatchMapping("/{id}/saldo")
@@ -277,5 +259,33 @@ public class JogadorController {
     ) {
         Page<TransacaoResponseDTO> transacoes = jogadorService.listarTransacoesDoJogador(id, pageable);
         return ResponseEntity.ok(transacoes);
+    }
+
+    @PatchMapping("/{id}/status")
+    public ResponseEntity<Void> atualizarStatus(
+            @PathVariable String id,
+            @RequestBody @Valid AtualizarStatusRequest request) {
+
+        jogadorService.alterarStatusJogador(id, request.getStatus());
+
+        return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/ranking-financeiro")
+    public ResponseEntity<Page<JogadorRankingDTO>> getRankingFinanceiro(
+            @PageableDefault(size = 20, sort = "saldoVirtual", direction = Sort.Direction.DESC) Pageable pageable) {
+        return ResponseEntity.ok(jogadorService.listarRankingFinanceiro(pageable));
+    }
+
+    @GetMapping("/comparar")
+    public ResponseEntity<ComparacaoJogadoresDTO> comparar(
+            @RequestParam String id1,
+            @RequestParam String id2) {
+        return ResponseEntity.ok(jogadorService.compararJogadores(id1, id2));
+    }
+
+    @GetMapping("/{id}/resumo")
+    public ResponseEntity<JogadorResumoDTO> buscarJogadorResumo(@PathVariable String id) {
+        return ResponseEntity.ok(jogadorService.buscarResumoPorId(id));
     }
 }

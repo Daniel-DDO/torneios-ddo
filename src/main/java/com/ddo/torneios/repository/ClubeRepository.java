@@ -1,5 +1,6 @@
 package com.ddo.torneios.repository;
 
+import com.ddo.torneios.dto.RecordeClubeDTO;
 import com.ddo.torneios.model.Clube;
 import com.ddo.torneios.model.LigaClube;
 import org.springframework.data.domain.Page;
@@ -32,4 +33,11 @@ public interface ClubeRepository extends JpaRepository<Clube, String> {
 
     @Query("SELECT c.estadio FROM Clube c WHERE c.estrelas >= 5 AND c.estadio IS NOT NULL")
     List<String> findEstadiosDeClubesTop();
+
+    @Query("""
+    SELECT new com.ddo.torneios.dto.RecordeClubeDTO(c.id, c.nome, c.imagem, c.titulos)
+    FROM Clube c
+    WHERE c.titulos = (SELECT MAX(c2.titulos) FROM Clube c2)
+""")
+    List<RecordeClubeDTO> findClubeComMaisTitulos();
 }

@@ -8,5 +8,6 @@ public record TituloRequest(
         @NotNull Integer valor,
         String descricao,
         @NotBlank String imagem,
-        String imagemGerarPost
+        String imagemGerarPost,
+        Boolean ativo
 ) {}

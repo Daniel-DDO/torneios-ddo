@@ -1,6 +1,7 @@
 package com.ddo.torneios.dto;
 
 public record LinhaClassificacaoDTO(
+        String id,
         Integer posicao,
         String jogadorClubeId,
         String nomeJogador,

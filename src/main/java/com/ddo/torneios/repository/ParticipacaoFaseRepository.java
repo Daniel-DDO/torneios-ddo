@@ -1,5 +1,6 @@
 package com.ddo.torneios.repository;
 
+import com.ddo.torneios.dto.ParticipacaoClassificacaoProjection;
 import com.ddo.torneios.model.FaseTorneio;
 import com.ddo.torneios.model.JogadorClube;
 import com.ddo.torneios.model.ParticipacaoFase;
@@ -31,4 +32,18 @@ public interface ParticipacaoFaseRepository extends JpaRepository<ParticipacaoFa
     List<ParticipacaoFase> findByFaseIdOrderByPosicaoClassificacaoAsc(String faseId, Pageable pageable);
 
     List<ParticipacaoFase> findByJogadorClube(JogadorClube antigoJC);
+
+    @Query("""
+    SELECT new com.ddo.torneios.dto.ParticipacaoClassificacaoProjection(
+        pf.id, jc.id, j.nome, c.nome, c.imagem
+    )
+    FROM ParticipacaoFase pf
+    JOIN pf.jogadorClube jc
+    JOIN jc.jogador j
+    JOIN jc.clube c
+    WHERE pf.fase.id = :faseId
+    """)
+    List<ParticipacaoClassificacaoProjection> buscarDadosClassificacao(@Param("faseId") String faseId);
+
+    List<ParticipacaoFase> findByFaseId(String id);
 }

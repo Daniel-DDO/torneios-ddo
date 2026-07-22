@@ -1,15 +1,21 @@
 package com.ddo.torneios.service;
 
+import com.ddo.torneios.dto.PaginacaoDTO;
 import com.ddo.torneios.dto.PartidaDTO;
+import com.ddo.torneios.dto.PartidaDetalheProjection;
+import com.ddo.torneios.dto.PartidaHistoricoDTO;
 import com.ddo.torneios.model.Partida;
 import com.ddo.torneios.repository.PartidaRepository;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.List;
@@ -22,9 +28,49 @@ public class PartidaService {
     private PartidaRepository partidaRepository;
 
     public PartidaDTO buscarPorId(String id) {
-        return partidaRepository.findById(id)
-                .map(PartidaDTO::new)
+        PartidaDetalheProjection p = partidaRepository.buscarDetalhePorId(id)
                 .orElseThrow(() -> new EntityNotFoundException("Partida não encontrada com id: " + id));
+        return converterParaDTO(p);
+    }
+
+    private PartidaDTO converterParaDTO(PartidaDetalheProjection p) {
+        boolean houvePenaltis = p.penaltisMandante() != null && p.penaltisVisitante() != null;
+
+        return new PartidaDTO(
+                p.id(),
+                p.faseId(),
+                p.rodadaId(),
+                p.numeroRodada(),
+                p.etapaMataMata() != null ? p.etapaMataMata().name() : null,
+                p.chaveIndex(),
+                p.dataHora(),
+                p.estadio(),
+                p.linkPartida(),
+                p.mandante(),
+                p.visitante(),
+                p.golsMandante(),
+                p.golsVisitante(),
+                p.realizada(),
+                p.wo(),
+                p.houveProrrogacao(),
+                houvePenaltis,
+                p.penaltisMandante(),
+                p.penaltisVisitante(),
+                p.logEventos(),
+                p.cartoesAmarelosMandante(),
+                p.cartoesVermelhosMandante(),
+                p.cartoesAmarelosVisitante(),
+                p.cartoesVermelhosVisitante(),
+                p.coeficienteMandante(),
+                p.coeficienteVisitante(),
+                p.tipoPartida() != null ? p.tipoPartida().name() : null,
+                p.proximaPartidaId(),
+                p.slotNaProxima(),
+                p.receitaMandante() != null ? p.receitaMandante() : BigDecimal.ZERO,
+                p.receitaVisitante() != null ? p.receitaVisitante() : BigDecimal.ZERO,
+                p.golsMandante(),
+                p.golsVisitante()
+        );
     }
 
     public List<PartidaDTO> listarPorFase(String faseId) {
@@ -80,22 +126,27 @@ public class PartidaService {
                 .collect(Collectors.toList());
     }
 
-    public List<PartidaDTO> minhasPartidasFeitas(String jogadorId) {
-        Sort sort = Sort.by(Sort.Direction.DESC, "dataHora");
-
-        return partidaRepository.findPorJogadorIdEStatus(jogadorId, true, sort)
-                .stream()
-                .map(PartidaDTO::new)
-                .collect(Collectors.toList());
+    public PaginacaoDTO<PartidaHistoricoDTO> minhasPartidasFeitas(String jogadorId, int pagina, int tamanho) {
+        Pageable pageable = PageRequest.of(pagina, tamanho, Sort.by(Sort.Direction.DESC, "dataHora"));
+        Page<PartidaHistoricoDTO> resultado = partidaRepository.findPorJogadorIdEStatus(jogadorId, true, pageable);
+        return montarPaginacao(resultado);
     }
 
-    public List<PartidaDTO> minhasPartidasParaFazer(String jogadorId) {
-        Sort sort = Sort.by(Sort.Direction.ASC, "dataHora");
+    public PaginacaoDTO<PartidaHistoricoDTO> minhasPartidasParaFazer(String jogadorId, int pagina, int tamanho) {
+        Pageable pageable = PageRequest.of(pagina, tamanho, Sort.by(Sort.Direction.ASC, "dataHora"));
+        Page<PartidaHistoricoDTO> resultado = partidaRepository.findPorJogadorIdEStatus(jogadorId, false, pageable);
+        return montarPaginacao(resultado);
+    }
 
-        return partidaRepository.findPorJogadorIdEStatus(jogadorId, false, sort)
-                .stream()
-                .map(PartidaDTO::new)
-                .collect(Collectors.toList());
+    private PaginacaoDTO<PartidaHistoricoDTO> montarPaginacao(Page<PartidaHistoricoDTO> pagina) {
+        return new PaginacaoDTO<>(
+                pagina.getContent(),
+                pagina.getNumber(),
+                pagina.getTotalPages(),
+                pagina.getTotalElements(),
+                pagina.getSize(),
+                pagina.isLast()
+        );
     }
 
     public List<PartidaDTO> minhasPartidasPorTorneio(String jogadorId, String torneioId) {

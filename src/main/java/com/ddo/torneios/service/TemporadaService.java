@@ -1,5 +1,6 @@
 package com.ddo.torneios.service;
 
+import com.ddo.torneios.dto.PaginacaoDTO;
 import com.ddo.torneios.dto.TemporadaDTO;
 import com.ddo.torneios.dto.TorneioDTO;
 import com.ddo.torneios.exception.TemporadaJaExisteException;
@@ -10,6 +11,10 @@ import com.ddo.torneios.repository.TorneioRepository;
 import com.ddo.torneios.request.TemporadaRequest;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -39,11 +44,26 @@ public class TemporadaService {
         return new TemporadaDTO(temporadaSalva);
     }
 
-    public List<TemporadaDTO> listarTodas() {
-        return temporadaRepository.findAll()
+    public PaginacaoDTO<TemporadaDTO> listarTodas(int pagina, int tamanho, String busca) {
+        Pageable pageable = PageRequest.of(pagina, tamanho, Sort.by(Sort.Direction.DESC, "dataInicio"));
+
+        Page<Temporada> resultado = (busca != null && !busca.isBlank())
+                ? temporadaRepository.findByNomeContainingIgnoreCase(busca, pageable)
+                : temporadaRepository.findAll(pageable);
+
+        List<TemporadaDTO> conteudo = resultado.getContent()
                 .stream()
                 .map(TemporadaDTO::new)
                 .collect(Collectors.toList());
+
+        return new PaginacaoDTO<>(
+                conteudo,
+                resultado.getNumber(),
+                resultado.getTotalPages(),
+                resultado.getTotalElements(),
+                resultado.getSize(),
+                resultado.isLast()
+        );
     }
 
     public TemporadaDTO buscarPorId(String id) {

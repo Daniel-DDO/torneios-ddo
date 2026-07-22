@@ -5,19 +5,28 @@ import com.ddo.torneios.model.Anuncio;
 import com.ddo.torneios.repository.AnuncioRepository;
 import com.ddo.torneios.request.AnuncioRequest;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
+import com.ddo.torneios.service.NotificacaoService.AnuncioCriadoEvent;
 
 import java.time.LocalDateTime;
 import java.util.List;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class AnuncioService {
 
     private final AnuncioRepository anuncioRepository;
+    private final ApplicationEventPublisher eventPublisher;
+
+    @Value("${app.frontend.url}")
+    private String frontendUrl;
 
     @Transactional
     public AnuncioDTO criarAnuncio(AnuncioRequest request) {
@@ -27,7 +36,15 @@ public class AnuncioService {
             anuncio.setDataPostagem(LocalDateTime.now());
         }
 
-        anuncioRepository.save(anuncio);
+        anuncio = anuncioRepository.save(anuncio);
+
+        String linkAnuncio = frontendUrl + "/anuncios/" + anuncio.getId();
+        eventPublisher.publishEvent(new AnuncioCriadoEvent(
+                anuncio.getTitulo(),
+                anuncio.getMensagem(),
+                linkAnuncio
+        ));
+
         return entityToResponse(anuncio);
     }
 
@@ -96,7 +113,11 @@ public class AnuncioService {
                 anuncio.getId(),
                 anuncio.getTitulo(),
                 anuncio.getMensagem(),
-                anuncio.getDataPostagem()
+                anuncio.getDataPostagem(),
+                anuncio.getTipoMensagem(),
+                anuncio.getImagem(),
+                anuncio.getCorMensagem()
         );
     }
+
 }

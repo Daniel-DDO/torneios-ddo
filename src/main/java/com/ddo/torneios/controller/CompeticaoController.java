@@ -1,7 +1,9 @@
 package com.ddo.torneios.controller;
 
+import com.ddo.torneios.dto.CompeticaoDTO;
 import com.ddo.torneios.dto.PaginacaoDTO;
 import com.ddo.torneios.model.Competicao;
+import com.ddo.torneios.request.VincularTituloRequest;
 import com.ddo.torneios.service.CompeticaoService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -43,5 +45,19 @@ public class CompeticaoController {
     @GetMapping("/buscar-autocomplete")
     public ResponseEntity<List<Competicao>> autocomplete(@RequestParam String termo) {
         return ResponseEntity.ok(competicaoService.buscarAutocomplete(termo));
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<CompeticaoDTO> buscarPorId(@PathVariable String id) {
+        CompeticaoDTO competicao = competicaoService.buscarDetalhesPorId(id);
+        return ResponseEntity.ok(competicao);
+    }
+
+    @PatchMapping("/{id}/vincular-titulo")
+    public ResponseEntity<Void> vincularTitulo(
+            @PathVariable String id,
+            @RequestBody VincularTituloRequest request) {
+        competicaoService.vincularTitulo(id, request.tituloId());
+        return ResponseEntity.noContent().build();
     }
 }

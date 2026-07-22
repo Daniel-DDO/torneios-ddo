@@ -6,6 +6,7 @@ public record JogadorResumoDTO(
         String id,
         String nome,
         String discord,
-        BigDecimal pontosCoeficiente
+        BigDecimal pontosCoeficiente,
+        String imagem
 ) {
 }

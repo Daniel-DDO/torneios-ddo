@@ -10,5 +10,5 @@ import java.util.Map;
 @AllArgsConstructor
 public class BracketResponseDTO {
     private String estadioFinal;
-    private Map<String, List<PartidaDTO>> partidas;
+    private Map<String, List<PartidaBracketDTO>> partidas;
 }

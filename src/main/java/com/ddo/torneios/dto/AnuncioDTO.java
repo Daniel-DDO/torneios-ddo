@@ -6,5 +6,8 @@ public record AnuncioDTO (
         String id,
         String titulo,
         String mensagem,
-        LocalDateTime dataPostagem
+        LocalDateTime dataPostagem,
+        String tipoMensagem,
+        String imagem,
+        String corMensagem
 ) {}

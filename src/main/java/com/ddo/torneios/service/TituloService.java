@@ -1,17 +1,20 @@
 package com.ddo.torneios.service;
 
+import com.ddo.torneios.dto.TituloResumoDTO;
 import com.ddo.torneios.model.*;
 import com.ddo.torneios.repository.*;
+import com.ddo.torneios.request.ConcederTituloColetivoRequest;
 import com.ddo.torneios.request.TituloRequest;
 import com.ddo.torneios.util.ByteArrayMultipartFile;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 
 @Slf4j
@@ -139,6 +142,16 @@ public class TituloService {
         return tituloRepository.findAll();
     }
 
+    @Transactional(readOnly = true)
+    public List<Titulo> listarAtivos() {
+        return tituloRepository.findByAtivoTrue();
+    }
+
+    @Transactional(readOnly = true)
+    public List<Titulo> listarInativos() {
+        return tituloRepository.findByAtivoFalse();
+    }
+
     private Titulo converterDto(TituloRequest req) {
         Titulo t = new Titulo();
         t.setNome(req.nome());
@@ -146,6 +159,8 @@ public class TituloService {
         t.setDescricao(req.descricao());
         t.setImagem(req.imagem());
         t.setImagemGerarPost(req.imagemGerarPost());
+        t.setAtivo(req.ativo() != null ? req.ativo() : true);
+
         return t;
     }
 
@@ -220,5 +235,84 @@ public class TituloService {
         clubeRepository.save(clube);
 
         return novaConquista;
+    }
+
+    @Transactional
+    public List<Conquista> concederTituloColetivo(ConcederTituloColetivoRequest request) {
+        Clube clube = clubeRepository.findById(request.getClubeId())
+                .orElseThrow(() -> new RuntimeException("Clube não encontrado: " + request.getClubeId()));
+
+        Titulo titulo = tituloRepository.findById(request.getIdTitulo())
+                .orElseThrow(() -> new RuntimeException("Título não encontrado: " + request.getIdTitulo()));
+
+        List<Conquista> conquistasGeradas = new ArrayList<>();
+        List<Jogador> jogadoresParaSalvar = new ArrayList<>();
+
+        for (String jogadorId : request.getJogadoresIds()) {
+            Jogador jogador = jogadorRepository.findById(jogadorId)
+                    .orElseThrow(() -> new RuntimeException("Jogador não encontrado: " + jogadorId));
+
+            boolean jaPossui = conquistaRepository.existsByTituloIdAndNomeEdicaoAndJogadorId(
+                    titulo.getId(),
+                    request.getEdicao(),
+                    jogador.getId()
+            );
+
+            if (jaPossui) {
+                log.warn("O jogador {} já possui o título {}", jogador.getNome(), request.getEdicao());
+                continue;
+            }
+
+            Conquista novaConquista = new Conquista(titulo, request.getEdicao(), clube, jogador);
+            novaConquista.setDataConquista(request.getData());
+
+            try {
+                if (titulo.getImagemGerarPost() != null && !titulo.getImagemGerarPost().isEmpty()) {
+
+                    String urlLogoParaPost = clube.getImagem();
+
+                    log.info("Gerando post para {}", jogador.getNome());
+
+                    byte[] imagemBytes = postGeradorService.gerarImagemTitulo(
+                            titulo.getImagemGerarPost(),
+                            urlLogoParaPost,
+                            jogador.getNome()
+                    );
+
+                    if (imagemBytes != null) {
+                        String nomeArquivo = "titulo_coletivo_" + jogador.getId() + "_" + System.currentTimeMillis() + ".png";
+
+                        MultipartFile multipartFile = new ByteArrayMultipartFile(
+                                imagemBytes, "image", nomeArquivo, "image/png"
+                        );
+
+                        String urlImgBB = imgBBService.uploadImagem(multipartFile);
+                        novaConquista.setImagem(urlImgBB);
+                    }
+                }
+            } catch (Exception e) {
+                log.error("Erro ao gerar imagem para jogador {}: ", jogador.getNome(), e);
+            }
+
+            jogador.setTitulos(jogador.getTitulos() == null ? 1 : jogador.getTitulos() + 1);
+            jogadoresParaSalvar.add(jogador);
+
+            conquistasGeradas.add(novaConquista);
+        }
+
+        conquistaRepository.saveAll(conquistasGeradas);
+        jogadorRepository.saveAll(jogadoresParaSalvar);
+
+        clube.setTitulos(clube.getTitulos() == null ? 1 : clube.getTitulos() + 1);
+        clubeRepository.save(clube);
+
+        return conquistasGeradas;
+    }
+
+    public List<TituloResumoDTO> buscarAutocomplete(String termo) {
+        if (termo == null || termo.trim().length() < 3) {
+            return List.of();
+        }
+        return tituloRepository.buscarAutocomplete(termo.trim(), PageRequest.of(0, 10));
     }
 }

@@ -1,9 +1,14 @@
 package com.ddo.torneios.service;
 
 import com.ddo.torneios.dto.JogadorClubeDTO;
+import com.ddo.torneios.dto.JogadorClubeInscritoDTO;
+import com.ddo.torneios.dto.SorteioResultadoDTO;
+import com.ddo.torneios.exception.RegraNegocioException;
 import com.ddo.torneios.model.*;
 import com.ddo.torneios.repository.*;
+import com.ddo.torneios.request.ConfirmacaoSorteioRequest;
 import com.ddo.torneios.request.JogadorClubeRequest;
+import com.ddo.torneios.request.SorteioRequest;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
@@ -11,6 +16,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
@@ -93,6 +99,10 @@ public class JogadorClubeService {
             throw new EntityNotFoundException("Inscrição não encontrada com ID: " + id);
         }
         jogadorClubeRepository.deleteById(id);
+    }
+
+    public List<JogadorClubeInscritoDTO> listarInscritosResumoPorTemporada(String temporadaId) {
+        return jogadorClubeRepository.buscarInscritosResumo(temporadaId);
     }
 
     public List<JogadorClubeDTO> listarTodos() {
@@ -214,5 +224,113 @@ public class JogadorClubeService {
                 .stream()
                 .map(JogadorClubeDTO::new)
                 .toList();
+    }
+
+    @Transactional
+    public List<JogadorClubeDTO> realizarSorteio(SorteioRequest request) {
+        if (request.getClubesIds().size() < request.getJogadoresIds().size()) {
+            throw new RegraNegocioException("A quantidade de clubes deve ser maior ou igual à de jogadores.");
+        }
+
+        Temporada temporada = temporadaRepository.findById(request.getTemporadaId())
+                .orElseThrow(() -> new EntityNotFoundException("Temporada não encontrada."));
+
+        List<Jogador> jogadores = jogadorRepository.findAllById(request.getJogadoresIds());
+        List<Clube> clubes = clubeRepository.findAllById(request.getClubesIds());
+
+        if (jogadores.size() != request.getJogadoresIds().size()) {
+            throw new RegraNegocioException("Alguns jogadores não foram encontrados.");
+        }
+        if (clubes.size() != request.getClubesIds().size()) {
+            throw new RegraNegocioException("Alguns clubes não foram encontrados.");
+        }
+
+        List<Clube> clubesSorteio = new ArrayList<>(clubes);
+        Collections.shuffle(clubesSorteio);
+
+        List<JogadorClube> novasInscricoes = new ArrayList<>();
+
+        for (int i = 0; i < jogadores.size(); i++) {
+            Jogador jogador = jogadores.get(i);
+            Clube clubeSorteado = clubesSorteio.get(i);
+
+            if (jogadorClubeRepository.existsByJogadorIdAndTemporadaId(jogador.getId(), temporada.getId())) {
+                throw new RegraNegocioException("O jogador " + jogador.getNome() + " já está inscrito nesta temporada.");
+            }
+
+            JogadorClube novaInscricao = new JogadorClube();
+            novaInscricao.setJogador(jogador);
+            novaInscricao.setClube(clubeSorteado);
+            novaInscricao.setTemporada(temporada);
+
+            novaInscricao.setBalancoFinanceiro(BigDecimal.ZERO);
+            novaInscricao.setPontosCoeficiente(BigDecimal.ZERO);
+
+            novasInscricoes.add(novaInscricao);
+        }
+
+        List<JogadorClube> salvos = jogadorClubeRepository.saveAll(novasInscricoes);
+
+        return salvos.stream().map(JogadorClubeDTO::new).toList();
+    }
+
+    public List<SorteioResultadoDTO> simularSorteio(SorteioRequest request) {
+        if (request.getClubesIds().size() < request.getJogadoresIds().size()) {
+            throw new RegraNegocioException("Quantidade de clubes insuficiente para o número de jogadores.");
+        }
+
+        List<Jogador> jogadores = jogadorRepository.findAllById(request.getJogadoresIds());
+        List<Clube> clubes = clubeRepository.findAllById(request.getClubesIds());
+
+        if (jogadores.size() != request.getJogadoresIds().size() || clubes.size() != request.getClubesIds().size()) {
+            throw new RegraNegocioException("Alguns jogadores ou clubes não foram encontrados.");
+        }
+
+        List<Clube> clubesSorteio = new ArrayList<>(clubes);
+        Collections.shuffle(clubesSorteio);
+
+        List<SorteioResultadoDTO> resultado = new ArrayList<>();
+
+        for (int i = 0; i < jogadores.size(); i++) {
+            Jogador jogador = jogadores.get(i);
+            Clube clube = clubesSorteio.get(i);
+
+            resultado.add(new SorteioResultadoDTO(
+                    jogador.getId(),
+                    jogador.getNome(),
+                    clube.getId(),
+                    clube.getNome(),
+                    clube.getImagem()
+            ));
+        }
+
+        return resultado;
+    }
+
+    @Transactional
+    public void confirmarInscricoesEmLote(ConfirmacaoSorteioRequest request) {
+        Temporada temporada = temporadaRepository.findById(request.getTemporadaId())
+                .orElseThrow(() -> new EntityNotFoundException("Temporada não encontrada."));
+
+        List<JogadorClube> listaParaSalvar = new ArrayList<>();
+
+        for (ConfirmacaoSorteioRequest.ParInscricao par : request.getInscricoes()) {
+            if (jogadorClubeRepository.existsByJogadorIdAndTemporadaId(par.getJogadorId(), temporada.getId())) {
+                throw new RegraNegocioException("O jogador com ID " + par.getJogadorId() + " já está inscrito nesta temporada.");
+            }
+
+            Jogador jogador = jogadorRepository.getReferenceById(par.getJogadorId());
+            Clube clube = clubeRepository.getReferenceById(par.getClubeId());
+
+            JogadorClube novo = new JogadorClube();
+            novo.setJogador(jogador);
+            novo.setClube(clube);
+            novo.setTemporada(temporada);
+            novo.setBalancoFinanceiro(BigDecimal.ZERO);
+            novo.setPontosCoeficiente(BigDecimal.ZERO);
+            listaParaSalvar.add(novo);
+        }
+
+        jogadorClubeRepository.saveAll(listaParaSalvar);
     }
 }

@@ -1,8 +1,6 @@
 package com.ddo.torneios.service;
 
-import com.ddo.torneios.dto.LinhaClassificacaoDTO;
-import com.ddo.torneios.dto.ParametrosCoeficienteDTO;
-import com.ddo.torneios.dto.PartidaDTO;
+import com.ddo.torneios.dto.*;
 import com.ddo.torneios.model.*;
 import com.ddo.torneios.repository.*;
 import lombok.Getter;
@@ -12,6 +10,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -42,6 +42,13 @@ public class ClassificacaoService {
     private TituloService tituloService;
     @Autowired
     private ClubeRepository clubeRepository;
+    @Autowired
+    private NoticiaService noticiaService;
+    @Autowired
+    private JogadorService jogadorService;
+    @Autowired
+    private PunicaoRepository punicaoRepository;
+
 
     @Transactional
     public void registrarResultado(PartidaDTO dto) {
@@ -133,33 +140,104 @@ public class ClassificacaoService {
         }
 
 
+        // ... trecho anterior do método ...
+
         if (partida.getTipoPartida() == TipoPartida.FINAL_UNICA) {
+            // Atualiza contagem de finais
             jGlobalMandante.setFinais((jGlobalMandante.getFinais() == null ? 0 : jGlobalMandante.getFinais()) + 1);
             jGlobalVisitante.setFinais((jGlobalVisitante.getFinais() == null ? 0 : jGlobalVisitante.getFinais()) + 1);
 
             jogadorRepository.saveAll(List.of(jGlobalMandante, jGlobalVisitante));
 
             JogadorClube vencedor = null;
+            JogadorClube perdedor = null;
 
+            // 1. Definição de Vencedor e Perdedor
             if (dto.wo()) {
-                if (dto.golsMandante() > dto.golsVisitante()) vencedor = jcMandante;
-                else vencedor = jcVisitante;
+                if (dto.golsMandante() > dto.golsVisitante()) {
+                    vencedor = jcMandante;
+                    perdedor = jcVisitante;
+                } else {
+                    vencedor = jcVisitante;
+                    perdedor = jcMandante;
+                }
             } else if (dto.houvePenaltis()) {
-                if (dto.penaltisMandante() > dto.penaltisVisitante()) vencedor = jcMandante;
-                else vencedor = jcVisitante;
+                if (dto.penaltisMandante() > dto.penaltisVisitante()) {
+                    vencedor = jcMandante;
+                    perdedor = jcVisitante;
+                } else {
+                    vencedor = jcVisitante;
+                    perdedor = jcMandante;
+                }
             } else {
-                if (dto.golsMandante() > dto.golsVisitante()) vencedor = jcMandante;
-                else if (dto.golsVisitante() > dto.golsMandante()) vencedor = jcVisitante;
+                // Tempo normal
+                if (dto.golsMandante() > dto.golsVisitante()) {
+                    vencedor = jcMandante;
+                    perdedor = jcVisitante;
+                } else if (dto.golsVisitante() > dto.golsMandante()) {
+                    vencedor = jcVisitante;
+                    perdedor = jcMandante;
+                }
+                // Se empatou no tempo normal e não teve pênaltis, vencedor continua null (correto, pois evita pagar prêmio indevido)
             }
 
-            if (vencedor != null) {
+            // 2. Pagamento da Premiação
+            if (vencedor != null && perdedor != null) {
                 Competicao competicao = fase.getTorneio().getCompeticao();
 
-                if (competicao != null && competicao.getTitulo() != null) {
-                    String tituloId = competicao.getTitulo().getId();
-                    String nomeEdicao = fase.getTorneio().getNome();
+                // Pega o valor ou usa 15% como padrão se for nulo
+                int pctValor = (competicao != null && competicao.getValor() != null) ? competicao.getValor() : 15;
 
-                    tituloService.concederTituloAoJogador(vencedor.getId(), tituloId, nomeEdicao);
+                // Garante o mínimo de 15%
+                if (pctValor < 15) pctValor = 15;
+
+                // Bases de cálculo
+                BigDecimal baseCampeao = new BigDecimal("100000");
+                BigDecimal baseVice = new BigDecimal("60000");
+
+                // Multiplicador: converte inteiro (ex: 60) para porcentagem (0.60)
+                BigDecimal multiplicador = BigDecimal.valueOf(pctValor).movePointLeft(2);
+
+                BigDecimal premioCampeao = baseCampeao.multiply(multiplicador);
+                BigDecimal premioVice = baseVice.multiply(multiplicador);
+
+                try {
+                    // VERIFIQUE A ORDEM DO SEU CONSTRUTOR DTO AQUI
+                    MovimentacaoSaldoDTO dtoCampeao = new MovimentacaoSaldoDTO(
+                            premioCampeao,
+                            "Premiação Campeão - " + fase.getTorneio().getNome(),
+                            MovimentacaoSaldoDTO.TipoOperacao.ADICIONAR,
+                            false
+                    );
+                    jogadorService.atualizarSaldo(vencedor.getJogador().getId(), dtoCampeao, "SISTEMA");
+
+                    MovimentacaoSaldoDTO dtoVice = new MovimentacaoSaldoDTO(
+                            premioVice,
+                            "Premiação Vice - " + fase.getTorneio().getNome(),
+                            MovimentacaoSaldoDTO.TipoOperacao.ADICIONAR,
+                            false
+                    );
+                    jogadorService.atualizarSaldo(perdedor.getJogador().getId(), dtoVice, "SISTEMA");
+
+                    log.info("Premiação paga. Campeão: {}, Vice: {}", premioCampeao, premioVice);
+                } catch (Exception e) {
+                    log.error("Erro ao pagar premiação da final", e);
+                }
+
+                String logMsg = String.format(
+                        "\nFINAL ENCERRADA\n\nCampeão: %s (Prêmio: %s)\nVice: %s (Prêmio: %s)\nValor Competição: %d%%",
+                        vencedor.getClube().getNome(),
+                        java.text.NumberFormat.getCurrencyInstance().format(premioCampeao),
+                        perdedor.getClube().getNome(),
+                        java.text.NumberFormat.getCurrencyInstance().format(premioVice),
+                        pctValor
+                );
+
+                String logAtual = partida.getLogEventos() != null ? partida.getLogEventos() : "";
+                partida.setLogEventos(logAtual + logMsg);
+
+                if (competicao != null && competicao.getTitulo() != null) {
+                    tituloService.concederTituloAoJogador(vencedor.getId(), competicao.getTitulo().getId(), fase.getTorneio().getNome());
                 } else {
                     log.warn("Campeão definido (Partida {}), mas não foi possível localizar o Título vinculado à Competição.", partida.getId());
                 }
@@ -171,6 +249,19 @@ public class ClassificacaoService {
 
         insigniaService.processarPosPartida(jGlobalMandante,dto.golsMandante());
         insigniaService.processarPosPartida(jGlobalVisitante, dto.golsVisitante());
+
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+            @Override
+            public void afterCommit() {
+                new Thread(() -> {
+                    try {
+                        noticiaService.gerarNoticiaSeRelevante(partida);
+                    } catch (Exception e) {
+                        log.error("Erro ao gerar notícia em background: {}", e.getMessage());
+                    }
+                }).start();
+            }
+        });
 
         try {
 
@@ -184,7 +275,7 @@ public class ClassificacaoService {
     }
 
     private void atualizarPosicoesNoBanco(List<LinhaClassificacaoDTO> classificacao, FaseTorneio fase) {
-        List<ParticipacaoFase> participacoes = fase.getParticipacoes();
+        List<ParticipacaoFase> participacoes = participacaoRepository.findByFaseId(fase.getId());
         boolean houveAlteracao = false;
 
         for (LinhaClassificacaoDTO linha : classificacao) {
@@ -465,41 +556,46 @@ public class ClassificacaoService {
     private Long safeLong(Long v) { return v == null ? 0L : v; }
 
     public List<LinhaClassificacaoDTO> calcularClassificacao(FaseTorneio fase) {
-        List<Partida> partidas = partidaRepository.findByFaseAndRealizadaTrue(fase);
+        List<ParticipacaoClassificacaoProjection> participantes =
+                participacaoRepository.buscarDadosClassificacao(fase.getId());
+
         Map<String, AcumuladorStatus> mapa = new HashMap<>();
 
-        fase.getParticipacoes().forEach(p -> {
-            String id = p.getJogadorClube().getId();
+        for (ParticipacaoClassificacaoProjection part : participantes) {
             AcumuladorStatus acc = new AcumuladorStatus();
-            acc.setJogadorClubeId(id);
-            acc.setNomeJogador(p.getJogadorClube().getJogador().getNome());
-            acc.setNomeClube(p.getJogadorClube().getClube().getNome());
-            acc.setImagemClube(p.getJogadorClube().getClube().getImagem());
-            mapa.put(id, acc);
-        });
+            acc.setJogadorClubeId(part.jogadorClubeId());
+            acc.setNomeJogador(part.nomeJogador());
+            acc.setNomeClube(part.nomeClube());
+            acc.setImagemClube(part.imagemClube());
+            acc.setPontos(0);
+            mapa.put(part.jogadorClubeId(), acc);
+        }
 
-        for (Partida p : partidas) {
+        List<PartidaClassificacaoProjection> partidas = partidaRepository.buscarDadosClassificacao(fase);
+
+        for (PartidaClassificacaoProjection p : partidas) {
             acumularPartida(mapa, p);
+        }
+
+        List<Punicao> punicoes = punicaoRepository.findByParticipacaoFase_FaseId(fase.getId());
+
+        for (Punicao punicao : punicoes) {
+            String jogadorClubeId = punicao.getParticipacaoFase().getJogadorClube().getId();
+            AcumuladorStatus acc = mapa.get(jogadorClubeId);
+            if (acc != null) {
+                acc.setPontos(acc.getPontos() + punicao.getPontos());
+            }
         }
 
         List<AcumuladorStatus> ordenados = mapa.values().stream()
                 .sorted((a, b) -> {
-                    //Pontos
                     if (b.getPontos() != a.getPontos()) return b.getPontos() - a.getPontos();
-                    //Saldo de Gols
                     if (b.getSaldo() != a.getSaldo()) return b.getSaldo() - a.getSaldo();
-                    //Vitórias
                     if (b.getVitorias() != a.getVitorias()) return b.getVitorias() - a.getVitorias();
-                    //Gols Pró
                     if (b.getGolsPro() != a.getGolsPro()) return b.getGolsPro() - a.getGolsPro();
-                    //Gols Contra (menos é melhor)
                     if (a.getGolsContra() != b.getGolsContra()) return a.getGolsContra() - b.getGolsContra();
-                    //Cartões Amarelos (menos é melhor)
                     if (a.getAmarelos() != b.getAmarelos()) return a.getAmarelos() - b.getAmarelos();
-                    //Cartões Vermelhos (menos é melhor)
                     if (a.getVermelhos() != b.getVermelhos()) return a.getVermelhos() - b.getVermelhos();
-
-                    // Confronto Direto
                     return compararConfrontoDireto(a, b, partidas, mapa);
                 })
                 .toList();
@@ -507,47 +603,41 @@ public class ClassificacaoService {
         return atribuirZonasEPosicao(ordenados, fase);
     }
 
-    private AcumuladorStatus resolverAcumulador(Map<String, AcumuladorStatus> mapa, JogadorClube jogador) {
-        if (jogador == null) return null;
+    private AcumuladorStatus resolverAcumulador(Map<String, AcumuladorStatus> mapa, String jogadorClubeId) {
+        if (jogadorClubeId == null) return null;
 
-        if (mapa.containsKey(jogador.getId())) {
-            return mapa.get(jogador.getId());
-        }
+        AcumuladorStatus direto = mapa.get(jogadorClubeId);
+        if (direto != null) return direto;
 
-        if (jogador.getIdDeQuemMeSubstituiu() != null) {
-            return mapa.get(jogador.getIdDeQuemMeSubstituiu());
-        }
-
-        return null;
+        return jogadorClubeRepository.buscarIdSubstituto(jogadorClubeId)
+                .map(mapa::get)
+                .orElse(null);
     }
 
-    private void acumularPartida(Map<String, AcumuladorStatus> mapa, Partida p) {
-        AcumuladorStatus m = resolverAcumulador(mapa, p.getMandante());
-        AcumuladorStatus v = resolverAcumulador(mapa, p.getVisitante());
+    private void acumularPartida(Map<String, AcumuladorStatus> mapa, PartidaClassificacaoProjection p) {
+        AcumuladorStatus m = resolverAcumulador(mapa, p.mandanteId());
+        AcumuladorStatus v = resolverAcumulador(mapa, p.visitanteId());
 
         if (m == null || v == null) return;
 
-        int gM = p.getGolsMandante() != null ? p.getGolsMandante() : 0;
-        int gV = p.getGolsVisitante() != null ? p.getGolsVisitante() : 0;
+        int gM = p.golsMandante() != null ? p.golsMandante() : 0;
+        int gV = p.golsVisitante() != null ? p.golsVisitante() : 0;
 
         m.setJogos(m.getJogos() + 1);
         v.setJogos(v.getJogos() + 1);
 
         m.setGolsPro(m.getGolsPro() + gM);
         m.setGolsContra(m.getGolsContra() + gV);
-
         v.setGolsPro(v.getGolsPro() + gV);
         v.setGolsContra(v.getGolsContra() + gM);
 
-        int amM = p.getCartoesAmarelosMandante() != null ? p.getCartoesAmarelosMandante() : 0;
-        int verM = p.getCartoesVermelhosMandante() != null ? p.getCartoesVermelhosMandante() : 0;
-
-        int amV = p.getCartoesAmarelosVisitante() != null ? p.getCartoesAmarelosVisitante() : 0;
-        int verV = p.getCartoesVermelhosVisitante() != null ? p.getCartoesVermelhosVisitante() : 0;
+        int amM = p.cartoesAmarelosMandante() != null ? p.cartoesAmarelosMandante() : 0;
+        int verM = p.cartoesVermelhosMandante() != null ? p.cartoesVermelhosMandante() : 0;
+        int amV = p.cartoesAmarelosVisitante() != null ? p.cartoesAmarelosVisitante() : 0;
+        int verV = p.cartoesVermelhosVisitante() != null ? p.cartoesVermelhosVisitante() : 0;
 
         m.setAmarelos(m.getAmarelos() + amM);
         m.setVermelhos(m.getVermelhos() + verM);
-
         v.setAmarelos(v.getAmarelos() + amV);
         v.setVermelhos(v.getVermelhos() + verV);
 
@@ -567,13 +657,15 @@ public class ClassificacaoService {
         }
     }
 
-    private int compararConfrontoDireto(AcumuladorStatus a, AcumuladorStatus b, List<Partida> partidas, Map<String, AcumuladorStatus> mapa) {
+    private int compararConfrontoDireto(AcumuladorStatus a, AcumuladorStatus b,
+                                        List<PartidaClassificacaoProjection> partidas,
+                                        Map<String, AcumuladorStatus> mapa) {
         int pontosA = 0;
         int pontosB = 0;
 
-        for (Partida p : partidas) {
-            AcumuladorStatus realMandanteAcc = resolverAcumulador(mapa, p.getMandante());
-            AcumuladorStatus realVisitanteAcc = resolverAcumulador(mapa, p.getVisitante());
+        for (PartidaClassificacaoProjection p : partidas) {
+            AcumuladorStatus realMandanteAcc = resolverAcumulador(mapa, p.mandanteId());
+            AcumuladorStatus realVisitanteAcc = resolverAcumulador(mapa, p.visitanteId());
 
             if (realMandanteAcc == null || realVisitanteAcc == null) continue;
 
@@ -583,23 +675,40 @@ public class ClassificacaoService {
             if ((mId.equals(a.getJogadorClubeId()) && vId.equals(b.getJogadorClubeId())) ||
                     (mId.equals(b.getJogadorClubeId()) && vId.equals(a.getJogadorClubeId()))) {
 
-                int gM = p.getGolsMandante();
-                int gV = p.getGolsVisitante();
+                int gM = p.golsMandante() != null ? p.golsMandante() : 0;
+                int gV = p.golsVisitante() != null ? p.golsVisitante() : 0;
 
                 if (gM > gV) {
                     if (mId.equals(a.getJogadorClubeId())) pontosA += 3; else pontosB += 3;
                 } else if (gV > gM) {
                     if (vId.equals(a.getJogadorClubeId())) pontosA += 3; else pontosB += 3;
                 } else {
-                    pontosA += 1; pontosB += 1;
+                    pontosA += 1;
+                    pontosB += 1;
                 }
             }
         }
         return pontosB - pontosA;
     }
 
+    private AcumuladorStatus resolverAcumulador(Map<String, AcumuladorStatus> mapa, JogadorClube jogador) {
+        if (jogador == null) return null;
+
+        if (mapa.containsKey(jogador.getId())) {
+            return mapa.get(jogador.getId());
+        }
+
+        if (jogador.getIdDeQuemMeSubstituiu() != null) {
+            return mapa.get(jogador.getIdDeQuemMeSubstituiu());
+        }
+
+        return null;
+    }
+
     private List<LinhaClassificacaoDTO> atribuirZonasEPosicao(List<AcumuladorStatus> lista, FaseTorneio fase) {
         List<LinhaClassificacaoDTO> resultado = new ArrayList<>();
+
+        List<ParticipacaoFase> paraAtualizar = new ArrayList<>();
 
         for (int i = 0; i < lista.size(); i++) {
             int pos = i + 1;
@@ -609,14 +718,43 @@ public class ClassificacaoService {
                     .filter(z -> pos >= z.getPosicaoDe() && pos <= z.getPosicaoAte())
                     .findFirst().orElse(null);
 
+            ParticipacaoFase p = fase.getParticipacoes().stream()
+                    .filter(part -> part.getJogadorClube().getId().equals(acc.jogadorClubeId))
+                    .findFirst()
+                    .orElse(null);
+
             resultado.add(new LinhaClassificacaoDTO(
+                    p != null ? p.getId() : null,
                     pos, acc.jogadorClubeId, acc.nomeJogador, acc.nomeClube, acc.imagemClube,
                     acc.pontos, acc.jogos, acc.vitorias, acc.empates, acc.derrotas,
                     acc.golsPro, acc.golsContra, acc.getSaldo(),
                     zona != null ? zona.getNome() : "",
                     zona != null ? zona.getCorHex() : "#FFFFFF"
             ));
+
+            if (p != null) {
+                boolean mudou = false;
+
+                if (p.getPosicaoClassificacao() == null || p.getPosicaoClassificacao() != pos) {
+                    p.setPosicaoClassificacao(pos);
+                    mudou = true;
+                }
+
+                if (!Objects.equals(p.getPontos(), acc.pontos)) {
+                    p.setPontos(acc.pontos);
+                    mudou = true;
+                }
+
+                if (mudou) {
+                    paraAtualizar.add(p);
+                }
+            }
         }
+
+        if (!paraAtualizar.isEmpty()) {
+            participacaoRepository.saveAll(paraAtualizar);
+        }
+
         return resultado;
     }
 

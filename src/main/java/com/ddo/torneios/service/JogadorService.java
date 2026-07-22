@@ -12,7 +12,9 @@ import com.ddo.torneios.repository.TransacaoRepository;
 import com.ddo.torneios.request.*;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.validation.constraints.NotNull;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -34,6 +36,7 @@ import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 public class JogadorService {
 
@@ -57,6 +60,9 @@ public class JogadorService {
 
     @Autowired
     private TransacaoRepository transacaoRepository;
+
+    @Autowired
+    private NotificacaoService notificacaoService;
 
     public void cadastrarJogador(JogadorRequest request) {
         if (jogadorRepository.existsJogadorByDiscord(request.getDiscord())) {
@@ -273,6 +279,11 @@ public class JogadorService {
         return jogadorRepository.findByDiscordContainingIgnoreCase(termo);
     }
 
+    public List<JogadorResumo> buscarAutocomplete(String termo) {
+        Pageable limit = PageRequest.of(0, 5);
+        return jogadorRepository.findByDiscordContainingIgnoreCaseOrNomeContainingIgnoreCase(termo, termo, limit);
+    }
+
     public Page<Jogador> listarTodosPaginado(Pageable pageable) {
         return jogadorRepository.findAll(pageable);
     }
@@ -432,7 +443,7 @@ public class JogadorService {
     public List<JogadorResumoDTO> buscarJogadoresParaSelect(String termo) {
         return jogadorRepository.findByNomeContainingIgnoreCaseOrDiscordContainingIgnoreCase(termo, termo)
                 .stream()
-                .map(j -> new JogadorResumoDTO(j.getId(), j.getNome(), j.getDiscord(), j.getPontosCoeficiente())) // DTO leve só com o necessário
+                .map(j -> new JogadorResumoDTO(j.getId(), j.getNome(), j.getDiscord(), j.getPontosCoeficiente(), j.getImagem()))
                 .collect(Collectors.toList());
     }
 
@@ -487,15 +498,25 @@ public class JogadorService {
     @Transactional
     public void alterarStatusJogador(String idJogador, StatusJogador novoStatus) {
         Jogador jogador = jogadorRepository.findById(idJogador)
-                .orElseThrow(() -> new RuntimeException("Jogador não encontrado"));
+                .orElseThrow(() -> new EntityNotFoundException("Jogador não encontrado com ID: " + idJogador));
+
+        if (novoStatus == StatusJogador.ATIVO) {
+            jogador.setSuspensoAte(null);
+        }
 
         jogador.setStatusJogador(novoStatus);
         jogadorRepository.save(jogador);
     }
 
     public List<RivalidadeDTO> buscarTop3Patos(String jogadorId) {
-        List<PatoProjection> projecoes = partidaRepository.findTop3Patos(jogadorId);
+        return mapearRivalidades(partidaRepository.findTop3Patos(jogadorId));
+    }
 
+    public List<RivalidadeDTO> buscarTop3Carrascos(String jogadorId) {
+        return mapearRivalidades(partidaRepository.findTop3Carrascos(jogadorId));
+    }
+
+    private List<RivalidadeDTO> mapearRivalidades(List<PatoProjection> projecoes) {
         return projecoes.stream().map(p -> {
             RivalidadeDTO dto = new RivalidadeDTO();
             dto.setAdversarioId(p.getAdversarioId());
@@ -506,24 +527,23 @@ public class JogadorService {
             dto.setPartidasJogadas(p.getTotalJogos());
             dto.setMinhasVitorias(p.getMinhasVitorias());
             dto.setMeusEmpates(p.getMeusEmpates());
-
-            int derrotas = p.getTotalJogos() - p.getMinhasVitorias() - p.getMeusEmpates();
-            dto.setMinhasDerrotas(derrotas);
+            dto.setMinhasDerrotas(p.getTotalJogos() - p.getMinhasVitorias() - p.getMeusEmpates());
 
             dto.setGolsFeitos(p.getMeusGols());
             dto.setGolsSofridos(p.getGolsSofridos());
             dto.setSaldoGols(p.getMeusGols() - p.getGolsSofridos());
 
-            if (p.getTotalJogos() > 0) {
-                double pontos = (p.getMinhasVitorias() * 3.0) + p.getMeusEmpates();
-                double possiveis = p.getTotalJogos() * 3.0;
-                dto.setAproveitamento(String.format("%.1f%%", (pontos / possiveis) * 100.0));
-            } else {
-                dto.setAproveitamento("0.0%");
-            }
+            dto.setAproveitamento(calcularAproveitamento(p.getMinhasVitorias(), p.getMeusEmpates(), p.getTotalJogos()));
 
             return dto;
         }).collect(Collectors.toList());
+    }
+
+    private String calcularAproveitamento(int vitorias, int empates, int totalJogos) {
+        if (totalJogos == 0) return "0.0%";
+        double pontos = (vitorias * 3.0) + empates;
+        double possiveis = totalJogos * 3.0;
+        return String.format("%.1f%%", (pontos / possiveis) * 100.0);
     }
 
     @Transactional
@@ -565,6 +585,8 @@ public class JogadorService {
         transacaoRepository.save(transacao);
         jogadorRepository.save(jogador);
 
+        enviarNotificacaoSaldo(jogador, dto);
+
         return novoSaldo;
     }
 
@@ -588,5 +610,98 @@ public class JogadorService {
                         t.getResponsavel(),
                         t.getDataHora()
                 ));
+    }
+
+    @Value("${app.frontend.url}")
+    private String linkFront;
+
+    private void enviarNotificacaoSaldo(Jogador jogador, MovimentacaoSaldoDTO dto) {
+        try {
+            String valorFormatado = java.text.NumberFormat.getCurrencyInstance(new java.util.Locale("pt", "BR"))
+                    .format(dto.valor());
+
+            String titulo;
+            String mensagem;
+            TipoNotificacao tipo;
+
+            if (dto.operacao() == MovimentacaoSaldoDTO.TipoOperacao.ADICIONAR) {
+                titulo = "Saldo Recebido!";
+                mensagem = String.format("Você recebeu %s. Motivo: %s", valorFormatado, dto.motivo());
+                tipo = TipoNotificacao.INFORMACAO;
+            } else {
+                titulo = "Pagamento Realizado";
+                mensagem = String.format("Foi debitado %s da sua conta. Motivo: %s", valorFormatado, dto.motivo());
+                tipo = TipoNotificacao.INFORMACAO;
+            }
+
+            String link = linkFront + "/minha-conta/financeiro";
+
+            notificacaoService.enviarParaJogador(
+                    jogador,
+                    titulo,
+                    mensagem,
+                    link,
+                    tipo
+            );
+        } catch (Exception e) {
+            log.error("Erro ao enviar notificação de saldo para o jogador {}", jogador.getId(), e);
+        }
+    }
+
+    public Page<JogadorRankingDTO> listarRankingFinanceiro(Pageable pageable) {
+        return jogadorRepository.findAllByOrderBySaldoVirtualDesc(pageable)
+                .map(jogador -> new JogadorRankingDTO(
+                        jogador.getId(),
+                        jogador.getNome(),
+                        jogador.getDiscord(),
+                        jogador.getImagem(),
+                        jogador.getCargo().name(),
+                        jogador.getSaldoVirtual() != null ? jogador.getSaldoVirtual() : BigDecimal.ZERO
+                ));
+    }
+
+    public ComparacaoJogadoresDTO compararJogadores(String idJogador1, String idJogador2) {
+        Jogador j1 = jogadorRepository.findById(idJogador1)
+                .orElseThrow(() -> new RuntimeException("Jogador 1 não encontrado (ID: " + idJogador1 + ")"));
+
+        Jogador j2 = jogadorRepository.findById(idJogador2)
+                .orElseThrow(() -> new RuntimeException("Jogador 2 não encontrado (ID: " + idJogador2 + ")"));
+
+        return new ComparacaoJogadoresDTO(
+                mapearDadosComparacao(j1),
+                mapearDadosComparacao(j2)
+        );
+    }
+
+    private ComparacaoJogadoresDTO.DadosJogadorComparacao mapearDadosComparacao(Jogador j) {
+        int jogos = j.getPartidasJogadas() != null ? j.getPartidasJogadas() : 0;
+        int vitorias = j.getVitorias() != null ? j.getVitorias() : 0;
+
+        String aproveitamento = "0.0%";
+        if (jogos > 0) {
+            double pct = ((double) vitorias / jogos) * 100;
+            aproveitamento = String.format("%.1f%%", pct);
+        }
+
+        return new ComparacaoJogadoresDTO.DadosJogadorComparacao(
+                j.getId(),
+                j.getNome(),
+                j.getDiscord(),
+                j.getImagem(),
+                j.getTitulos() != null ? j.getTitulos() : 0,
+                j.getFinais() != null ? j.getFinais() : 0,
+                jogos,
+                vitorias,
+                j.getGolsMarcados() != null ? j.getGolsMarcados() : 0,
+                j.getGolsSofridos() != null ? j.getGolsSofridos() : 0,
+                aproveitamento,
+                j.getSaldoVirtual() != null ? j.getSaldoVirtual() : BigDecimal.ZERO,
+                j.getPontosCoeficiente() != null ? j.getPontosCoeficiente() : BigDecimal.ZERO
+        );
+    }
+
+    public JogadorResumoDTO buscarResumoPorId(String id) {
+        return jogadorRepository.findResumoById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Jogador não encontrado com ID: " + id));
     }
 }
