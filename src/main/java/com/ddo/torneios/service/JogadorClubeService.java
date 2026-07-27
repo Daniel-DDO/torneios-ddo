@@ -333,4 +333,81 @@ public class JogadorClubeService {
 
         jogadorClubeRepository.saveAll(listaParaSalvar);
     }
+
+    @Transactional
+    public void substituirJogadorNoTorneio(String idJogadorClubeAntigo, String idNovoJogador, String torneioId) {
+        JogadorClube antigoJC = jogadorClubeRepository.findById(idJogadorClubeAntigo)
+                .orElseThrow(() -> new EntityNotFoundException("Inscrição antiga não encontrada."));
+
+        Torneio torneio = torneioRepository.findById(torneioId)
+                .orElseThrow(() -> new EntityNotFoundException("Torneio não encontrado."));
+
+        if (!antigoJC.getTemporada().getId().equals(torneio.getTemporada().getId())) {
+            throw new RegraNegocioException("O jogador antigo não pertence à temporada deste torneio.");
+        }
+
+        List<String> fasesIds = torneio.getFases().stream().map(FaseTorneio::getId).toList();
+
+        JogadorClube novoJC = jogadorClubeRepository.findByJogadorIdAndTemporadaId(idNovoJogador, antigoJC.getTemporada().getId())
+                .map(existente -> {
+                    boolean jaParticipaDoTorneio = participacaoFaseRepository.findByJogadorClube(existente).stream()
+                            .anyMatch(p -> fasesIds.contains(p.getFase().getId()));
+
+                    if (jaParticipaDoTorneio) {
+                        throw new RegraNegocioException("Esse jogador já participa deste torneio.");
+                    }
+
+                    return existente;
+                })
+                .orElseGet(() -> {
+                    Jogador novoJogador = jogadorRepository.findById(idNovoJogador)
+                            .orElseThrow(() -> new EntityNotFoundException("Novo jogador não encontrado."));
+
+                    JogadorClube criado = new JogadorClube();
+                    criado.setJogador(novoJogador);
+                    criado.setClube(antigoJC.getClube());
+                    criado.setTemporada(antigoJC.getTemporada());
+                    criado.setBalancoFinanceiro(BigDecimal.ZERO);
+                    criado.setPontosCoeficiente(BigDecimal.ZERO);
+                    criado.setTotalGolsMarcados(0);
+                    criado.setTotalGolsSofridos(0);
+                    criado.setPartidasJogadas(0);
+                    criado.setVitorias(0);
+                    criado.setEmpates(0);
+                    criado.setDerrotas(0);
+                    criado.setAproveitamento(0.0);
+                    criado.setStatusTemporada(StatusClassificacao.ATIVO);
+
+                    return jogadorClubeRepository.save(criado);
+                });
+
+        List<ParticipacaoFase> participacoes = participacaoFaseRepository.findByJogadorClube(antigoJC).stream()
+                .filter(p -> fasesIds.contains(p.getFase().getId()))
+                .toList();
+
+        for (ParticipacaoFase participacao : participacoes) {
+            participacao.setJogadorClube(novoJC);
+            participacaoFaseRepository.save(participacao);
+        }
+
+        List<Partida> partidasPendentes = partidaRepository.findPartidasNaoRealizadasPorJogadorClubeETorneio(antigoJC.getId(), torneioId);
+
+        for (Partida partida : partidasPendentes) {
+            boolean atualizado = false;
+
+            if (partida.getMandante() != null && partida.getMandante().equals(antigoJC)) {
+                partida.setMandante(novoJC);
+                atualizado = true;
+            }
+
+            if (partida.getVisitante() != null && partida.getVisitante().equals(antigoJC)) {
+                partida.setVisitante(novoJC);
+                atualizado = true;
+            }
+
+            if (atualizado) {
+                partidaRepository.save(partida);
+            }
+        }
+    }
 }

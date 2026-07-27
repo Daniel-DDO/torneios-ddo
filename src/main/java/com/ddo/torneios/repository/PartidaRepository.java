@@ -487,4 +487,11 @@ public interface PartidaRepository extends JpaRepository<Partida, String> {
 """)
     List<RecordePartidaDTO> findMaiorGoleada();
 
+    @Query("SELECT p FROM Partida p " +
+            "WHERE p.fase.torneio.id = :torneioId " +
+            "AND (p.mandante.id = :jcId OR p.visitante.id = :jcId) " +
+            "AND p.realizada = false")
+    List<Partida> findPartidasNaoRealizadasPorJogadorClubeETorneio(@Param("jcId") String jogadorClubeId,
+                                                                   @Param("torneioId") String torneioId);
+
 }
