@@ -386,6 +386,7 @@ public class JogadorClubeService {
                 .toList();
 
         for (ParticipacaoFase participacao : participacoes) {
+            participacao.getHistoricoJogadorClubeIds().add(antigoJC.getId());
             participacao.setJogadorClube(novoJC);
             participacaoFaseRepository.save(participacao);
         }

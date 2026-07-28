@@ -139,9 +139,6 @@ public class ClassificacaoService {
             processarLiga(dto, pMandante, pVisitante);
         }
 
-
-        // ... trecho anterior do método ...
-
         if (partida.getTipoPartida() == TipoPartida.FINAL_UNICA) {
             // Atualiza contagem de finais
             jGlobalMandante.setFinais((jGlobalMandante.getFinais() == null ? 0 : jGlobalMandante.getFinais()) + 1);
@@ -571,10 +568,20 @@ public class ClassificacaoService {
             mapa.put(part.jogadorClubeId(), acc);
         }
 
+        Map<String, String> aliasParaAtual = new HashMap<>();
+        List<ParticipacaoFase> participacoesFase = participacaoRepository.findByFaseId(fase.getId());
+        for (ParticipacaoFase pf : participacoesFase) {
+            if (pf.getHistoricoJogadorClubeIds() != null) {
+                for (String idAntigo : pf.getHistoricoJogadorClubeIds()) {
+                    aliasParaAtual.put(idAntigo, pf.getJogadorClube().getId());
+                }
+            }
+        }
+
         List<PartidaClassificacaoProjection> partidas = partidaRepository.buscarDadosClassificacao(fase);
 
         for (PartidaClassificacaoProjection p : partidas) {
-            acumularPartida(mapa, p);
+            acumularPartida(mapa, aliasParaAtual, p);
         }
 
         List<Punicao> punicoes = punicaoRepository.findByParticipacaoFase_FaseId(fase.getId());
@@ -596,11 +603,106 @@ public class ClassificacaoService {
                     if (a.getGolsContra() != b.getGolsContra()) return a.getGolsContra() - b.getGolsContra();
                     if (a.getAmarelos() != b.getAmarelos()) return a.getAmarelos() - b.getAmarelos();
                     if (a.getVermelhos() != b.getVermelhos()) return a.getVermelhos() - b.getVermelhos();
-                    return compararConfrontoDireto(a, b, partidas, mapa);
+                    return compararConfrontoDireto(a, b, partidas, mapa, aliasParaAtual);
                 })
                 .toList();
 
         return atribuirZonasEPosicao(ordenados, fase);
+    }
+
+    private AcumuladorStatus resolverAcumulador(Map<String, AcumuladorStatus> mapa, Map<String, String> aliasParaAtual, String jogadorClubeId) {
+        if (jogadorClubeId == null) return null;
+
+        AcumuladorStatus direto = mapa.get(jogadorClubeId);
+        if (direto != null) return direto;
+
+        String idAtualPorAliasDeFase = aliasParaAtual.get(jogadorClubeId);
+        if (idAtualPorAliasDeFase != null) {
+            AcumuladorStatus viaAlias = mapa.get(idAtualPorAliasDeFase);
+            if (viaAlias != null) return viaAlias;
+        }
+
+        return jogadorClubeRepository.buscarIdSubstituto(jogadorClubeId)
+                .map(mapa::get)
+                .orElse(null);
+    }
+
+    private void acumularPartida(Map<String, AcumuladorStatus> mapa, Map<String, String> aliasParaAtual, PartidaClassificacaoProjection p) {
+        AcumuladorStatus m = resolverAcumulador(mapa, aliasParaAtual, p.mandanteId());
+        AcumuladorStatus v = resolverAcumulador(mapa, aliasParaAtual, p.visitanteId());
+
+        if (m == null || v == null) return;
+
+        int gM = p.golsMandante() != null ? p.golsMandante() : 0;
+        int gV = p.golsVisitante() != null ? p.golsVisitante() : 0;
+
+        m.setJogos(m.getJogos() + 1);
+        v.setJogos(v.getJogos() + 1);
+
+        m.setGolsPro(m.getGolsPro() + gM);
+        m.setGolsContra(m.getGolsContra() + gV);
+        v.setGolsPro(v.getGolsPro() + gV);
+        v.setGolsContra(v.getGolsContra() + gM);
+
+        int amM = p.cartoesAmarelosMandante() != null ? p.cartoesAmarelosMandante() : 0;
+        int verM = p.cartoesVermelhosMandante() != null ? p.cartoesVermelhosMandante() : 0;
+        int amV = p.cartoesAmarelosVisitante() != null ? p.cartoesAmarelosVisitante() : 0;
+        int verV = p.cartoesVermelhosVisitante() != null ? p.cartoesVermelhosVisitante() : 0;
+
+        m.setAmarelos(m.getAmarelos() + amM);
+        m.setVermelhos(m.getVermelhos() + verM);
+        v.setAmarelos(v.getAmarelos() + amV);
+        v.setVermelhos(v.getVermelhos() + verV);
+
+        if (gM > gV) {
+            m.setPontos(m.getPontos() + 3);
+            m.setVitorias(m.getVitorias() + 1);
+            v.setDerrotas(v.getDerrotas() + 1);
+        } else if (gV > gM) {
+            v.setPontos(v.getPontos() + 3);
+            v.setVitorias(v.getVitorias() + 1);
+            m.setDerrotas(m.getDerrotas() + 1);
+        } else {
+            m.setPontos(m.getPontos() + 1);
+            v.setPontos(v.getPontos() + 1);
+            m.setEmpates(m.getEmpates() + 1);
+            v.setEmpates(v.getEmpates() + 1);
+        }
+    }
+
+    private int compararConfrontoDireto(AcumuladorStatus a, AcumuladorStatus b,
+                                        List<PartidaClassificacaoProjection> partidas,
+                                        Map<String, AcumuladorStatus> mapa,
+                                        Map<String, String> aliasParaAtual) {
+        int pontosA = 0;
+        int pontosB = 0;
+
+        for (PartidaClassificacaoProjection p : partidas) {
+            AcumuladorStatus realMandanteAcc = resolverAcumulador(mapa, aliasParaAtual, p.mandanteId());
+            AcumuladorStatus realVisitanteAcc = resolverAcumulador(mapa, aliasParaAtual, p.visitanteId());
+
+            if (realMandanteAcc == null || realVisitanteAcc == null) continue;
+
+            String mId = realMandanteAcc.getJogadorClubeId();
+            String vId = realVisitanteAcc.getJogadorClubeId();
+
+            if ((mId.equals(a.getJogadorClubeId()) && vId.equals(b.getJogadorClubeId())) ||
+                    (mId.equals(b.getJogadorClubeId()) && vId.equals(a.getJogadorClubeId()))) {
+
+                int gM = p.golsMandante() != null ? p.golsMandante() : 0;
+                int gV = p.golsVisitante() != null ? p.golsVisitante() : 0;
+
+                if (gM > gV) {
+                    if (mId.equals(a.getJogadorClubeId())) pontosA += 3; else pontosB += 3;
+                } else if (gV > gM) {
+                    if (vId.equals(a.getJogadorClubeId())) pontosA += 3; else pontosB += 3;
+                } else {
+                    pontosA += 1;
+                    pontosB += 1;
+                }
+            }
+        }
+        return pontosB - pontosA;
     }
 
     private AcumuladorStatus resolverAcumulador(Map<String, AcumuladorStatus> mapa, String jogadorClubeId) {

@@ -4,6 +4,9 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.util.ArrayList;
+import java.util.List;
+
 @Getter
 @Setter
 @Entity
@@ -39,6 +42,11 @@ public class ParticipacaoFase {
     private Integer posicaoClassificacao;
 
     private String grupo; //para fase de grupos
+
+    @ElementCollection
+    @CollectionTable(name = "participacao_fase_historico_jc", joinColumns = @JoinColumn(name = "participacao_fase_id"))
+    @Column(name = "jogador_clube_id_antigo")
+    private List<String> historicoJogadorClubeIds = new ArrayList<>();
 
     @Override
     public String toString() {
