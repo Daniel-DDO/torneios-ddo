@@ -315,4 +315,10 @@ public class TituloService {
         }
         return tituloRepository.buscarAutocomplete(termo.trim(), PageRequest.of(0, 10));
     }
+
+    @Transactional(readOnly = true)
+    public Titulo buscarPorId(String id) {
+        return tituloRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Título não encontrado: " + id));
+    }
 }

@@ -125,4 +125,14 @@ public class TituloController {
     public ResponseEntity<List<TituloResumoDTO>> autocomplete(@RequestParam String termo) {
         return ResponseEntity.ok(tituloService.buscarAutocomplete(termo));
     }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<?> buscarPorId(@PathVariable String id) {
+        try {
+            Titulo titulo = tituloService.buscarPorId(id);
+            return ResponseEntity.ok(titulo);
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(Map.of("erro", e.getMessage()));
+        }
+    }
 }
