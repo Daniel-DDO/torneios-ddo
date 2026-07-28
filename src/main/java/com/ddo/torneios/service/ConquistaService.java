@@ -1,9 +1,11 @@
 package com.ddo.torneios.service;
 
 import com.ddo.torneios.dto.ConquistaDashboardDTO;
+import com.ddo.torneios.dto.TituloCampeaoDTO;
 import com.ddo.torneios.model.Conquista;
 import com.ddo.torneios.repository.ConquistaRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -71,5 +73,10 @@ public class ConquistaService {
 
                 c.getDataConquista()
         );
+    }
+
+    @Transactional(readOnly = true)
+    public List<TituloCampeaoDTO> buscarTop3CampeoesPorTitulo(String tituloId) {
+        return conquistaRepository.findTop3CampeoesPorTitulo(tituloId, PageRequest.of(0, 3));
     }
 }
