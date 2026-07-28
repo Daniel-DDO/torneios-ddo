@@ -410,4 +410,62 @@ public class JogadorClubeService {
             }
         }
     }
+
+    @Transactional
+    public void desfazerSubstituicao(String idJogadorClubeAntigo) {
+        JogadorClube antigoJC = jogadorClubeRepository.findById(idJogadorClubeAntigo)
+                .orElseThrow(() -> new EntityNotFoundException("Inscrição não encontrada."));
+
+        if (antigoJC.getStatusTemporada() != StatusClassificacao.SUBSTITUIDO || antigoJC.getIdDeQuemMeSubstituiu() == null) {
+            throw new RegraNegocioException("Esta inscrição não foi substituída, não há o que desfazer.");
+        }
+
+        JogadorClube novoJC = jogadorClubeRepository.findById(antigoJC.getIdDeQuemMeSubstituiu())
+                .orElseThrow(() -> new EntityNotFoundException("Inscrição do jogador substituto não encontrada."));
+
+        if (novoJC.getStatusTemporada() != StatusClassificacao.ATIVO) {
+            throw new RegraNegocioException("O jogador substituto já não está mais ativo (provavelmente foi substituído por outro jogador). Não é possível desfazer automaticamente.");
+        }
+
+        List<ParticipacaoFase> participacoes = participacaoFaseRepository.findByJogadorClube(novoJC);
+
+        for (ParticipacaoFase participacao : participacoes) {
+            participacao.setJogadorClube(antigoJC);
+            participacaoFaseRepository.save(participacao);
+        }
+
+        List<Partida> partidasPendentes = partidaRepository.findPartidasNaoRealizadasPorJogadorClube(novoJC.getId());
+
+        for (Partida partida : partidasPendentes) {
+            boolean atualizado = false;
+
+            if (partida.getMandante() != null && partida.getMandante().equals(novoJC)) {
+                partida.setMandante(antigoJC);
+                atualizado = true;
+            }
+
+            if (partida.getVisitante() != null && partida.getVisitante().equals(novoJC)) {
+                partida.setVisitante(antigoJC);
+                atualizado = true;
+            }
+
+            if (atualizado) {
+                partidaRepository.save(partida);
+            }
+        }
+
+        antigoJC.setStatusTemporada(StatusClassificacao.ATIVO);
+        antigoJC.setIdDeQuemMeSubstituiu(null);
+        jogadorClubeRepository.save(antigoJC);
+
+        boolean novoJogouAlgumaPartida = partidaRepository.existsPartidaRealizadaPorJogadorClube(novoJC.getId());
+
+        if (novoJogouAlgumaPartida) {
+            novoJC.setStatusTemporada(StatusClassificacao.SUBSTITUIDO);
+            novoJC.setIdDeQuemMeSubstituiu(antigoJC.getId());
+            jogadorClubeRepository.save(novoJC);
+        } else {
+            jogadorClubeRepository.delete(novoJC);
+        }
+    }
 }

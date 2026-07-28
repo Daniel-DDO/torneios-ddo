@@ -111,4 +111,10 @@ public class JogadorClubeController {
         jogadorClubeService.substituirJogadorNoTorneio(dto.idInscricaoAntiga(), dto.idNovoJogador(), dto.torneioId());
         return ResponseEntity.noContent().build();
     }
+
+    @PutMapping("/desfazer-substituicao/{idJogadorClubeAntigo}")
+    public ResponseEntity<Void> desfazerSubstituicao(@PathVariable String idJogadorClubeAntigo) {
+        jogadorClubeService.desfazerSubstituicao(idJogadorClubeAntigo);
+        return ResponseEntity.noContent().build();
+    }
 }

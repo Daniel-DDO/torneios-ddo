@@ -494,4 +494,6 @@ public interface PartidaRepository extends JpaRepository<Partida, String> {
     List<Partida> findPartidasNaoRealizadasPorJogadorClubeETorneio(@Param("jcId") String jogadorClubeId,
                                                                    @Param("torneioId") String torneioId);
 
+    @Query("SELECT COUNT(p) > 0 FROM Partida p WHERE (p.mandante.id = :jcId OR p.visitante.id = :jcId) AND p.realizada = true")
+    boolean existsPartidaRealizadaPorJogadorClube(@Param("jcId") String jogadorClubeId);
 }
