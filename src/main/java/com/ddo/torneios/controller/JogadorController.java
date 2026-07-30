@@ -15,6 +15,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -287,5 +288,82 @@ public class JogadorController {
     @GetMapping("/{id}/resumo")
     public ResponseEntity<JogadorResumoDTO> buscarJogadorResumo(@PathVariable String id) {
         return ResponseEntity.ok(jogadorService.buscarResumoPorId(id));
+    }
+
+    @PreAuthorize("hasAuthority('PROPRIETARIO')")
+    @PatchMapping("/{id}/discord")
+    public ResponseEntity<JogadorDTO> trocarDiscord(
+            @PathVariable String id,
+            @RequestBody @Valid TrocarDiscordRequest request) {
+        return ResponseEntity.ok(jogadorService.trocarDiscord(id, request.novoDiscord()));
+    }
+
+    @PreAuthorize("hasAuthority('PROPRIETARIO')")
+    @PatchMapping("/{id}/email-admin")
+    public ResponseEntity<JogadorDTO> atualizarEmailAdmin(
+            @PathVariable String id,
+            @RequestBody @Valid AtualizarEmailAdminRequest request) {
+        return ResponseEntity.ok(jogadorService.atualizarEmailAdmin(id, request.novoEmail()));
+    }
+
+    @PreAuthorize("hasAuthority('PROPRIETARIO')")
+    @PatchMapping("/{id}/saldo/zerar")
+    public ResponseEntity<BigDecimal> zerarSaldoJogador(
+            @PathVariable String id,
+            @RequestBody(required = false) ZerarSaldoRequest request,
+            @AuthenticationPrincipal UserDetails userDetails) {
+
+        String motivo = request != null ? request.motivo() : null;
+        String responsavel = userDetails != null ? userDetails.getUsername() : "SISTEMA";
+
+        BigDecimal novoSaldo = jogadorService.zerarSaldoJogador(id, motivo, responsavel);
+        return ResponseEntity.ok(novoSaldo);
+    }
+
+    @PreAuthorize("hasAuthority('PROPRIETARIO')")
+    @PostMapping("/saldo/zerar-todos")
+    public ResponseEntity<String> zerarSaldoDeTodos(
+            @RequestBody(required = false) ZerarSaldoRequest request,
+            @AuthenticationPrincipal UserDetails userDetails) {
+
+        String motivo = request != null ? request.motivo() : null;
+        String responsavel = userDetails != null ? userDetails.getUsername() : "SISTEMA";
+
+        int afetados = jogadorService.zerarSaldoDeTodosOsJogadores(motivo, responsavel);
+        return ResponseEntity.ok(afetados + " jogadores tiveram o saldo zerado.");
+    }
+
+    @PreAuthorize("hasAuthority('PROPRIETARIO')")
+    @PostMapping("/saldo/distribuir")
+    public ResponseEntity<String> distribuirSaldoParaTodos(
+            @RequestBody @Valid DistribuirSaldoRequest request,
+            @AuthenticationPrincipal UserDetails userDetails) {
+
+        String responsavel = userDetails != null ? userDetails.getUsername() : "SISTEMA";
+
+        int afetados = jogadorService.distribuirSaldoParaTodos(request.valor(), request.motivo(), responsavel);
+        return ResponseEntity.ok(afetados + " jogadores receberam o saldo.");
+    }
+
+    @PreAuthorize("hasAuthority('PROPRIETARIO')")
+    @PatchMapping("/{id}/resetar-senha")
+    public ResponseEntity<Void> resetarSenhaAdmin(
+            @PathVariable String id,
+            @RequestBody @Valid ResetarSenhaRequest request) {
+        jogadorService.resetarSenhaAdmin(id, request.novaSenha());
+        return ResponseEntity.noContent().build();
+    }
+
+    @PreAuthorize("hasAuthority('PROPRIETARIO')")
+    @PatchMapping("/{id}/resetar-pin")
+    public ResponseEntity<Integer> resetarPinAdmin(@PathVariable String id) {
+        return ResponseEntity.ok(jogadorService.resetarPinAdmin(id));
+    }
+
+    @PreAuthorize("hasAuthority('PROPRIETARIO')")
+    @DeleteMapping("/{id}/deletar")
+    public ResponseEntity<Void> deletarJogador(@PathVariable String id) {
+        jogadorService.deletarJogador(id);
+        return ResponseEntity.noContent().build();
     }
 }

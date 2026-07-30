@@ -9,10 +9,12 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
 
@@ -143,4 +145,15 @@ public interface JogadorRepository extends JpaRepository<Jogador, String> {
     LIMIT 1
 """, nativeQuery = true)
     Optional<AproveitamentoProjection> findMelhorAproveitamento(@Param("minimoPartidas") int minimoPartidas);
+
+    @Query("SELECT new com.ddo.torneios.dto.SaldoProjecaoDTO(j.id, j.saldoVirtual) FROM Jogador j WHERE j.contaReivindicada = true")
+    List<SaldoProjecaoDTO> buscarSaldosDeJogadoresAtivos();
+
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("UPDATE Jogador j SET j.saldoVirtual = :novoSaldo, j.modificacaoConta = CURRENT_TIMESTAMP WHERE j.contaReivindicada = true")
+    void zerarSaldoDeTodosOsJogadores(@Param("novoSaldo") BigDecimal novoSaldo);
+
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("UPDATE Jogador j SET j.saldoVirtual = j.saldoVirtual + :valor, j.modificacaoConta = CURRENT_TIMESTAMP WHERE j.contaReivindicada = true")
+    void distribuirSaldoParaTodosOsJogadores(@Param("valor") BigDecimal valor);
 }

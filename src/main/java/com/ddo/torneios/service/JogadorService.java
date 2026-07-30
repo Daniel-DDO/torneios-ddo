@@ -704,4 +704,163 @@ public class JogadorService {
         return jogadorRepository.findResumoById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Jogador não encontrado com ID: " + id));
     }
+
+    @Transactional
+    public JogadorDTO trocarDiscord(String jogadorId, String novoDiscord) {
+        if (!StringUtils.hasText(novoDiscord)) {
+            throw new RegraNegocioException("O novo discord não pode ser vazio.");
+        }
+
+        Jogador jogador = jogadorRepository.findById(jogadorId)
+                .orElseThrow(() -> new EntityNotFoundException("Jogador não encontrado com ID: " + jogadorId));
+
+        if (!novoDiscord.equalsIgnoreCase(jogador.getDiscord()) && jogadorRepository.existsJogadorByDiscord(novoDiscord)) {
+            throw new RegraNegocioException("Este discord já está em uso por outro jogador.");
+        }
+
+        jogador.setDiscord(novoDiscord);
+        jogador.setModificacaoConta(LocalDateTime.now());
+
+        return new JogadorDTO(jogadorRepository.save(jogador));
+    }
+
+    @Transactional
+    public JogadorDTO atualizarEmailAdmin(String jogadorId, String novoEmail) {
+        if (!StringUtils.hasText(novoEmail)) {
+            throw new RegraNegocioException("O novo email não pode ser vazio.");
+        }
+
+        Jogador jogador = jogadorRepository.findById(jogadorId)
+                .orElseThrow(() -> new EntityNotFoundException("Jogador não encontrado com ID: " + jogadorId));
+
+        if (!novoEmail.equalsIgnoreCase(jogador.getEmail()) && jogadorRepository.existsJogadorByEmail(novoEmail)) {
+            throw new EmailJaCadastradoException(novoEmail);
+        }
+
+        jogador.setEmail(novoEmail);
+        jogador.setModificacaoConta(LocalDateTime.now());
+
+        return new JogadorDTO(jogadorRepository.save(jogador));
+    }
+
+    @Transactional
+    public BigDecimal zerarSaldoJogador(String jogadorId, String motivo, String idAdminResponsavel) {
+        Jogador jogador = jogadorRepository.findById(jogadorId)
+                .orElseThrow(() -> new EntityNotFoundException("Jogador não encontrado com ID: " + jogadorId));
+
+        BigDecimal saldoAnterior = jogador.getSaldoVirtual() != null ? jogador.getSaldoVirtual() : BigDecimal.ZERO;
+
+        if (saldoAnterior.compareTo(BigDecimal.ZERO) == 0) {
+            return saldoAnterior;
+        }
+
+        Transacao transacao = new Transacao(
+                jogador,
+                TipoTransacao.DEBITO,
+                saldoAnterior,
+                saldoAnterior,
+                BigDecimal.ZERO,
+                StringUtils.hasText(motivo) ? motivo : "Zeragem administrativa de saldo",
+                idAdminResponsavel
+        );
+
+        jogador.setSaldoVirtual(BigDecimal.ZERO);
+        jogador.setModificacaoConta(LocalDateTime.now());
+
+        transacaoRepository.save(transacao);
+        jogadorRepository.save(jogador);
+
+        return BigDecimal.ZERO;
+    }
+
+    @Transactional
+    public int zerarSaldoDeTodosOsJogadores(String motivo, String idAdminResponsavel) {
+        List<SaldoProjecaoDTO> saldos = jogadorRepository.buscarSaldosDeJogadoresAtivos();
+
+        String motivoFinal = StringUtils.hasText(motivo) ? motivo : "Zeragem administrativa de saldo (em massa)";
+
+        List<Transacao> transacoes = saldos.stream()
+                .filter(s -> s.saldoVirtual() != null && s.saldoVirtual().compareTo(BigDecimal.ZERO) != 0)
+                .map(s -> new Transacao(
+                        jogadorRepository.getReferenceById(s.id()),
+                        TipoTransacao.DEBITO,
+                        s.saldoVirtual(),
+                        s.saldoVirtual(),
+                        BigDecimal.ZERO,
+                        motivoFinal,
+                        idAdminResponsavel
+                ))
+                .toList();
+
+        jogadorRepository.zerarSaldoDeTodosOsJogadores(BigDecimal.ZERO);
+        transacaoRepository.saveAll(transacoes);
+
+        return transacoes.size();
+    }
+
+    @Transactional
+    public int distribuirSaldoParaTodos(BigDecimal valor, String motivo, String idAdminResponsavel) {
+        if (valor == null || valor.compareTo(BigDecimal.ZERO) <= 0) {
+            throw new RegraNegocioException("O valor a distribuir deve ser maior que zero.");
+        }
+
+        List<SaldoProjecaoDTO> saldos = jogadorRepository.buscarSaldosDeJogadoresAtivos();
+
+        String motivoFinal = StringUtils.hasText(motivo) ? motivo : "Distribuição administrativa de saldo";
+
+        List<Transacao> transacoes = saldos.stream()
+                .map(s -> {
+                    BigDecimal saldoAnterior = s.saldoVirtual() != null ? s.saldoVirtual() : BigDecimal.ZERO;
+                    BigDecimal saldoPosterior = saldoAnterior.add(valor);
+                    return new Transacao(
+                            jogadorRepository.getReferenceById(s.id()),
+                            TipoTransacao.CREDITO,
+                            valor,
+                            saldoAnterior,
+                            saldoPosterior,
+                            motivoFinal,
+                            idAdminResponsavel
+                    );
+                })
+                .toList();
+
+        jogadorRepository.distribuirSaldoParaTodosOsJogadores(valor);
+        transacaoRepository.saveAll(transacoes);
+
+        return transacoes.size();
+    }
+
+    @Transactional
+    public void resetarSenhaAdmin(String jogadorId, String novaSenha) {
+        Jogador jogador = jogadorRepository.findById(jogadorId)
+                .orElseThrow(() -> new EntityNotFoundException("Jogador não encontrado com ID: " + jogadorId));
+
+        jogador.setSenha(passwordEncoder.encode(novaSenha));
+        jogador.setModificacaoConta(LocalDateTime.now());
+        jogadorRepository.save(jogador);
+    }
+
+    @Transactional
+    public Integer resetarPinAdmin(String jogadorId) {
+        Jogador jogador = jogadorRepository.findById(jogadorId)
+                .orElseThrow(() -> new EntityNotFoundException("Jogador não encontrado com ID: " + jogadorId));
+
+        Integer novoPin = ThreadLocalRandom.current().nextInt(100000, 1000000);
+        jogador.setPin(novoPin);
+        jogadorRepository.save(jogador);
+
+        return novoPin;
+    }
+
+    @Transactional
+    public void deletarJogador(String jogadorId) {
+        Jogador jogador = jogadorRepository.findById(jogadorId)
+                .orElseThrow(() -> new EntityNotFoundException("Jogador não encontrado com ID: " + jogadorId));
+
+        if (jogador.isContaReivindicada()) {
+            throw new RegraNegocioException("Não é possível deletar uma conta já reivindicada. Suspenda o jogador em vez disso.");
+        }
+
+        jogadorRepository.delete(jogador);
+    }
 }
