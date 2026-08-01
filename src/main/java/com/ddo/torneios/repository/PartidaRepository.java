@@ -496,4 +496,12 @@ public interface PartidaRepository extends JpaRepository<Partida, String> {
 
     @Query("SELECT COUNT(p) > 0 FROM Partida p WHERE (p.mandante.id = :jcId OR p.visitante.id = :jcId) AND p.realizada = true")
     boolean existsPartidaRealizadaPorJogadorClube(@Param("jcId") String jogadorClubeId);
+
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("UPDATE Partida p SET p.mandante.id = :sobreviventeId WHERE p.mandante.id = :antigoId")
+    void reatribuirMandante(String antigoId, String sobreviventeId);
+
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("UPDATE Partida p SET p.visitante.id = :sobreviventeId WHERE p.visitante.id = :antigoId")
+    void reatribuirVisitante(String antigoId, String sobreviventeId);
 }

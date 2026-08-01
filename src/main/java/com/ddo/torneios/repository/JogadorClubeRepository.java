@@ -1,10 +1,12 @@
 package com.ddo.torneios.repository;
 
 import com.ddo.torneios.dto.*;
+import com.ddo.torneios.model.Jogador;
 import com.ddo.torneios.model.JogadorClube;
 import com.ddo.torneios.model.Temporada;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -76,4 +78,14 @@ public interface JogadorClubeRepository extends JpaRepository<JogadorClube, Stri
     )
 """)
     List<RecordeTemporadaDTO> findMelhorDefesaTemporada(@Param("minimoPartidas") int minimoPartidas);
+
+    @Query("SELECT jc.id, jc.temporada.id FROM JogadorClube jc WHERE jc.jogador.id = :jogadorId")
+    List<Object[]> buscarIdETemporadaPorJogador(String jogadorId);
+
+    @Query("SELECT jc.id, jc.temporada.id FROM JogadorClube jc WHERE jc.jogador.id IN :jogadorIds")
+    List<Object[]> buscarIdETemporadaPorJogadores(List<String> jogadorIds);
+
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("UPDATE JogadorClube jc SET jc.jogador = :principal WHERE jc.id IN :ids")
+    void reatribuirJogador(List<String> ids, Jogador principal);
 }

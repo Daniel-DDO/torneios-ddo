@@ -366,4 +366,11 @@ public class JogadorController {
         jogadorService.deletarJogador(id);
         return ResponseEntity.noContent().build();
     }
+
+    @PreAuthorize("hasAuthority('PROPRIETARIO')")
+    @PostMapping("/mesclar-contas")
+    public ResponseEntity<JogadorDTO> mesclarContas(@RequestBody @Valid MesclarContasRequest request) {
+        Jogador jogadorMesclado = jogadorService.mesclarContas(request.idPrincipal(), request.idsAntigos());
+        return ResponseEntity.ok(new JogadorDTO(jogadorMesclado));
+    }
 }

@@ -46,4 +46,8 @@ public interface ParticipacaoFaseRepository extends JpaRepository<ParticipacaoFa
     List<ParticipacaoClassificacaoProjection> buscarDadosClassificacao(@Param("faseId") String faseId);
 
     List<ParticipacaoFase> findByFaseId(String id);
+
+    List<ParticipacaoFase> findByJogadorClube_Id(String jogadorClubeId);
+
+    Optional<ParticipacaoFase> findByFase_IdAndJogadorClube_Id(String faseId, String jogadorClubeId);
 }

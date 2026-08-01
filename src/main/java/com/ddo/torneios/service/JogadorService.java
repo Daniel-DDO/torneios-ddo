@@ -6,9 +6,7 @@ import com.ddo.torneios.exception.JogadorExisteException;
 import com.ddo.torneios.exception.RegraNegocioException;
 import com.ddo.torneios.exception.SaldoInsuficienteException;
 import com.ddo.torneios.model.*;
-import com.ddo.torneios.repository.JogadorRepository;
-import com.ddo.torneios.repository.PartidaRepository;
-import com.ddo.torneios.repository.TransacaoRepository;
+import com.ddo.torneios.repository.*;
 import com.ddo.torneios.request.*;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.validation.constraints.NotNull;
@@ -19,20 +17,19 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.Collections;
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Collectors;
 
@@ -63,6 +60,18 @@ public class JogadorService {
 
     @Autowired
     private NotificacaoService notificacaoService;
+
+    @Autowired
+    private JogadorClubeRepository jogadorClubeRepository;
+
+    @Autowired
+    private ParticipacaoFaseRepository participacaoFaseRepository;
+
+    @Autowired
+    private LanceRepository lanceRepository;
+
+    @Autowired
+    private TransferenciaRepository transferenciaRepository;
 
     public void cadastrarJogador(JogadorRequest request) {
         if (jogadorRepository.existsJogadorByDiscord(request.getDiscord())) {
@@ -862,5 +871,197 @@ public class JogadorService {
         }
 
         jogadorRepository.delete(jogador);
+    }
+
+    @Transactional
+    public Jogador mesclarContas(String idPrincipal, List<String> idsAntigosRequest) {
+
+        List<String> idsAntigos = idsAntigosRequest.stream().distinct().toList();
+
+        if (idsAntigos.contains(idPrincipal)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "A conta principal não pode estar na lista de contas antigas.");
+        }
+
+        Jogador principal = jogadorRepository.findById(idPrincipal)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Conta principal não encontrada."));
+
+        List<Jogador> antigos = jogadorRepository.findAllById(idsAntigos);
+        if (antigos.size() != idsAntigos.size()) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Uma ou mais contas antigas não foram encontradas.");
+        }
+
+        for (Jogador antigo : antigos) {
+            principal.setFinais(nz(principal.getFinais()) + nz(antigo.getFinais()));
+            principal.setTitulos(nz(principal.getTitulos()) + nz(antigo.getTitulos()));
+            principal.setGolsMarcados(nz(principal.getGolsMarcados()) + nz(antigo.getGolsMarcados()));
+            principal.setGolsSofridos(nz(principal.getGolsSofridos()) + nz(antigo.getGolsSofridos()));
+            principal.setPartidasJogadas(nz(principal.getPartidasJogadas()) + nz(antigo.getPartidasJogadas()));
+            principal.setVitorias(nz(principal.getVitorias()) + nz(antigo.getVitorias()));
+            principal.setEmpates(nz(principal.getEmpates()) + nz(antigo.getEmpates()));
+            principal.setDerrotas(nz(principal.getDerrotas()) + nz(antigo.getDerrotas()));
+            principal.setCartoesAmarelos(nzLong(principal.getCartoesAmarelos()) + nzLong(antigo.getCartoesAmarelos()));
+            principal.setCartoesVermelhos(nzLong(principal.getCartoesVermelhos()) + nzLong(antigo.getCartoesVermelhos()));
+            principal.setSaldoVirtual(nzBig(principal.getSaldoVirtual()).add(nzBig(antigo.getSaldoVirtual())));
+            principal.setPontosCoeficiente(nzBig(principal.getPontosCoeficiente()).add(nzBig(antigo.getPontosCoeficiente())));
+
+            principal.getInsignias().addAll(antigo.getInsignias());
+
+            for (Conquista conquista : new ArrayList<>(antigo.getConquistas())) {
+                conquista.setJogador(principal);
+                principal.getConquistas().add(conquista);
+            }
+            antigo.getConquistas().clear();
+        }
+        principal.setModificacaoConta(LocalDateTime.now());
+
+        mesclarJogadorClube(idPrincipal, idsAntigos, principal);
+
+        transacaoRepository.reatribuirJogador(idsAntigos, principal);
+        transferenciaRepository.reatribuirJogador(idsAntigos, principal);
+
+        mesclarLances(idPrincipal, idsAntigos, principal);
+
+        jogadorRepository.deleteAll(antigos);
+
+        return jogadorRepository.save(principal);
+    }
+
+    private void mesclarJogadorClube(String idPrincipal, List<String> idsAntigos, Jogador principal) {
+        Map<String, String> temporadaParaJcPrincipal = new HashMap<>();
+        for (Object[] linha : jogadorClubeRepository.buscarIdETemporadaPorJogador(idPrincipal)) {
+            temporadaParaJcPrincipal.put((String) linha[1], (String) linha[0]);
+        }
+
+        List<String> reatribuicaoSimples = new ArrayList<>();
+        List<String[]> conflitos = new ArrayList<>();
+
+        for (Object[] linha : jogadorClubeRepository.buscarIdETemporadaPorJogadores(idsAntigos)) {
+            String jcId = (String) linha[0];
+            String temporadaId = (String) linha[1];
+            String sobreviventeId = temporadaParaJcPrincipal.get(temporadaId);
+
+            if (sobreviventeId == null) {
+                reatribuicaoSimples.add(jcId);
+                temporadaParaJcPrincipal.put(temporadaId, jcId);
+            } else {
+                conflitos.add(new String[]{jcId, sobreviventeId});
+            }
+        }
+
+        if (!reatribuicaoSimples.isEmpty()) {
+            jogadorClubeRepository.reatribuirJogador(reatribuicaoSimples, principal);
+        }
+
+        for (String[] par : conflitos) {
+            mesclarJogadorClubeComConflito(par[0], par[1]);
+        }
+    }
+
+    private void mesclarJogadorClubeComConflito(String antigoId, String sobreviventeId) {
+        JogadorClube antigo = jogadorClubeRepository.findById(antigoId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "JogadorClube antigo não encontrado."));
+        JogadorClube sobrevivente = jogadorClubeRepository.findById(sobreviventeId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "JogadorClube sobrevivente não encontrado."));
+
+        sobrevivente.setTotalGolsMarcados(nz(sobrevivente.getTotalGolsMarcados()) + nz(antigo.getTotalGolsMarcados()));
+        sobrevivente.setTotalGolsSofridos(nz(sobrevivente.getTotalGolsSofridos()) + nz(antigo.getTotalGolsSofridos()));
+        sobrevivente.setTotalCartoesAmarelos(nz(sobrevivente.getTotalCartoesAmarelos()) + nz(antigo.getTotalCartoesAmarelos()));
+        sobrevivente.setTotalCartoesVermelhos(nz(sobrevivente.getTotalCartoesVermelhos()) + nz(antigo.getTotalCartoesVermelhos()));
+        sobrevivente.setPartidasJogadas(nz(sobrevivente.getPartidasJogadas()) + nz(antigo.getPartidasJogadas()));
+        sobrevivente.setVitorias(nz(sobrevivente.getVitorias()) + nz(antigo.getVitorias()));
+        sobrevivente.setEmpates(nz(sobrevivente.getEmpates()) + nz(antigo.getEmpates()));
+        sobrevivente.setDerrotas(nz(sobrevivente.getDerrotas()) + nz(antigo.getDerrotas()));
+        sobrevivente.setBalancoFinanceiro(nzBig(sobrevivente.getBalancoFinanceiro()).add(nzBig(antigo.getBalancoFinanceiro())));
+        sobrevivente.setPontosCoeficiente(nzBig(sobrevivente.getPontosCoeficiente()).add(nzBig(antigo.getPontosCoeficiente())));
+
+        int jogos = nz(sobrevivente.getPartidasJogadas());
+        sobrevivente.setAproveitamento(jogos > 0
+                ? (nz(sobrevivente.getVitorias()) * 3 + nz(sobrevivente.getEmpates())) * 100.0 / (jogos * 3)
+                : 0.0);
+
+        partidaRepository.reatribuirMandante(antigoId, sobreviventeId);
+        partidaRepository.reatribuirVisitante(antigoId, sobreviventeId);
+
+        List<ParticipacaoFase> participacoesAntigas = participacaoFaseRepository.findByJogadorClube_Id(antigoId);
+        for (ParticipacaoFase pAntiga : participacoesAntigas) {
+            Optional<ParticipacaoFase> pSobreviventeOpt = participacaoFaseRepository
+                    .findByFase_IdAndJogadorClube_Id(pAntiga.getFase().getId(), sobreviventeId);
+
+            if (pSobreviventeOpt.isEmpty()) {
+                pAntiga.setJogadorClube(sobrevivente);
+                pAntiga.getHistoricoJogadorClubeIds().add(antigoId);
+            } else {
+                ParticipacaoFase pSobrevivente = pSobreviventeOpt.get();
+                pSobrevivente.setPontos(nz(pSobrevivente.getPontos()) + nz(pAntiga.getPontos()));
+                pSobrevivente.setPartidasJogadas(nz(pSobrevivente.getPartidasJogadas()) + nz(pAntiga.getPartidasJogadas()));
+                pSobrevivente.setVitorias(nz(pSobrevivente.getVitorias()) + nz(pAntiga.getVitorias()));
+                pSobrevivente.setEmpates(nz(pSobrevivente.getEmpates()) + nz(pAntiga.getEmpates()));
+                pSobrevivente.setDerrotas(nz(pSobrevivente.getDerrotas()) + nz(pAntiga.getDerrotas()));
+                pSobrevivente.setGolsPro(nz(pSobrevivente.getGolsPro()) + nz(pAntiga.getGolsPro()));
+                pSobrevivente.setGolsContra(nz(pSobrevivente.getGolsContra()) + nz(pAntiga.getGolsContra()));
+                pSobrevivente.setSaldoGols(pSobrevivente.getGolsPro() - pSobrevivente.getGolsContra());
+                pSobrevivente.getHistoricoJogadorClubeIds().add(antigoId);
+
+                participacaoFaseRepository.delete(pAntiga);
+            }
+        }
+
+        jogadorClubeRepository.delete(antigo);
+    }
+
+    private void mesclarLances(String idPrincipal, List<String> idsAntigos, Jogador principal) {
+        record ChaveLance(String leilaoId, Integer prioridade) {}
+
+        Map<ChaveLance, String[]> lancesPorChave = new HashMap<>();
+        for (Object[] linha : lanceRepository.buscarChavesPorJogador(idPrincipal)) {
+            ChaveLance chave = new ChaveLance((String) linha[1], (Integer) linha[2]);
+            lancesPorChave.put(chave, new String[]{(String) linha[0], linha[3].toString()});
+        }
+
+        List<String> reatribuicaoSimples = new ArrayList<>();
+        List<String> paraDeletar = new ArrayList<>();
+
+        for (Object[] linha : lanceRepository.buscarChavesPorJogadores(idsAntigos)) {
+            String lanceAntigoId = (String) linha[0];
+            ChaveLance chave = new ChaveLance((String) linha[1], (Integer) linha[2]);
+            BigDecimal valorAntigo = (BigDecimal) linha[3];
+
+            String[] existente = lancesPorChave.get(chave);
+
+            if (existente == null) {
+                lancesPorChave.put(chave, new String[]{lanceAntigoId, valorAntigo.toString()});
+                reatribuicaoSimples.add(lanceAntigoId);
+            } else {
+                BigDecimal valorExistente = new BigDecimal(existente[1]);
+                if (valorAntigo.compareTo(valorExistente) > 0) {
+                    paraDeletar.add(existente[0]);
+                    reatribuicaoSimples.remove(existente[0]);
+                    lancesPorChave.put(chave, new String[]{lanceAntigoId, valorAntigo.toString()});
+                    reatribuicaoSimples.add(lanceAntigoId);
+                } else {
+                    paraDeletar.add(lanceAntigoId);
+                }
+            }
+        }
+
+        if (!reatribuicaoSimples.isEmpty()) {
+            lanceRepository.reatribuirJogador(reatribuicaoSimples, principal);
+        }
+        if (!paraDeletar.isEmpty()) {
+            lanceRepository.deletarPorIds(paraDeletar);
+        }
+    }
+
+    private int nz(Integer valor) {
+        return valor == null ? 0 : valor;
+    }
+
+    private long nzLong(Long valor) {
+        return valor == null ? 0L : valor;
+    }
+
+    private BigDecimal nzBig(BigDecimal valor) {
+        return valor == null ? BigDecimal.ZERO : valor;
     }
 }

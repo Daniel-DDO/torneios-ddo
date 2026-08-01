@@ -10,6 +10,7 @@ import com.ddo.torneios.model.Lance;
 import com.ddo.torneios.model.Leilao;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -96,4 +97,18 @@ public interface LanceRepository extends JpaRepository<Lance, String> {
     List<Lance> findByLeilaoOrderByPrioridadeAscValorDesc(Leilao leilao);
 
     Optional<Lance> findTopByLeilaoAndClubeAndPrioridadeOrderByValorDesc(Leilao leilao, Clube clube, Integer prioridade);
+
+    @Query("SELECT l.id, l.leilao.id, l.prioridade, l.valor FROM Lance l WHERE l.jogador.id = :jogadorId")
+    List<Object[]> buscarChavesPorJogador(String jogadorId);
+
+    @Query("SELECT l.id, l.leilao.id, l.prioridade, l.valor FROM Lance l WHERE l.jogador.id IN :jogadorIds")
+    List<Object[]> buscarChavesPorJogadores(List<String> jogadorIds);
+
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("UPDATE Lance l SET l.jogador = :principal WHERE l.id IN :ids")
+    void reatribuirJogador(List<String> ids, Jogador principal);
+
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("DELETE FROM Lance l WHERE l.id IN :ids")
+    void deletarPorIds(List<String> ids);
 }
