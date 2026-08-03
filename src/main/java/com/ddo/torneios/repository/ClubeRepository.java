@@ -1,15 +1,19 @@
 package com.ddo.torneios.repository;
 
+import com.ddo.torneios.dto.ClubeResumoConcessaoView;
 import com.ddo.torneios.dto.RecordeClubeDTO;
 import com.ddo.torneios.model.Clube;
 import com.ddo.torneios.model.LigaClube;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface ClubeRepository extends JpaRepository<Clube, String> {
@@ -40,4 +44,15 @@ public interface ClubeRepository extends JpaRepository<Clube, String> {
     WHERE c.titulos = (SELECT MAX(c2.titulos) FROM Clube c2)
 """)
     List<RecordeClubeDTO> findClubeComMaisTitulos();
+
+    @Query("SELECT c.id as id, c.imagem as imagem FROM Clube c WHERE c.id = :id")
+    Optional<ClubeResumoConcessaoView> buscarResumoParaConcessao(@Param("id") String id);
+
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("UPDATE Clube c SET c.titulos = COALESCE(c.titulos, 0) + 1 WHERE c.id = :id")
+    void incrementarTitulos(@Param("id") String id);
+
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("UPDATE Clube c SET c.titulos = COALESCE(c.titulos, 0) + :qtd WHERE c.id = :id")
+    void incrementarTitulos(@Param("id") String id, @Param("qtd") int qtd);
 }

@@ -1,5 +1,8 @@
 package com.ddo.torneios.service;
 
+import com.ddo.torneios.dto.ClubeResumoConcessaoView;
+import com.ddo.torneios.dto.JogadorClubeConcessaoView;
+import com.ddo.torneios.dto.JogadorResumoConcessaoView;
 import com.ddo.torneios.dto.TituloResumoDTO;
 import com.ddo.torneios.model.*;
 import com.ddo.torneios.repository.*;
@@ -17,6 +20,8 @@ import org.springframework.web.multipart.MultipartFile;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -45,46 +50,74 @@ public class TituloService {
         }
         nomeEdicao = nomeEdicao.trim();
 
-        JogadorClube jogadorClube = jogadorClubeRepository.findById(jogadorClubeId)
+        JogadorClubeConcessaoView view = jogadorClubeRepository.buscarParaConcessao(jogadorClubeId)
                 .orElseThrow(() -> new RuntimeException("Vínculo Jogador-Clube não encontrado"));
 
-        Jogador jogador = jogadorClube.getJogador();
-        Clube clube = jogadorClube.getClube();
-
         boolean jaPossui = conquistaRepository.existsByTituloIdAndNomeEdicaoAndJogadorId(
-                idTitulo, nomeEdicao, jogador.getId()
+                idTitulo, nomeEdicao, view.getJogadorId()
         );
         if (jaPossui) {
-            throw new RuntimeException("O jogador " + jogador.getNome() + " já possui o título desta edição (" + nomeEdicao + ").");
+            throw new RuntimeException("O jogador " + view.getJogadorNome() + " já possui o título desta edição (" + nomeEdicao + ").");
         }
 
         Titulo titulo = tituloRepository.findById(idTitulo)
                 .orElseThrow(() -> new RuntimeException("Título não encontrado: " + idTitulo));
 
-        Conquista novaConquista = new Conquista(titulo, nomeEdicao, clube, jogador);
+        Jogador jogadorRef = jogadorRepository.getReferenceById(view.getJogadorId());
+        Clube clubeRef = clubeRepository.getReferenceById(view.getClubeId());
+
+        Conquista novaConquista = new Conquista(titulo, nomeEdicao, clubeRef, jogadorRef);
         novaConquista.setDataConquista(LocalDateTime.now());
 
         try {
             conquistaRepository.saveAndFlush(novaConquista);
         } catch (DataIntegrityViolationException e) {
-            throw new RuntimeException("O jogador " + jogador.getNome() + " já possui o título desta edição (" + nomeEdicao + ").");
+            throw new RuntimeException("O jogador " + view.getJogadorNome() + " já possui o título desta edição (" + nomeEdicao + ").");
         }
 
-        jogador.getConquistas().add(novaConquista);
-        clube.getConquistas().add(novaConquista);
+        jogadorRepository.incrementarTitulos(view.getJogadorId());
+        clubeRepository.incrementarTitulos(view.getClubeId());
 
-        if (jogador.getTitulos() == null) jogador.setTitulos(0);
-        jogador.setTitulos(jogador.getTitulos() + 1);
-
-        if (clube.getTitulos() == null) clube.setTitulos(0);
-        clube.setTitulos(clube.getTitulos() + 1);
-
-        jogadorRepository.save(jogador);
-        clubeRepository.save(clube);
-
-        gerarImagemEAtualizar(novaConquista, titulo, clube, jogador, "titulo_");
+        gerarImagemEAtualizarLeve(novaConquista, titulo, view.getClubeImagem(), view.getJogadorId(), view.getJogadorNome(), view.getJogadorImagem(), "titulo_");
 
         return novaConquista;
+    }
+
+    private void gerarImagemEAtualizarLeve(Conquista conquista, Titulo titulo,
+                                           String clubeImagem, String jogadorId,
+                                           String jogadorNome, String jogadorImagem,
+                                           String prefixoArquivo) {
+        try {
+            if (titulo.getImagemGerarPost() != null && !titulo.getImagemGerarPost().isEmpty()) {
+
+                String urlLogoParaPost = clubeImagem;
+                if (urlLogoParaPost == null || urlLogoParaPost.isEmpty()) {
+                    urlLogoParaPost = jogadorImagem;
+                }
+
+                log.info("Gerando post do título para {}", jogadorNome);
+
+                byte[] imagemBytes = postGeradorService.gerarImagemTitulo(
+                        titulo.getImagemGerarPost(), urlLogoParaPost, jogadorNome
+                );
+
+                if (imagemBytes != null) {
+                    String nomeArquivo = prefixoArquivo + jogadorId + "_" + System.currentTimeMillis() + ".png";
+
+                    MultipartFile multipartFile = new ByteArrayMultipartFile(
+                            imagemBytes, "image", nomeArquivo, "image/png"
+                    );
+
+                    String urlImgBB = imgBBService.uploadImagem(multipartFile);
+
+                    conquista.setImagem(urlImgBB);
+                    conquistaRepository.save(conquista);
+                    log.info("Imagem salva no ImgBB: {}", urlImgBB);
+                }
+            }
+        } catch (Exception e) {
+            log.error("Erro ao gerar imagem (o título já foi concedido sem imagem): ", e);
+        }
     }
 
     private void gerarImagemEAtualizar(Conquista conquista, Titulo titulo, Clube clube, Jogador jogador, String prefixoArquivo) {
@@ -180,90 +213,107 @@ public class TituloService {
         }
         nomeEdicao = nomeEdicao.trim();
 
-        Jogador jogador = jogadorRepository.findById(jogadorId)
+        JogadorResumoConcessaoView jogadorView = jogadorRepository.buscarResumoParaConcessao(jogadorId)
                 .orElseThrow(() -> new RuntimeException("Jogador não encontrado: " + jogadorId));
 
-        Clube clube = clubeRepository.findById(clubeId)
+        ClubeResumoConcessaoView clubeView = clubeRepository.buscarResumoParaConcessao(clubeId)
                 .orElseThrow(() -> new RuntimeException("Clube não encontrado: " + clubeId));
 
         boolean jaPossui = conquistaRepository.existsByTituloIdAndNomeEdicaoAndJogadorId(
-                idTitulo, nomeEdicao, jogador.getId()
+                idTitulo, nomeEdicao, jogadorId
         );
         if (jaPossui) {
-            throw new RuntimeException("O jogador " + jogador.getNome() + " já possui o título desta edição (" + nomeEdicao + ").");
+            throw new RuntimeException("O jogador " + jogadorView.getNome() + " já possui o título desta edição (" + nomeEdicao + ").");
         }
 
         Titulo titulo = tituloRepository.findById(idTitulo)
                 .orElseThrow(() -> new RuntimeException("Título não encontrado: " + idTitulo));
 
-        Conquista novaConquista = new Conquista(titulo, nomeEdicao, clube, jogador);
+        Jogador jogadorRef = jogadorRepository.getReferenceById(jogadorId);
+        Clube clubeRef = clubeRepository.getReferenceById(clubeId);
+
+        Conquista novaConquista = new Conquista(titulo, nomeEdicao, clubeRef, jogadorRef);
         novaConquista.setDataConquista(data);
 
         try {
             conquistaRepository.saveAndFlush(novaConquista);
         } catch (DataIntegrityViolationException e) {
-            throw new RuntimeException("O jogador " + jogador.getNome() + " já possui o título desta edição (" + nomeEdicao + ").");
+            throw new RuntimeException("O jogador " + jogadorView.getNome() + " já possui o título desta edição (" + nomeEdicao + ").");
         }
 
-        if (jogador.getConquistas() != null) jogador.getConquistas().add(novaConquista);
-        if (clube.getConquistas() != null) clube.getConquistas().add(novaConquista);
+        jogadorRepository.incrementarTitulosEmLote(List.of(jogadorId));
+        clubeRepository.incrementarTitulos(clubeId, 1);
 
-        jogador.setTitulos(jogador.getTitulos() == null ? 1 : jogador.getTitulos() + 1);
-        clube.setTitulos(clube.getTitulos() == null ? 1 : clube.getTitulos() + 1);
-
-        jogadorRepository.save(jogador);
-        clubeRepository.save(clube);
-
-        gerarImagemEAtualizar(novaConquista, titulo, clube, jogador, "titulo_legado_");
+        gerarImagemEAtualizarLeve(
+                novaConquista, titulo,
+                clubeView.getImagem(), jogadorId, jogadorView.getNome(), jogadorView.getImagem(),
+                "titulo_legado_"
+        );
 
         return novaConquista;
     }
 
     @Transactional
     public List<Conquista> concederTituloColetivo(ConcederTituloColetivoRequest request) {
-        Clube clube = clubeRepository.findById(request.getClubeId())
+
+        ClubeResumoConcessaoView clubeView = clubeRepository.buscarResumoParaConcessao(request.getClubeId())
                 .orElseThrow(() -> new RuntimeException("Clube não encontrado: " + request.getClubeId()));
 
         Titulo titulo = tituloRepository.findById(request.getIdTitulo())
                 .orElseThrow(() -> new RuntimeException("Título não encontrado: " + request.getIdTitulo()));
 
-        List<Conquista> conquistasGeradas = new ArrayList<>();
-        int jogadoresPremiados = 0;
+        List<JogadorResumoConcessaoView> jogadoresViews =
+                jogadorRepository.buscarResumosParaConcessao(request.getJogadoresIds());
+
+        Map<String, JogadorResumoConcessaoView> jogadoresPorId = jogadoresViews.stream()
+                .collect(Collectors.toMap(JogadorResumoConcessaoView::getId, v -> v));
 
         for (String jogadorId : request.getJogadoresIds()) {
-            Jogador jogador = jogadorRepository.findById(jogadorId)
-                    .orElseThrow(() -> new RuntimeException("Jogador não encontrado: " + jogadorId));
+            if (!jogadoresPorId.containsKey(jogadorId)) {
+                throw new RuntimeException("Jogador não encontrado: " + jogadorId);
+            }
+        }
+
+        Clube clubeRef = clubeRepository.getReferenceById(request.getClubeId());
+
+        List<Conquista> conquistasGeradas = new ArrayList<>();
+        List<String> jogadoresPremiadosIds = new ArrayList<>();
+
+        for (String jogadorId : request.getJogadoresIds()) {
+            JogadorResumoConcessaoView jv = jogadoresPorId.get(jogadorId);
 
             boolean jaPossui = conquistaRepository.existsByTituloIdAndNomeEdicaoAndJogadorId(
-                    titulo.getId(), request.getEdicao(), jogador.getId()
+                    titulo.getId(), request.getEdicao(), jogadorId
             );
             if (jaPossui) {
-                log.warn("O jogador {} já possui o título {}", jogador.getNome(), request.getEdicao());
+                log.warn("O jogador {} já possui o título {}", jv.getNome(), request.getEdicao());
                 continue;
             }
 
-            Conquista novaConquista = new Conquista(titulo, request.getEdicao(), clube, jogador);
+            Jogador jogadorRef = jogadorRepository.getReferenceById(jogadorId);
+            Conquista novaConquista = new Conquista(titulo, request.getEdicao(), clubeRef, jogadorRef);
             novaConquista.setDataConquista(request.getData());
 
             try {
                 conquistaRepository.saveAndFlush(novaConquista);
             } catch (DataIntegrityViolationException e) {
-                log.warn("Título duplicado detectado na constraint para o jogador {} — pulando.", jogador.getNome());
+                log.warn("Título duplicado detectado na constraint para o jogador {} — pulando.", jv.getNome());
                 continue;
             }
 
-            jogador.setTitulos(jogador.getTitulos() == null ? 1 : jogador.getTitulos() + 1);
-            jogadorRepository.save(jogador);
-
-            gerarImagemEAtualizar(novaConquista, titulo, clube, jogador, "titulo_coletivo_");
+            gerarImagemEAtualizarLeve(
+                    novaConquista, titulo,
+                    clubeView.getImagem(), jogadorId, jv.getNome(), jv.getImagem(),
+                    "titulo_coletivo_"
+            );
 
             conquistasGeradas.add(novaConquista);
-            jogadoresPremiados++;
+            jogadoresPremiadosIds.add(jogadorId);
         }
 
-        if (jogadoresPremiados > 0) {
-            clube.setTitulos(clube.getTitulos() == null ? jogadoresPremiados : clube.getTitulos() + jogadoresPremiados);
-            clubeRepository.save(clube);
+        if (!jogadoresPremiadosIds.isEmpty()) {
+            jogadorRepository.incrementarTitulosEmLote(jogadoresPremiadosIds);
+            clubeRepository.incrementarTitulos(request.getClubeId(), jogadoresPremiadosIds.size());
         }
 
         return conquistasGeradas;

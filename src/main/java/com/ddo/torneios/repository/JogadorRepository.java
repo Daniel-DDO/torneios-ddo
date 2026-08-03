@@ -156,4 +156,18 @@ public interface JogadorRepository extends JpaRepository<Jogador, String> {
     @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("UPDATE Jogador j SET j.saldoVirtual = j.saldoVirtual + :valor, j.modificacaoConta = CURRENT_TIMESTAMP WHERE j.contaReivindicada = true")
     void distribuirSaldoParaTodosOsJogadores(@Param("valor") BigDecimal valor);
+
+    @Query("SELECT j.id as id, j.nome as nome, j.imagem as imagem FROM Jogador j WHERE j.id = :id")
+    Optional<JogadorResumoConcessaoView> buscarResumoParaConcessao(@Param("id") String id);
+
+    @Query("SELECT j.id as id, j.nome as nome, j.imagem as imagem FROM Jogador j WHERE j.id IN :ids")
+    List<JogadorResumoConcessaoView> buscarResumosParaConcessao(@Param("ids") List<String> ids);
+
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("UPDATE Jogador j SET j.titulos = COALESCE(j.titulos, 0) + 1 WHERE j.id IN :ids")
+    void incrementarTitulosEmLote(@Param("ids") List<String> ids);
+
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("UPDATE Jogador j SET j.titulos = COALESCE(j.titulos, 0) + 1 WHERE j.id = :id")
+    void incrementarTitulos(@Param("id") String id);
 }

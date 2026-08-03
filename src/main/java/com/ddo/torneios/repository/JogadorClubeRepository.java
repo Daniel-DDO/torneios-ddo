@@ -88,4 +88,15 @@ public interface JogadorClubeRepository extends JpaRepository<JogadorClube, Stri
     @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("UPDATE JogadorClube jc SET jc.jogador = :principal WHERE jc.id IN :ids")
     void reatribuirJogador(List<String> ids, Jogador principal);
+
+    @Query("""
+    SELECT jc.id as jogadorClubeId,
+           j.id as jogadorId, j.nome as jogadorNome, j.imagem as jogadorImagem,
+           c.id as clubeId, c.imagem as clubeImagem
+    FROM JogadorClube jc
+    JOIN jc.jogador j
+    JOIN jc.clube c
+    WHERE jc.id = :id
+""")
+    Optional<JogadorClubeConcessaoView> buscarParaConcessao(@Param("id") String id);
 }
