@@ -52,6 +52,7 @@ public class InsigniaService {
     public static final String RANK_BRONZE = "BRONZE";
     public static final String RANK_PRATA = "PRATA";
     public static final String RANK_OURO = "OURO";
+    public static final String RANK_PLATINA = "PLATINA";
     public static final String RANK_DIAMANTE = "DIAMANTE";
     public static final String RANK_CHAMPION = "CHAMPION";
 

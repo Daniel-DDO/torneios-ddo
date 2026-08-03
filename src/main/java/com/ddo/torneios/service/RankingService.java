@@ -35,6 +35,7 @@ public class RankingService {
             RankJogador.BRONZE, InsigniaService.RANK_BRONZE,
             RankJogador.PRATA, InsigniaService.RANK_PRATA,
             RankJogador.OURO, InsigniaService.RANK_OURO,
+            RankJogador.PLATINA, InsigniaService.RANK_PLATINA,
             RankJogador.DIAMANTE, InsigniaService.RANK_DIAMANTE,
             RankJogador.CHAMPION, InsigniaService.RANK_CHAMPION
     );
