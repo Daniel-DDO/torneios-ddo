@@ -94,6 +94,18 @@ public class Jogador implements UserDetails {
     @OneToMany(mappedBy = "jogador", cascade = CascadeType.ALL, fetch = FetchType.EAGER)
     private List<Conquista> conquistas = new ArrayList<>();
 
+    @ColumnDefault("0")
+    private Integer rankPoints;
+
+    @Enumerated(EnumType.STRING)
+    private RankJogador rank;
+
+    @ColumnDefault("0")
+    private Integer partidasRankeadas;
+
+    @ColumnDefault("0")
+    private Integer strikesRebaixamento;
+
     public Jogador(String nome, String discord) {
         this.nome = nome;
         this.discord = discord;
@@ -110,6 +122,7 @@ public class Jogador implements UserDetails {
         this.cartoesAmarelos = 0L;
         this.cartoesVermelhos = 0L;
         this.pin = ThreadLocalRandom.current().nextInt(10000, 1000000);
+        this.rank = RankJogador.SEM_RANK;
     }
 
     public Jogador() {

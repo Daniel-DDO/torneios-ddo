@@ -48,6 +48,8 @@ public class ClassificacaoService {
     private JogadorService jogadorService;
     @Autowired
     private PunicaoRepository punicaoRepository;
+    @Autowired
+    private RankingService rankingService;
 
 
     @Transactional
@@ -137,6 +139,11 @@ public class ClassificacaoService {
             bracketService.processarAvancoVencedor(partida);
         } else {
             processarLiga(dto, pMandante, pVisitante);
+        }
+
+        if (!partida.isWo()) {
+            rankingService.aplicarResultado(jGlobalMandante.getId(), ResultadoPartida.VITORIA, partida.getId(), RankingService.Lado.MANDANTE);
+            rankingService.aplicarResultado(jGlobalVisitante.getId(), ResultadoPartida.DERROTA, partida.getId(), RankingService.Lado.VISITANTE);
         }
 
         if (partida.getTipoPartida() == TipoPartida.FINAL_UNICA) {
@@ -905,6 +912,9 @@ public class ClassificacaoService {
 
         jogadorClubeRepository.saveAll(List.of(pMandante.getJogadorClube(), pVisitante.getJogadorClube()));
         jogadorRepository.saveAll(List.of(pMandante.getJogadorClube().getJogador(), pVisitante.getJogadorClube().getJogador()));
+
+        rankingService.reverterResultado(partida.getId(), pMandante.getJogadorClube().getJogador().getId(), RankingService.Lado.MANDANTE);
+        rankingService.reverterResultado(partida.getId(), pVisitante.getJogadorClube().getJogador().getId(), RankingService.Lado.VISITANTE);
 
         List<LinhaClassificacaoDTO> novaClassificacao = calcularClassificacao(fase);
         atualizarPosicoesNoBanco(novaClassificacao, fase);

@@ -4,6 +4,7 @@ import com.ddo.torneios.dto.AproveitamentoProjection;
 import com.ddo.torneios.dto.*;
 import com.ddo.torneios.model.Cargo;
 import com.ddo.torneios.model.Jogador;
+import com.ddo.torneios.model.RankJogador;
 import jakarta.validation.constraints.NotBlank;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -170,4 +171,56 @@ public interface JogadorRepository extends JpaRepository<Jogador, String> {
     @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("UPDATE Jogador j SET j.titulos = COALESCE(j.titulos, 0) + 1 WHERE j.id = :id")
     void incrementarTitulos(@Param("id") String id);
+
+    @Query("SELECT j.id FROM Jogador j")
+    List<String> buscarTodosIds();
+
+    @Query("""
+        SELECT new com.ddo.torneios.dto.RankingEstadoDTO(
+            j.id, j.nome, j.rank, j.rankPoints, j.partidasRankeadas, j.strikesRebaixamento
+        )
+        FROM Jogador j WHERE j.id = :jogadorId
+    """)
+    Optional<RankingEstadoDTO> buscarEstadoRanking(@Param("jogadorId") String jogadorId);
+
+    @Query("""
+        SELECT new com.ddo.torneios.dto.RankingEstadoDTO(
+            j.id, j.nome, j.rank, j.rankPoints, j.partidasRankeadas, j.strikesRebaixamento
+        )
+        FROM Jogador j ORDER BY j.rankPoints DESC
+    """)
+    List<RankingEstadoDTO> buscarTabelaRanking();
+
+    @Modifying
+    @Query("""
+        UPDATE Jogador j
+        SET j.rankPoints = :rankPoints, j.rank = :rank,
+            j.partidasRankeadas = :partidasRankeadas, j.strikesRebaixamento = :strikes
+        WHERE j.id = :jogadorId
+    """)
+    void atualizarEstadoRanking(@Param("jogadorId") String jogadorId,
+                                @Param("rankPoints") int rankPoints,
+                                @Param("rank") RankJogador rank,
+                                @Param("partidasRankeadas") int partidasRankeadas,
+                                @Param("strikes") int strikes);
+
+    @Modifying
+    @Query("""
+        UPDATE Jogador j SET j.rankPoints = 0, j.rank = com.ddo.torneios.model.RankJogador.SEM_RANK,
+        j.partidasRankeadas = 0, j.strikesRebaixamento = 0 WHERE j.id = :jogadorId
+    """)
+    void zerarRankingPorId(@Param("jogadorId") String jogadorId);
+
+    @Modifying
+    @Query("""
+        UPDATE Jogador j SET j.rankPoints = 0, j.rank = com.ddo.torneios.model.RankJogador.SEM_RANK,
+        j.partidasRankeadas = 0, j.strikesRebaixamento = 0
+    """)
+    void zerarRankingTodos();
+
+    @Modifying
+    @Query("UPDATE Jogador j SET j.rank = :rankDepois, j.rankPoints = :pontosDepois, j.strikesRebaixamento = 0 WHERE j.rank = :rankAntes")
+    void aplicarDecaimentoPorRank(@Param("rankAntes") RankJogador rankAntes,
+                                  @Param("rankDepois") RankJogador rankDepois,
+                                  @Param("pontosDepois") int pontosDepois);
 }

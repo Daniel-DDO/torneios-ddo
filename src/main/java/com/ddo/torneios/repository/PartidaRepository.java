@@ -504,4 +504,45 @@ public interface PartidaRepository extends JpaRepository<Partida, String> {
     @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("UPDATE Partida p SET p.visitante.id = :sobreviventeId WHERE p.visitante.id = :antigoId")
     void reatribuirVisitante(String antigoId, String sobreviventeId);
+
+    @Query("""
+        SELECT new com.ddo.torneios.dto.PartidaResultadoDTO(
+            p.id, p.mandante.jogador.id, p.visitante.jogador.id,
+            p.golsMandante, p.golsVisitante,
+            p.penaltis.golsMandante, p.penaltis.golsVisitante,
+            p.wo, p.dataHora
+        )
+        FROM Partida p
+        WHERE p.realizada = true
+        AND (p.mandante.jogador.id = :jogadorId OR p.visitante.jogador.id = :jogadorId)
+        ORDER BY p.dataHora ASC
+    """)
+    List<PartidaResultadoDTO> buscarResultadosDoJogador(@Param("jogadorId") String jogadorId);
+
+    @Modifying
+    @Query("UPDATE Partida p SET p.rankSnapshotMandante = :snapshot WHERE p.id = :id")
+    void atualizarSnapshotMandante(@Param("id") String id, @Param("snapshot") String snapshot);
+
+    @Modifying
+    @Query("UPDATE Partida p SET p.rankSnapshotVisitante = :snapshot WHERE p.id = :id")
+    void atualizarSnapshotVisitante(@Param("id") String id, @Param("snapshot") String snapshot);
+
+    @Query("SELECT p.rankSnapshotMandante FROM Partida p WHERE p.id = :id")
+    String buscarSnapshotMandante(@Param("id") String id);
+
+    @Query("SELECT p.rankSnapshotVisitante FROM Partida p WHERE p.id = :id")
+    String buscarSnapshotVisitante(@Param("id") String id);
+
+    @Modifying
+    @Query("UPDATE Partida p SET p.rankSnapshotMandante = NULL, p.rankSnapshotVisitante = NULL")
+    void limparTodosSnapshots();
+
+    @Modifying
+    @Query("UPDATE Partida p SET p.rankSnapshotMandante = NULL WHERE p.mandante.jogador.id = :jogadorId")
+    void limparSnapshotsMandanteDoJogador(@Param("jogadorId") String jogadorId);
+
+    @Modifying
+    @Query("UPDATE Partida p SET p.rankSnapshotVisitante = NULL WHERE p.visitante.jogador.id = :jogadorId")
+    void limparSnapshotsVisitanteDoJogador(@Param("jogadorId") String jogadorId);
+
 }

@@ -93,6 +93,12 @@ public class Partida {
     @ColumnDefault("0.00")
     private BigDecimal receitaVisitante;
 
+    @Column(columnDefinition = "TEXT")
+    private String rankSnapshotMandante;
+
+    @Column(columnDefinition = "TEXT")
+    private String rankSnapshotVisitante;
+
     public boolean houvePenaltis() {
         return penaltis != null &&
                 penaltis.getGolsMandante() != null &&
