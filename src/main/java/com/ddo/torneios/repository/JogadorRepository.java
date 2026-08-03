@@ -223,4 +223,7 @@ public interface JogadorRepository extends JpaRepository<Jogador, String> {
     void aplicarDecaimentoPorRank(@Param("rankAntes") RankJogador rankAntes,
                                   @Param("rankDepois") RankJogador rankDepois,
                                   @Param("pontosDepois") int pontosDepois);
+
+    @EntityGraph(attributePaths = "insignias", type = EntityGraph.EntityGraphType.FETCH)
+    Optional<Jogador> findComInsigniasById(String id);
 }

@@ -1,9 +1,9 @@
 package com.ddo.torneios.dto;
 
-import com.ddo.torneios.model.Cargo;
-import com.ddo.torneios.model.Insignia;
-import com.ddo.torneios.model.Jogador;
-import com.ddo.torneios.model.StatusJogador;
+import com.ddo.torneios.model.*;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import org.hibernate.annotations.ColumnDefault;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -33,7 +33,11 @@ public record JogadorDTO(
         Long cartoesVermelhos,
         BigDecimal saldoVirtual,
         Set<Insignia> insignias,
-        BigDecimal pontosCoeficiente
+        BigDecimal pontosCoeficiente,
+        Integer rankPoints,
+        RankJogador rank,
+        Integer partidasRankeadas,
+        Integer strikesRebaixamento
 ) {
     public JogadorDTO(Jogador jogador) {
         this(
@@ -60,7 +64,11 @@ public record JogadorDTO(
                 jogador.getCartoesVermelhos(),
                 jogador.getSaldoVirtual(),
                 jogador.getInsignias(),
-                jogador.getPontosCoeficiente()
+                jogador.getPontosCoeficiente(),
+                jogador.getRankPoints(),
+                jogador.getRank(),
+                jogador.getPartidasRankeadas(),
+                jogador.getStrikesRebaixamento()
         );
     }
 }

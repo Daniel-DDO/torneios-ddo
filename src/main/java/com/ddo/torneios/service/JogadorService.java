@@ -115,8 +115,9 @@ public class JogadorService {
         );
     }
 
+    @Transactional(readOnly = true)
     public ResponseEntity<JogadorDTO> retornarJogador(String id) {
-        return jogadorRepository.findById(id)
+        return jogadorRepository.findComInsigniasById(id)
                 .map(jogador -> ResponseEntity.ok(new JogadorDTO(jogador)))
                 .orElse(ResponseEntity.notFound().build());
     }
