@@ -39,6 +39,12 @@ public class TituloService {
 
     @Transactional
     public Conquista concederTituloAoJogador(String jogadorClubeId, String idTitulo, String nomeEdicao) {
+
+        if (nomeEdicao == null || nomeEdicao.trim().isEmpty()) {
+            throw new RuntimeException("O nome da edição é obrigatório.");
+        }
+        nomeEdicao = nomeEdicao.trim();
+
         JogadorClube jogadorClube = jogadorClubeRepository.findById(jogadorClubeId)
                 .orElseThrow(() -> new RuntimeException("Vínculo Jogador-Clube não encontrado"));
 
@@ -168,6 +174,11 @@ public class TituloService {
 
     @Transactional
     public Conquista concederTituloLegado(String jogadorId, String clubeId, String idTitulo, String nomeEdicao, LocalDateTime data) {
+
+        if (nomeEdicao == null || nomeEdicao.trim().isEmpty()) {
+            throw new RuntimeException("O nome da edição é obrigatório.");
+        }
+        nomeEdicao = nomeEdicao.trim();
 
         Jogador jogador = jogadorRepository.findById(jogadorId)
                 .orElseThrow(() -> new RuntimeException("Jogador não encontrado: " + jogadorId));
