@@ -26,9 +26,8 @@ public class ConquistaService {
 
     @Transactional(readOnly = true)
     public List<ConquistaDashboardDTO> buscarUltimasConquistas() {
-        return conquistaRepository.findTop10ByOrderByDataConquistaDesc()
+        return conquistaRepository.buscarUltimasConquistasDTO(PageRequest.of(0, 10))
                 .stream()
-                .map(this::converterParaDTO)
                 .toList();
     }
 

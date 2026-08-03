@@ -1,25 +1,22 @@
 package com.ddo.torneios.controller;
 
-import com.ddo.torneios.model.FaseTorneio;
-import com.ddo.torneios.model.JogadorClube;
-import com.ddo.torneios.model.Partida;
-import com.ddo.torneios.model.ParticipacaoFase;
+import com.ddo.torneios.model.*;
 import com.ddo.torneios.repository.FaseTorneioRepository;
 import com.ddo.torneios.repository.ParticipacaoFaseRepository;
 import com.ddo.torneios.service.gerador.GeradorMataMataSorteioDirigidoStrategy;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.ResponseEntity;
-import org.springframework.transaction.annotation.Transactional;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @RestController
-@RequestMapping("/debug/mata-mata")
 public class DebugSorteioController {
 
     @Autowired
@@ -32,76 +29,83 @@ public class DebugSorteioController {
     private GeradorMataMataSorteioDirigidoStrategy sorteioDirigidoStrategy;
 
     /**
-     * Roda o sorteio dirigido em memória (NADA é salvo no banco) e devolve
-     * a ordem/ranking usada e o resultado dos confrontos gerados,
-     * pra comparar visualmente com o que foi gerado de verdade.
+     * Simula o sorteio dirigido a partir dos classificados da fase de Liga informada,
+     * SEM salvar nada no banco. A fase de mata-mata é montada em memória (transiente),
+     * fixa em: SORTEIO_DIRIGIDO / OITAVAS / temJogoVolta=true / finalJogoUnico=true.
+     *
+     * faseAnteriorId = id da fase de Liga (de onde vêm os classificados)
+     * quantidade     = opcional, default 16
      */
-    @GetMapping("/{faseId}/simular-sorteio-dirigido")
-    @Transactional(readOnly = true)
-    public ResponseEntity<?> simularSorteioDirigido(@PathVariable String faseId) {
-        FaseTorneio fase = faseRepository.findById(faseId)
-                .orElseThrow(() -> new IllegalArgumentException("Fase não encontrada"));
+    @GetMapping("/debug/simular-sorteio-dirigido/{faseAnteriorId}")
+    public Map<String, Object> simular(
+            @PathVariable String faseAnteriorId,
+            @RequestParam(defaultValue = "16") int quantidade) {
 
-        List<ParticipacaoFase> participantes = participacaoRepository.findByFase(fase);
+        FaseTorneio faseAnterior = faseRepository.findById(faseAnteriorId)
+                .orElseThrow(() -> new IllegalArgumentException("Fase anterior não encontrada."));
 
-        // Mapa auxiliar: jogadorClubeId -> posicaoClassificacao (pra exibir no resultado)
-        Map<String, Integer> posicaoPorJogadorClube = participantes.stream()
-                .collect(Collectors.toMap(p -> p.getJogadorClube().getId(), ParticipacaoFase::getPosicaoClassificacao));
+        // Fase de mata-mata transiente, nunca persistida — só pra alimentar a strategy.
+        FaseTorneio faseNova = new FaseTorneio();
+        faseNova.setAlgoritmoMataMata(AlgoritmoGeracaoMataMata.SORTEIO_DIRIGIDO);
+        faseNova.setFaseInicialMataMata(FaseMataMata.OITAVAS);
+        faseNova.setTemJogoVolta(true);
+        faseNova.setFinalJogoUnico(true);
 
-        List<Partida> resultado = sorteioDirigidoStrategy.gerar(fase, participantes);
+        List<ParticipacaoFase> classificadosLiga = participacaoRepository
+                .findByFaseIdOrderByPosicaoClassificacaoAsc(faseAnteriorId, PageRequest.of(0, quantidade));
 
-        List<Map<String, Object>> confrontos = resultado.stream()
-                .collect(Collectors.groupingBy(Partida::getChaveIndex))
-                .entrySet().stream()
-                .sorted(Map.Entry.comparingByKey())
-                .map(e -> montarConfronto(e.getKey(), e.getValue(), posicaoPorJogadorClube))
-                .toList();
+        if (classificadosLiga.size() < quantidade) {
+            throw new IllegalStateException(String.format(
+                    "Fase anterior só tem %d participantes, esperado %d.", classificadosLiga.size(), quantidade));
+        }
 
-        List<Map<String, Object>> ordemUsada = participantes.stream()
-                .sorted(Comparator.comparing(ParticipacaoFase::getPosicaoClassificacao,
-                        Comparator.nullsLast(Comparator.naturalOrder())))
-                .map(p -> Map.<String, Object>of(
-                        "posicao", p.getPosicaoClassificacao(),
-                        "jogadorClubeId", p.getJogadorClube().getId(),
-                        "jogador", p.getJogadorClube().getJogador().getNome(),
-                        "clube", p.getJogadorClube().getClube().getNome()
-                ))
-                .toList();
+        // Monta participações TRANSIENTES (não persistidas) só pra alimentar a strategy,
+        // exatamente como TransicaoFaseService.criarParticipacoesParaNovaFase faria.
+        List<ParticipacaoFase> novasParticipacoes = new ArrayList<>();
+        for (int i = 0; i < classificadosLiga.size(); i++) {
+            ParticipacaoFase antiga = classificadosLiga.get(i);
+            ParticipacaoFase transiente = new ParticipacaoFase();
+            transiente.setFase(faseNova);
+            transiente.setJogadorClube(antiga.getJogadorClube());
+            transiente.setPosicaoClassificacao(i + 1);
+            novasParticipacoes.add(transiente);
+        }
 
-        Map<String, Object> resposta = new LinkedHashMap<>();
-        resposta.put("ordemClassificacaoUsadaNoSorteio", ordemUsada);
-        resposta.put("confrontos", confrontos);
+        List<Map<String, Object>> classificadosDTO = new ArrayList<>();
+        for (ParticipacaoFase p : novasParticipacoes) {
+            classificadosDTO.add(Map.of(
+                    "posicao", p.getPosicaoClassificacao(),
+                    "nome", p.getJogadorClube().getJogador().getNome()
+            ));
+        }
 
-        return ResponseEntity.ok(resposta);
-    }
+        // Chama a strategy diretamente. Ela não salva nada — só monta os objetos Partida em memória.
+        List<Partida> partidasGeradas = sorteioDirigidoStrategy.gerar(faseNova, novasParticipacoes);
 
-    private Map<String, Object> montarConfronto(Integer chaveIndex, List<Partida> jogos,
-                                                Map<String, Integer> posicaoPorJogadorClube) {
-        List<Map<String, Object>> jogosDTO = jogos.stream()
-                .sorted(Comparator.comparing(p -> p.getTipoPartida().name()))
-                .map(p -> {
-                    JogadorClube mandante = p.getMandante();
-                    JogadorClube visitante = p.getVisitante();
-                    Map<String, Object> m = new LinkedHashMap<>();
-                    m.put("tipoPartida", p.getTipoPartida());
-                    m.put("mandante", descreverJogador(mandante, posicaoPorJogadorClube));
-                    m.put("visitante", descreverJogador(visitante, posicaoPorJogadorClube));
-                    return m;
+        List<Map<String, Object>> bracketDTO = partidasGeradas.stream()
+                .sorted((a, b) -> {
+                    int cmp = Integer.compare(
+                            a.getChaveIndex() != null ? a.getChaveIndex() : 0,
+                            b.getChaveIndex() != null ? b.getChaveIndex() : 0);
+                    if (cmp != 0) return cmp;
+                    return a.getTipoPartida().name().compareTo(b.getTipoPartida().name());
                 })
-                .toList();
+                .map(p -> {
+                    String mandanteNome = p.getMandante() != null ? p.getMandante().getJogador().getNome() : "(vazio)";
+                    String visitanteNome = p.getVisitante() != null ? p.getVisitante().getJogador().getNome() : "(vazio)";
+                    return Map.<String, Object>of(
+                            "chaveIndex", p.getChaveIndex(),
+                            "etapa", p.getEtapaMataMata(),
+                            "tipoPartida", p.getTipoPartida(),
+                            "mandante", mandanteNome,
+                            "visitante", visitanteNome
+                    );
+                })
+                .collect(Collectors.toList());
 
-        Map<String, Object> confronto = new LinkedHashMap<>();
-        confronto.put("chaveIndex", chaveIndex);
-        confronto.put("jogos", jogosDTO);
-        return confronto;
-    }
-
-    private Map<String, Object> descreverJogador(JogadorClube jc, Map<String, Integer> posicoes) {
-        if (jc == null) return null;
-        Map<String, Object> m = new LinkedHashMap<>();
-        m.put("jogador", jc.getJogador().getNome());
-        m.put("clube", jc.getClube().getNome());
-        m.put("posicaoClassificacaoOriginal", posicoes.get(jc.getId()));
-        return m;
+        return Map.of(
+                "classificadosRecebidos", classificadosDTO,
+                "bracketGerado", bracketDTO
+        );
     }
 }

@@ -1,5 +1,6 @@
 package com.ddo.torneios.repository;
 
+import com.ddo.torneios.dto.ConquistaDashboardDTO;
 import com.ddo.torneios.dto.TituloCampeaoDTO;
 import com.ddo.torneios.model.Conquista;
 import org.springframework.data.domain.Pageable;
@@ -30,4 +31,17 @@ public interface ConquistaRepository extends JpaRepository<Conquista, String> {
             "GROUP BY j.id, j.nome, j.imagem " +
             "ORDER BY COUNT(c) DESC")
     List<TituloCampeaoDTO> findTop3CampeoesPorTitulo(@Param("tituloId") String tituloId, Pageable pageable);
+
+    @Query("""
+    SELECT new com.ddo.torneios.dto.ConquistaDashboardDTO(
+        c.id, c.titulo.id, c.titulo.nome, c.nomeEdicao, c.imagem,
+        c.jogador.id, c.jogador.nome, c.jogador.imagem,
+        c.clube.id, c.clube.nome, c.clube.sigla, c.clube.imagem,
+        c.dataConquista
+    )
+    FROM Conquista c
+    LEFT JOIN c.clube
+    ORDER BY c.dataConquista DESC
+    """)
+    List<ConquistaDashboardDTO> buscarUltimasConquistasDTO(Pageable pageable);
 }

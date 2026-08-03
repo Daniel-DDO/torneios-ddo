@@ -8,6 +8,7 @@ import com.ddo.torneios.request.TituloRequest;
 import com.ddo.torneios.util.ByteArrayMultipartFile;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -45,11 +46,8 @@ public class TituloService {
         Clube clube = jogadorClube.getClube();
 
         boolean jaPossui = conquistaRepository.existsByTituloIdAndNomeEdicaoAndJogadorId(
-                idTitulo,
-                nomeEdicao,
-                jogador.getId()
+                idTitulo, nomeEdicao, jogador.getId()
         );
-
         if (jaPossui) {
             throw new RuntimeException("O jogador " + jogador.getNome() + " já possui o título desta edição (" + nomeEdicao + ").");
         }
@@ -61,42 +59,10 @@ public class TituloService {
         novaConquista.setDataConquista(LocalDateTime.now());
 
         try {
-            if (titulo.getImagemGerarPost() != null && !titulo.getImagemGerarPost().isEmpty()) {
-
-                String urlLogoParaPost = clube.getImagem();
-                if (urlLogoParaPost == null || urlLogoParaPost.isEmpty()) {
-                    urlLogoParaPost = jogador.getImagem();
-                }
-
-                log.info("Gerando post do título para {}", jogador.getNome());
-
-                byte[] imagemBytes = postGeradorService.gerarImagemTitulo(
-                        titulo.getImagemGerarPost(),
-                        urlLogoParaPost,
-                        jogador.getNome()
-                );
-
-                if (imagemBytes != null) {
-                    String nomeArquivo = "titulo_" + jogador.getId() + "_" + System.currentTimeMillis() + ".png";
-
-                    MultipartFile multipartFile = new ByteArrayMultipartFile(
-                            imagemBytes,
-                            "image",
-                            nomeArquivo,
-                            "image/png"
-                    );
-
-                    String urlImgBB = imgBBService.uploadImagem(multipartFile);
-
-                    novaConquista.setImagem(urlImgBB);
-                    log.info("Imagem salva no ImgBB: {}", urlImgBB);
-                }
-            }
-        } catch (Exception e) {
-            log.error("Erro ao gerar imagem (o título será concedido sem imagem): ", e);
+            conquistaRepository.saveAndFlush(novaConquista);
+        } catch (DataIntegrityViolationException e) {
+            throw new RuntimeException("O jogador " + jogador.getNome() + " já possui o título desta edição (" + nomeEdicao + ").");
         }
-
-        conquistaRepository.save(novaConquista);
 
         jogador.getConquistas().add(novaConquista);
         clube.getConquistas().add(novaConquista);
@@ -110,7 +76,43 @@ public class TituloService {
         jogadorRepository.save(jogador);
         clubeRepository.save(clube);
 
+        gerarImagemEAtualizar(novaConquista, titulo, clube, jogador, "titulo_");
+
         return novaConquista;
+    }
+
+    private void gerarImagemEAtualizar(Conquista conquista, Titulo titulo, Clube clube, Jogador jogador, String prefixoArquivo) {
+        try {
+            if (titulo.getImagemGerarPost() != null && !titulo.getImagemGerarPost().isEmpty()) {
+
+                String urlLogoParaPost = clube.getImagem();
+                if (urlLogoParaPost == null || urlLogoParaPost.isEmpty()) {
+                    urlLogoParaPost = jogador.getImagem();
+                }
+
+                log.info("Gerando post do título para {}", jogador.getNome());
+
+                byte[] imagemBytes = postGeradorService.gerarImagemTitulo(
+                        titulo.getImagemGerarPost(), urlLogoParaPost, jogador.getNome()
+                );
+
+                if (imagemBytes != null) {
+                    String nomeArquivo = prefixoArquivo + jogador.getId() + "_" + System.currentTimeMillis() + ".png";
+
+                    MultipartFile multipartFile = new ByteArrayMultipartFile(
+                            imagemBytes, "image", nomeArquivo, "image/png"
+                    );
+
+                    String urlImgBB = imgBBService.uploadImagem(multipartFile);
+
+                    conquista.setImagem(urlImgBB);
+                    conquistaRepository.save(conquista);
+                    log.info("Imagem salva no ImgBB: {}", urlImgBB);
+                }
+            }
+        } catch (Exception e) {
+            log.error("Erro ao gerar imagem (o título já foi concedido sem imagem): ", e);
+        }
     }
 
     @Transactional
@@ -174,11 +176,8 @@ public class TituloService {
                 .orElseThrow(() -> new RuntimeException("Clube não encontrado: " + clubeId));
 
         boolean jaPossui = conquistaRepository.existsByTituloIdAndNomeEdicaoAndJogadorId(
-                idTitulo,
-                nomeEdicao,
-                jogador.getId()
+                idTitulo, nomeEdicao, jogador.getId()
         );
-
         if (jaPossui) {
             throw new RuntimeException("O jogador " + jogador.getNome() + " já possui o título desta edição (" + nomeEdicao + ").");
         }
@@ -190,40 +189,10 @@ public class TituloService {
         novaConquista.setDataConquista(data);
 
         try {
-            if (titulo.getImagemGerarPost() != null && !titulo.getImagemGerarPost().isEmpty()) {
-
-                String urlLogoParaPost = clube.getImagem();
-                if (urlLogoParaPost == null || urlLogoParaPost.isEmpty()) {
-                    urlLogoParaPost = jogador.getImagem();
-                }
-
-                log.info("Gerando post do título legado para {}", jogador.getNome());
-
-                byte[] imagemBytes = postGeradorService.gerarImagemTitulo(
-                        titulo.getImagemGerarPost(),
-                        urlLogoParaPost,
-                        jogador.getNome()
-                );
-
-                if (imagemBytes != null) {
-                    String nomeArquivo = "titulo_legado_" + jogador.getId() + "_" + System.currentTimeMillis() + ".png";
-
-                    MultipartFile multipartFile = new ByteArrayMultipartFile(
-                            imagemBytes,
-                            "image",
-                            nomeArquivo,
-                            "image/png"
-                    );
-
-                    String urlImgBB = imgBBService.uploadImagem(multipartFile);
-                    novaConquista.setImagem(urlImgBB);
-                }
-            }
-        } catch (Exception e) {
-            log.error("Erro ao gerar imagem legado: ", e);
+            conquistaRepository.saveAndFlush(novaConquista);
+        } catch (DataIntegrityViolationException e) {
+            throw new RuntimeException("O jogador " + jogador.getNome() + " já possui o título desta edição (" + nomeEdicao + ").");
         }
-
-        conquistaRepository.save(novaConquista);
 
         if (jogador.getConquistas() != null) jogador.getConquistas().add(novaConquista);
         if (clube.getConquistas() != null) clube.getConquistas().add(novaConquista);
@@ -233,6 +202,8 @@ public class TituloService {
 
         jogadorRepository.save(jogador);
         clubeRepository.save(clube);
+
+        gerarImagemEAtualizar(novaConquista, titulo, clube, jogador, "titulo_legado_");
 
         return novaConquista;
     }
@@ -246,18 +217,15 @@ public class TituloService {
                 .orElseThrow(() -> new RuntimeException("Título não encontrado: " + request.getIdTitulo()));
 
         List<Conquista> conquistasGeradas = new ArrayList<>();
-        List<Jogador> jogadoresParaSalvar = new ArrayList<>();
+        int jogadoresPremiados = 0;
 
         for (String jogadorId : request.getJogadoresIds()) {
             Jogador jogador = jogadorRepository.findById(jogadorId)
                     .orElseThrow(() -> new RuntimeException("Jogador não encontrado: " + jogadorId));
 
             boolean jaPossui = conquistaRepository.existsByTituloIdAndNomeEdicaoAndJogadorId(
-                    titulo.getId(),
-                    request.getEdicao(),
-                    jogador.getId()
+                    titulo.getId(), request.getEdicao(), jogador.getId()
             );
-
             if (jaPossui) {
                 log.warn("O jogador {} já possui o título {}", jogador.getNome(), request.getEdicao());
                 continue;
@@ -267,44 +235,25 @@ public class TituloService {
             novaConquista.setDataConquista(request.getData());
 
             try {
-                if (titulo.getImagemGerarPost() != null && !titulo.getImagemGerarPost().isEmpty()) {
-
-                    String urlLogoParaPost = clube.getImagem();
-
-                    log.info("Gerando post para {}", jogador.getNome());
-
-                    byte[] imagemBytes = postGeradorService.gerarImagemTitulo(
-                            titulo.getImagemGerarPost(),
-                            urlLogoParaPost,
-                            jogador.getNome()
-                    );
-
-                    if (imagemBytes != null) {
-                        String nomeArquivo = "titulo_coletivo_" + jogador.getId() + "_" + System.currentTimeMillis() + ".png";
-
-                        MultipartFile multipartFile = new ByteArrayMultipartFile(
-                                imagemBytes, "image", nomeArquivo, "image/png"
-                        );
-
-                        String urlImgBB = imgBBService.uploadImagem(multipartFile);
-                        novaConquista.setImagem(urlImgBB);
-                    }
-                }
-            } catch (Exception e) {
-                log.error("Erro ao gerar imagem para jogador {}: ", jogador.getNome(), e);
+                conquistaRepository.saveAndFlush(novaConquista);
+            } catch (DataIntegrityViolationException e) {
+                log.warn("Título duplicado detectado na constraint para o jogador {} — pulando.", jogador.getNome());
+                continue;
             }
 
             jogador.setTitulos(jogador.getTitulos() == null ? 1 : jogador.getTitulos() + 1);
-            jogadoresParaSalvar.add(jogador);
+            jogadorRepository.save(jogador);
+
+            gerarImagemEAtualizar(novaConquista, titulo, clube, jogador, "titulo_coletivo_");
 
             conquistasGeradas.add(novaConquista);
+            jogadoresPremiados++;
         }
 
-        conquistaRepository.saveAll(conquistasGeradas);
-        jogadorRepository.saveAll(jogadoresParaSalvar);
-
-        clube.setTitulos(clube.getTitulos() == null ? 1 : clube.getTitulos() + 1);
-        clubeRepository.save(clube);
+        if (jogadoresPremiados > 0) {
+            clube.setTitulos(clube.getTitulos() == null ? jogadoresPremiados : clube.getTitulos() + jogadoresPremiados);
+            clubeRepository.save(clube);
+        }
 
         return conquistasGeradas;
     }
