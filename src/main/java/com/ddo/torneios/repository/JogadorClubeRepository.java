@@ -99,4 +99,17 @@ public interface JogadorClubeRepository extends JpaRepository<JogadorClube, Stri
     WHERE jc.id = :id
 """)
     Optional<JogadorClubeConcessaoView> buscarParaConcessao(@Param("id") String id);
+
+    @Query("""
+    SELECT new com.ddo.torneios.dto.EstatisticaTemporadaDTO(
+        jc.id, j.id, j.nome,
+        jc.totalGolsMarcados, jc.totalGolsSofridos, jc.partidasJogadas,
+        jc.totalCartoesAmarelos, jc.totalCartoesVermelhos, jc.pontosCoeficiente,
+        j.rankPoints
+    )
+    FROM JogadorClube jc
+    JOIN jc.jogador j
+    WHERE jc.temporada.id = :temporadaId
+""")
+    List<EstatisticaTemporadaDTO> buscarEstatisticasTemporada(@Param("temporadaId") String temporadaId);
 }
