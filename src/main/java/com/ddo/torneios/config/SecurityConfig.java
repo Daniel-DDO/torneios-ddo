@@ -88,6 +88,8 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/partida/{id}/desfazer-resultado").hasAuthority("PROPRIETARIO")
                         .requestMatchers(HttpMethod.POST, "/partida/{partidaId}/analisar-problema").authenticated()
                         .requestMatchers(HttpMethod.POST, "/partida/{partidaId}/reanalisar").hasAuthority("PROPRIETARIO")
+                        .requestMatchers(HttpMethod.PATCH, "/jogador/{id}/status").hasAuthority("PROPRIETARIO")
+                        .requestMatchers(HttpMethod.PATCH, "/jogador/{id}/cargo").hasAuthority("PROPRIETARIO")
                         .anyRequest().permitAll()
                 )
                 .addFilterBefore(securityFilter, UsernamePasswordAuthenticationFilter.class);
