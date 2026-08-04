@@ -90,6 +90,11 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/partida/{partidaId}/reanalisar").hasAuthority("PROPRIETARIO")
                         .requestMatchers(HttpMethod.PATCH, "/jogador/{id}/status").hasAuthority("PROPRIETARIO")
                         .requestMatchers(HttpMethod.PATCH, "/jogador/{id}/cargo").hasAuthority("PROPRIETARIO")
+                        .requestMatchers(HttpMethod.POST, "/jogador/cadastrar").hasAuthority("PROPRIETARIO")
+                        .requestMatchers(HttpMethod.POST, "/competicao/cadastrar").hasAuthority("PROPRIETARIO")
+                        .requestMatchers(HttpMethod.PATCH, "/competicao/{id}/vincular-titulo").hasAuthority("PROPRIETARIO")
+                        .requestMatchers(HttpMethod.POST, "/fase-torneio/**").hasAuthority("PROPRIETARIO")
+                        .requestMatchers(HttpMethod.PATCH, "/fase-torneio/**").hasAuthority("PROPRIETARIO")
                         .anyRequest().permitAll()
                 )
                 .addFilterBefore(securityFilter, UsernamePasswordAuthenticationFilter.class);
