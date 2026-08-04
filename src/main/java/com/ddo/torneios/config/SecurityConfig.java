@@ -95,6 +95,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.PATCH, "/competicao/{id}/vincular-titulo").hasAuthority("PROPRIETARIO")
                         .requestMatchers(HttpMethod.POST, "/fase-torneio/**").hasAuthority("PROPRIETARIO")
                         .requestMatchers(HttpMethod.PATCH, "/fase-torneio/**").hasAuthority("PROPRIETARIO")
+                        .requestMatchers(HttpMethod.POST, "/clube/cadastrar").hasAuthority("PROPRIETARIO")
                         .anyRequest().permitAll()
                 )
                 .addFilterBefore(securityFilter, UsernamePasswordAuthenticationFilter.class);
