@@ -5,6 +5,7 @@ import com.ddo.torneios.model.Partida;
 import com.ddo.torneios.model.ReportPartida;
 import com.ddo.torneios.repository.PartidaRepository;
 import com.ddo.torneios.repository.ReportPartidaRepository;
+import com.ddo.torneios.request.DefinirParticipanteRequest;
 import com.ddo.torneios.request.RelatoProblemaRequest;
 import com.ddo.torneios.service.ClassificacaoService;
 import com.ddo.torneios.service.JuizVirtualService;
@@ -13,6 +14,7 @@ import com.ddo.torneios.service.ProbabilidadeService;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -189,5 +191,14 @@ public class PartidaController {
         ProbabilidadePartidaDTO probabilidade = probabilidadeService.calcularProbabilidade(partida);
 
         return ResponseEntity.ok(probabilidade);
+    }
+
+    @PatchMapping("/partidas/{id}/participante")
+    @PreAuthorize("hasRole('PROPRIETARIO')")
+    public ResponseEntity<Void> definirParticipante(
+            @PathVariable String id,
+            @RequestBody DefinirParticipanteRequest request) {
+        partidaService.definirParticipante(id, request.participacaoFaseId(), request.lado());
+        return ResponseEntity.noContent().build();
     }
 }

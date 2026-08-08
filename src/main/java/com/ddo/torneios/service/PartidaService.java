@@ -4,7 +4,11 @@ import com.ddo.torneios.dto.PaginacaoDTO;
 import com.ddo.torneios.dto.PartidaDTO;
 import com.ddo.torneios.dto.PartidaDetalheProjection;
 import com.ddo.torneios.dto.PartidaHistoricoDTO;
+import com.ddo.torneios.model.JogadorClube;
+import com.ddo.torneios.model.LadoPartida;
+import com.ddo.torneios.model.ParticipacaoFase;
 import com.ddo.torneios.model.Partida;
+import com.ddo.torneios.repository.ParticipacaoFaseRepository;
 import com.ddo.torneios.repository.PartidaRepository;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -26,6 +30,9 @@ public class PartidaService {
 
     @Autowired
     private PartidaRepository partidaRepository;
+
+    @Autowired
+    private ParticipacaoFaseRepository participacaoFaseRepository;
 
     public PartidaDTO buscarPorId(String id) {
         PartidaDetalheProjection p = partidaRepository.buscarDetalhePorId(id)
@@ -165,5 +172,32 @@ public class PartidaService {
                 .stream()
                 .map(PartidaDTO::new)
                 .collect(Collectors.toList());
+    }
+
+    @Transactional
+    public void definirParticipante(String partidaId, String participacaoFaseId, LadoPartida lado) {
+        Partida partida = partidaRepository.findById(partidaId)
+                .orElseThrow(() -> new EntityNotFoundException("Partida não encontrada"));
+
+        if (partida.isRealizada()) {
+            throw new IllegalStateException("Não é possível trocar participante de partida já realizada");
+        }
+
+        ParticipacaoFase participacaoFase = participacaoFaseRepository.findById(participacaoFaseId)
+                .orElseThrow(() -> new EntityNotFoundException("ParticipacaoFase não encontrada"));
+
+        if (!participacaoFase.getFase().getId().equals(partida.getFase().getId())) {
+            throw new IllegalStateException("ParticipacaoFase não pertence à mesma fase da partida");
+        }
+
+        JogadorClube jogadorClube = participacaoFase.getJogadorClube();
+
+        if (lado == LadoPartida.MANDANTE) {
+            partida.setMandante(jogadorClube);
+        } else {
+            partida.setVisitante(jogadorClube);
+        }
+
+        partidaRepository.save(partida);
     }
 }
