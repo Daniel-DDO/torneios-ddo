@@ -545,4 +545,21 @@ public interface PartidaRepository extends JpaRepository<Partida, String> {
     @Query("UPDATE Partida p SET p.rankSnapshotVisitante = NULL WHERE p.visitante.jogador.id = :jogadorId")
     void limparSnapshotsVisitanteDoJogador(@Param("jogadorId") String jogadorId);
 
+    @Query("""
+    SELECT new com.ddo.torneios.dto.PlacarIdaDTO(p.golsMandante, p.golsVisitante, p.realizada)
+    FROM Partida p
+    WHERE p.fase.id = :faseId
+      AND p.chaveIndex = :chaveIndex
+      AND p.tipoPartida = :tipoIda
+      AND p.mandante.id = :visitanteVoltaId
+      AND p.visitante.id = :mandanteVoltaId
+    ORDER BY p.dataHora DESC
+    """)
+    List<PlacarIdaDTO> buscarPlacarIda(
+            @Param("faseId") String faseId,
+            @Param("chaveIndex") Integer chaveIndex,
+            @Param("tipoIda") TipoPartida tipoIda,
+            @Param("visitanteVoltaId") String visitanteVoltaId,
+            @Param("mandanteVoltaId") String mandanteVoltaId);
+
 }

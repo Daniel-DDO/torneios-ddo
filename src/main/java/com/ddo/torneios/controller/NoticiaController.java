@@ -37,7 +37,7 @@ public class NoticiaController {
     public ResponseEntity<String> forcarGeracao(@PathVariable String idPartida) {
         return partidaRepository.findById(idPartida)
                 .map(partida -> {
-                    new Thread(() -> noticiaService.gerarNoticiaSeRelevante(partida)).start();
+                    noticiaService.gerarNoticiaSeRelevante(partida);
                     return ResponseEntity.ok("Solicitação de análise de notícia enviada para a IA.");
                 })
                 .orElse(ResponseEntity.notFound().build());
