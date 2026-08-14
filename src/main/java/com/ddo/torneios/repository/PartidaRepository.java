@@ -79,7 +79,9 @@ public interface PartidaRepository extends JpaRepository<Partida, String> {
         CASE WHEN p.penaltis.golsMandante IS NOT NULL AND p.penaltis.golsVisitante IS NOT NULL
              THEN true ELSE false END,
         p.penaltis.golsMandante,
-        p.penaltis.golsVisitante
+        p.penaltis.golsVisitante,
+        p.anulada,
+        p.motivoAnulacao
     )
     FROM Partida p
     JOIN p.fase f
@@ -88,18 +90,66 @@ public interface PartidaRepository extends JpaRepository<Partida, String> {
     JOIN p.visitante v JOIN v.jogador vj JOIN v.clube vc
     WHERE (mj.id = :jogadorId OR vj.id = :jogadorId)
     AND p.realizada = :realizada
+    AND p.anulada = false
     """,
-            countQuery = """
+                countQuery = """
     SELECT count(p)
     FROM Partida p
     JOIN p.mandante m JOIN m.jogador mj
     JOIN p.visitante v JOIN v.jogador vj
     WHERE (mj.id = :jogadorId OR vj.id = :jogadorId)
     AND p.realizada = :realizada
+    AND p.anulada = false
     """)
     Page<PartidaHistoricoDTO> findPorJogadorIdEStatus(
             @Param("jogadorId") String jogadorId,
             @Param("realizada") boolean realizada,
+            Pageable pageable
+    );
+
+    @Query(value = """
+    SELECT new com.ddo.torneios.dto.PartidaHistoricoDTO(
+        p.id,
+        f.id,
+        r.id,
+        r.numero,
+        p.dataHora,
+        p.estadio,
+        new com.ddo.torneios.dto.JogadorClubeResumoDTO(
+            m.id, mj.id, mj.nome, mj.imagem, mc.id, mc.nome, mc.imagem, mc.sigla
+        ),
+        new com.ddo.torneios.dto.JogadorClubeResumoDTO(
+            v.id, vj.id, vj.nome, vj.imagem, vc.id, vc.nome, vc.imagem, vc.sigla
+        ),
+        p.golsMandante,
+        p.golsVisitante,
+        p.realizada,
+        p.wo,
+        CASE WHEN p.penaltis.golsMandante IS NOT NULL AND p.penaltis.golsVisitante IS NOT NULL
+             THEN true ELSE false END,
+        p.penaltis.golsMandante,
+        p.penaltis.golsVisitante,
+        p.anulada,
+        p.motivoAnulacao
+    )
+    FROM Partida p
+    JOIN p.fase f
+    LEFT JOIN p.rodada r
+    JOIN p.mandante m JOIN m.jogador mj JOIN m.clube mc
+    JOIN p.visitante v JOIN v.jogador vj JOIN v.clube vc
+    WHERE (mj.id = :jogadorId OR vj.id = :jogadorId)
+    AND p.anulada = true
+    """,
+                countQuery = """
+    SELECT count(p)
+    FROM Partida p
+    JOIN p.mandante m JOIN m.jogador mj
+    JOIN p.visitante v JOIN v.jogador vj
+    WHERE (mj.id = :jogadorId OR vj.id = :jogadorId)
+    AND p.anulada = true
+    """)
+    Page<PartidaHistoricoDTO> findAnuladasPorJogadorId(
+            @Param("jogadorId") String jogadorId,
             Pageable pageable
     );
 
@@ -310,7 +360,8 @@ public interface PartidaRepository extends JpaRepository<Partida, String> {
         p.coeficienteMandante, p.coeficienteVisitante,
         p.tipoPartida,
         pp.id, p.slotNaProxima,
-        p.receitaMandante, p.receitaVisitante
+        p.receitaMandante, p.receitaVisitante,
+        p.anulada, p.motivoAnulacao, p.anuladaEm
     )
     FROM Partida p
     JOIN p.fase f
@@ -562,4 +613,27 @@ public interface PartidaRepository extends JpaRepository<Partida, String> {
             @Param("visitanteVoltaId") String visitanteVoltaId,
             @Param("mandanteVoltaId") String mandanteVoltaId);
 
+    @Query(value = """
+    SELECT j.id AS jogadorId, j.nome AS nomeJogador, COUNT(*) AS totalDerrotasWo
+    FROM (
+        SELECT jc.jogador_id AS jogador_id
+        FROM partida p
+        JOIN jogador_clube jc ON jc.id = p.mandante_id
+        WHERE p.wo = true AND p.realizada = true
+          AND p.gols_mandante IS NOT NULL AND p.gols_visitante IS NOT NULL
+          AND p.gols_mandante < p.gols_visitante
+        UNION ALL
+        SELECT jc.jogador_id AS jogador_id
+        FROM partida p
+        JOIN jogador_clube jc ON jc.id = p.visitante_id
+        WHERE p.wo = true AND p.realizada = true
+          AND p.gols_mandante IS NOT NULL AND p.gols_visitante IS NOT NULL
+          AND p.gols_visitante < p.gols_mandante
+    ) derrotas
+    JOIN jogador j ON j.id = derrotas.jogador_id
+    GROUP BY j.id, j.nome
+    ORDER BY totalDerrotasWo DESC
+    LIMIT :limite
+    """, nativeQuery = true)
+    List<TopJogadorWoProjection> buscarTopJogadoresDerrotasWo(@Param("limite") int limite);
 }

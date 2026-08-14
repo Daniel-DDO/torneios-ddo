@@ -59,6 +59,11 @@ public class ClassificacaoService {
         Partida partida = partidaRepository.findById(dto.id())
                 .orElseThrow(() -> new RuntimeException("Partida não encontrada"));
 
+        if (partida.isAnulada()) {
+            log.warn("Tentativa de registrar resultado em partida anulada: {}", dto.id());
+            throw new IllegalStateException("Não é possível registrar resultado de uma partida anulada");
+        }
+
         if (partida.isRealizada()) {
             log.warn("Tentativa de registrar resultado em partida já realizada: {}", dto.id());
             return;

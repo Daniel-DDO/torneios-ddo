@@ -1,9 +1,6 @@
 package com.ddo.torneios.service;
 
-import com.ddo.torneios.dto.PaginacaoDTO;
-import com.ddo.torneios.dto.PartidaDTO;
-import com.ddo.torneios.dto.PartidaDetalheProjection;
-import com.ddo.torneios.dto.PartidaHistoricoDTO;
+import com.ddo.torneios.dto.*;
 import com.ddo.torneios.model.JogadorClube;
 import com.ddo.torneios.model.LadoPartida;
 import com.ddo.torneios.model.ParticipacaoFase;
@@ -76,7 +73,10 @@ public class PartidaService {
                 p.receitaMandante() != null ? p.receitaMandante() : BigDecimal.ZERO,
                 p.receitaVisitante() != null ? p.receitaVisitante() : BigDecimal.ZERO,
                 p.golsMandante(),
-                p.golsVisitante()
+                p.golsVisitante(),
+                p.anulada(),
+                p.motivoAnulacao(),
+                p.anuladaEm()
         );
     }
 
@@ -199,5 +199,54 @@ public class PartidaService {
         }
 
         partidaRepository.save(partida);
+    }
+
+    @Transactional
+    public PartidaDTO anularPartida(String partidaId, String motivo) {
+        Partida partida = partidaRepository.findById(partidaId)
+                .orElseThrow(() -> new EntityNotFoundException("Partida não encontrada"));
+
+        if (partida.isRealizada()) {
+            throw new IllegalStateException("Não é possível anular uma partida já realizada");
+        }
+        if (partida.isAnulada()) {
+            throw new IllegalStateException("Partida já está anulada");
+        }
+
+        partida.setAnulada(true);
+        partida.setMotivoAnulacao(motivo);
+        partida.setAnuladaEm(LocalDateTime.now());
+
+        Partida salva = partidaRepository.save(partida);
+        return new PartidaDTO(salva);
+    }
+
+    @Transactional
+    public PartidaDTO desanularPartida(String partidaId) {
+        Partida partida = partidaRepository.findById(partidaId)
+                .orElseThrow(() -> new EntityNotFoundException("Partida não encontrada"));
+
+        if (!partida.isAnulada()) {
+            throw new IllegalStateException("Partida não está anulada");
+        }
+
+        partida.setAnulada(false);
+        partida.setMotivoAnulacao(null);
+        partida.setAnuladaEm(null);
+
+        Partida salva = partidaRepository.save(partida);
+        return new PartidaDTO(salva);
+    }
+
+    public PaginacaoDTO<PartidaHistoricoDTO> minhasPartidasAnuladas(String jogadorId, int pagina, int tamanho) {
+        Pageable pageable = PageRequest.of(pagina, tamanho, Sort.by(Sort.Direction.DESC, "dataHora"));
+        Page<PartidaHistoricoDTO> resultado = partidaRepository.findAnuladasPorJogadorId(jogadorId, pageable);
+        return montarPaginacao(resultado);
+    }
+
+    public List<TopJogadorWoDTO> topJogadoresDerrotasWo(int limite) {
+        return partidaRepository.buscarTopJogadoresDerrotasWo(limite).stream()
+                .map(p -> new TopJogadorWoDTO(p.getJogadorId(), p.getNomeJogador(), p.getTotalDerrotasWo()))
+                .collect(Collectors.toList());
     }
 }

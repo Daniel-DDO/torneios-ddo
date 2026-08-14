@@ -99,6 +99,13 @@ public class Partida {
     @Column(columnDefinition = "TEXT")
     private String rankSnapshotVisitante;
 
+    @ColumnDefault("false")
+    private boolean anulada;
+
+    private String motivoAnulacao;
+
+    private LocalDateTime anuladaEm;
+
     public boolean houvePenaltis() {
         return penaltis != null &&
                 penaltis.getGolsMandante() != null &&

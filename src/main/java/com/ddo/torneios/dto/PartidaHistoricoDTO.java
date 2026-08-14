@@ -19,7 +19,9 @@ public record PartidaHistoricoDTO(
         boolean wo,
         boolean houvePenaltis,
         Integer penaltisMandante,
-        Integer penaltisVisitante
+        Integer penaltisVisitante,
+        boolean anulada,
+        String motivoAnulacao
 ) {
     public PartidaHistoricoDTO(Partida p) {
         this(
@@ -37,8 +39,9 @@ public record PartidaHistoricoDTO(
                 p.isWo(),
                 p.houvePenaltis(),
                 (p.houvePenaltis() && p.getPenaltis() != null) ? p.getPenaltis().getGolsMandante() : null,
-                (p.houvePenaltis() && p.getPenaltis() != null) ? p.getPenaltis().getGolsVisitante() : null
+                (p.houvePenaltis() && p.getPenaltis() != null) ? p.getPenaltis().getGolsVisitante() : null,
+                p.isAnulada(),
+                p.getMotivoAnulacao()
         );
     }
-
 }

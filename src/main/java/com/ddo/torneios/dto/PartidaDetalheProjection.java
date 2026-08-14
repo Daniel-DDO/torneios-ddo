@@ -36,6 +36,9 @@ public record PartidaDetalheProjection(
         String proximaPartidaId,
         Integer slotNaProxima,
         BigDecimal receitaMandante,
-        BigDecimal receitaVisitante
+        BigDecimal receitaVisitante,
+        boolean anulada,
+        String motivoAnulacao,
+        LocalDateTime anuladaEm
 ) {
 }

@@ -5,6 +5,7 @@ import com.ddo.torneios.model.Partida;
 import com.ddo.torneios.model.ReportPartida;
 import com.ddo.torneios.repository.PartidaRepository;
 import com.ddo.torneios.repository.ReportPartidaRepository;
+import com.ddo.torneios.request.AnularPartidaRequest;
 import com.ddo.torneios.request.DefinirParticipanteRequest;
 import com.ddo.torneios.request.RelatoProblemaRequest;
 import com.ddo.torneios.service.ClassificacaoService;
@@ -200,5 +201,47 @@ public class PartidaController {
             @RequestBody DefinirParticipanteRequest request) {
         partidaService.definirParticipante(id, request.participacaoFaseId(), request.lado());
         return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/jogador/{jogadorId}/anuladas")
+    public ResponseEntity<PaginacaoDTO<PartidaHistoricoDTO>> partidasAnuladas(
+            @PathVariable String jogadorId,
+            @RequestParam(defaultValue = "0") int pagina,
+            @RequestParam(defaultValue = "10") int tamanho) {
+        return ResponseEntity.ok(partidaService.minhasPartidasAnuladas(jogadorId, pagina, tamanho));
+    }
+
+    @GetMapping("/jogador/{jogadorId}/realizadas")
+    public ResponseEntity<PaginacaoDTO<PartidaHistoricoDTO>> partidasRealizadas(
+            @PathVariable String jogadorId,
+            @RequestParam(defaultValue = "0") int pagina,
+            @RequestParam(defaultValue = "10") int tamanho) {
+        return ResponseEntity.ok(partidaService.minhasPartidasFeitas(jogadorId, pagina, tamanho));
+    }
+
+    @GetMapping("/jogador/{jogadorId}/a-fazer")
+    public ResponseEntity<PaginacaoDTO<PartidaHistoricoDTO>> partidasAFazer(
+            @PathVariable String jogadorId,
+            @RequestParam(defaultValue = "0") int pagina,
+            @RequestParam(defaultValue = "10") int tamanho) {
+        return ResponseEntity.ok(partidaService.minhasPartidasParaFazer(jogadorId, pagina, tamanho));
+    }
+
+    @GetMapping("/ranking/wo")
+    @PreAuthorize("hasAnyRole('PROPRIETARIO', 'DIRETOR')")
+    public ResponseEntity<List<TopJogadorWoDTO>> topJogadoresWo(@RequestParam(defaultValue = "10") int limite) {
+        return ResponseEntity.ok(partidaService.topJogadoresDerrotasWo(limite));
+    }
+
+    @PostMapping("/{id}/anular")
+    @PreAuthorize("hasRole('PROPRIETARIO')")
+    public ResponseEntity<PartidaDTO> anular(@PathVariable String id, @RequestBody AnularPartidaRequest request) {
+        return ResponseEntity.ok(partidaService.anularPartida(id, request.motivo()));
+    }
+
+    @PostMapping("/{id}/desanular")
+    @PreAuthorize("hasRole('PROPRIETARIO')")
+    public ResponseEntity<PartidaDTO> desanular(@PathVariable String id) {
+        return ResponseEntity.ok(partidaService.desanularPartida(id));
     }
 }
