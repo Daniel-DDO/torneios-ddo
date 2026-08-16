@@ -14,6 +14,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.HttpServerErrorException;
 import org.springframework.web.client.RestTemplate;
 
 import java.util.List;
@@ -93,7 +94,8 @@ public class NoticiaService {
                     new Content(List.of(new Part(prompt)))
             ));
 
-            GeminiResponse response = restTemplate.postForObject(url, request, GeminiResponse.class);
+            //GeminiResponse response = restTemplate.postForObject(url, request, GeminiResponse.class);
+            GeminiResponse response = chamarGeminiComTentativas(url, request);
 
             if (response != null && !response.candidates.isEmpty()) {
                 String textoGerado = response.candidates.get(0).content.parts.get(0).text;
@@ -355,5 +357,49 @@ public class NoticiaService {
         public String titulo;
         public String mensagem;
         public String tipo;
+    }
+
+    private GeminiResponse chamarGeminiComTentativas(String url, GeminiRequest request) {
+
+        int maxTentativas = 3;
+
+        for (int tentativa = 1; tentativa <= maxTentativas; tentativa++) {
+
+            try {
+                log.info("- Chamando Gemini... Tentativa {}/{}", tentativa, maxTentativas);
+
+                return restTemplate.postForObject(
+                        url,
+                        request,
+                        GeminiResponse.class
+                );
+
+            } catch (HttpServerErrorException.ServiceUnavailable e) {
+
+                if (tentativa == maxTentativas) {
+                    log.error("- Gemini continuou indisponível após {} tentativas.", maxTentativas);
+                    throw e;
+                }
+
+                long espera = 15000L * tentativa;
+
+                log.warn(
+                        "- Gemini está sobrecarregado. Aguardando {} segundos antes da próxima tentativa...",
+                        espera / 1000
+                );
+
+                try {
+                    Thread.sleep(espera);
+                } catch (InterruptedException ex) {
+                    Thread.currentThread().interrupt();
+                    throw new RuntimeException(
+                            "Thread interrompida أثناء espera para nova tentativa do Gemini.",
+                            ex
+                    );
+                }
+            }
+        }
+
+        return null;
     }
 }

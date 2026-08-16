@@ -5,6 +5,7 @@ import com.ddo.torneios.dto.TituloCampeaoDTO;
 import com.ddo.torneios.model.Conquista;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -44,4 +45,8 @@ public interface ConquistaRepository extends JpaRepository<Conquista, String> {
     ORDER BY c.dataConquista DESC
     """)
     List<ConquistaDashboardDTO> buscarUltimasConquistasDTO(Pageable pageable);
+
+    @Modifying
+    @Query("UPDATE Conquista c SET c.imagem = :urlImagem WHERE c.id = :id")
+    void atualizarImagem(@Param("id") String id, @Param("urlImagem") String urlImagem);
 }

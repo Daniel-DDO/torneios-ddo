@@ -110,8 +110,8 @@ public class TituloService {
 
                     String urlImgBB = imgBBService.uploadImagem(multipartFile);
 
+                    conquistaRepository.atualizarImagem(conquista.getId(), urlImgBB);
                     conquista.setImagem(urlImgBB);
-                    conquistaRepository.save(conquista);
                     log.info("Imagem salva no ImgBB: {}", urlImgBB);
                 }
             }
