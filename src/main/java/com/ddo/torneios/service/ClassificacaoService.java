@@ -256,9 +256,9 @@ public class ClassificacaoService {
 
         ResultadoClassificacao resultado = calcularClassificacaoCompleto(fase);
         List<LinhaClassificacaoDTO> novaClassificacao = resultado.linhas();
-        //atualizarPosicoesNoBanco(novaClassificacao, resultado.participacoes());
+        persistirClassificacao(resultado);
 
-        insigniaService.processarPosPartida(jGlobalMandante,dto.golsMandante());
+        insigniaService.processarPosPartida(jGlobalMandante, dto.golsMandante());
         insigniaService.processarPosPartida(jGlobalVisitante, dto.golsVisitante());
 
         TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
@@ -275,7 +275,6 @@ public class ClassificacaoService {
         });
 
         try {
-
             String topico = "/topic/classificacao/" + fase.getId();
             messagingTemplate.convertAndSend(topico, novaClassificacao);
 
@@ -285,15 +284,27 @@ public class ClassificacaoService {
         }
     }
 
-    private void atualizarPosicoesNoBanco(List<LinhaClassificacaoDTO> classificacao, List<ParticipacaoFaseDTO> participacoes) {
-        for (LinhaClassificacaoDTO linha : classificacao) {
-            ParticipacaoFaseDTO p = participacoes.stream()
-                    .filter(part -> part.jogadorClubeId().equals(linha.jogadorClubeId()))
-                    .findFirst()
-                    .orElse(null);
+    /**
+     * Persiste no banco a posição e os pontos de cada participação, comparando com o estado
+     * atual carregado em {@link ResultadoClassificacao#participacoes()}. Só deve ser chamado
+     * a partir de fluxos transacionais de escrita (nunca a partir de endpoints de leitura).
+     */
+    @Transactional
+    public void persistirClassificacao(ResultadoClassificacao resultado) {
+        Map<String, ParticipacaoFaseDTO> porId = resultado.participacoes().stream()
+                .collect(Collectors.toMap(ParticipacaoFaseDTO::id, p -> p));
 
-            if (p != null && !Objects.equals(p.posicaoClassificacao(), linha.posicao())) {
-                participacaoRepository.atualizarPosicaoEPontos(p.id(), linha.posicao(), p.pontos());
+        for (LinhaClassificacaoDTO linha : resultado.linhas()) {
+            if (linha.id() == null) continue;
+
+            ParticipacaoFaseDTO atual = porId.get(linha.id());
+            if (atual == null) continue;
+
+            boolean mudouPosicao = !Objects.equals(atual.posicaoClassificacao(), linha.posicao());
+            boolean mudouPontos = !Objects.equals(atual.pontos(), linha.pontos());
+
+            if (mudouPosicao || mudouPontos) {
+                participacaoRepository.atualizarPosicaoEPontos(linha.id(), linha.posicao(), linha.pontos());
             }
         }
     }
@@ -361,7 +372,7 @@ public class ClassificacaoService {
         jc.setDerrotas(safeInt(jc.getDerrotas()) + d);
 
         j.setVitorias(safeInt(j.getVitorias()) + v);
-        j.setEmpates(safeInt(j.getEmpates())+  e);
+        j.setEmpates(safeInt(j.getEmpates()) + e);
         j.setDerrotas(safeInt(j.getDerrotas()) + d);
     }
 
@@ -558,6 +569,10 @@ public class ClassificacaoService {
 
     public record ResultadoClassificacao(List<LinhaClassificacaoDTO> linhas, List<ParticipacaoFaseDTO> participacoes) {}
 
+    /**
+     * Cálculo PURO da classificação: não grava nada no banco. Seguro para ser chamado
+     * a partir de endpoints de leitura (GET) sem transação de escrita.
+     */
     public ResultadoClassificacao calcularClassificacaoCompleto(FaseTorneio fase) {
         List<ParticipacaoClassificacaoProjection> participantes =
                 participacaoRepository.buscarDadosClassificacao(fase.getId());
@@ -625,6 +640,9 @@ public class ClassificacaoService {
         return new ResultadoClassificacao(linhas, participacoesDTO);
     }
 
+    /**
+     * Atalho de leitura pura. Não persiste nada — seguro para GETs sem transação de escrita.
+     */
     public List<LinhaClassificacaoDTO> calcularClassificacao(FaseTorneio fase) {
         return calcularClassificacaoCompleto(fase).linhas();
     }
@@ -724,108 +742,6 @@ public class ClassificacaoService {
         return pontosB - pontosA;
     }
 
-    private AcumuladorStatus resolverAcumulador(Map<String, AcumuladorStatus> mapa, String jogadorClubeId) {
-        if (jogadorClubeId == null) return null;
-
-        AcumuladorStatus direto = mapa.get(jogadorClubeId);
-        if (direto != null) return direto;
-
-        return jogadorClubeRepository.buscarIdSubstituto(jogadorClubeId)
-                .map(mapa::get)
-                .orElse(null);
-    }
-
-    private void acumularPartida(Map<String, AcumuladorStatus> mapa, PartidaClassificacaoProjection p) {
-        AcumuladorStatus m = resolverAcumulador(mapa, p.mandanteId());
-        AcumuladorStatus v = resolverAcumulador(mapa, p.visitanteId());
-
-        if (m == null || v == null) return;
-
-        int gM = p.golsMandante() != null ? p.golsMandante() : 0;
-        int gV = p.golsVisitante() != null ? p.golsVisitante() : 0;
-
-        m.setJogos(m.getJogos() + 1);
-        v.setJogos(v.getJogos() + 1);
-
-        m.setGolsPro(m.getGolsPro() + gM);
-        m.setGolsContra(m.getGolsContra() + gV);
-        v.setGolsPro(v.getGolsPro() + gV);
-        v.setGolsContra(v.getGolsContra() + gM);
-
-        int amM = p.cartoesAmarelosMandante() != null ? p.cartoesAmarelosMandante() : 0;
-        int verM = p.cartoesVermelhosMandante() != null ? p.cartoesVermelhosMandante() : 0;
-        int amV = p.cartoesAmarelosVisitante() != null ? p.cartoesAmarelosVisitante() : 0;
-        int verV = p.cartoesVermelhosVisitante() != null ? p.cartoesVermelhosVisitante() : 0;
-
-        m.setAmarelos(m.getAmarelos() + amM);
-        m.setVermelhos(m.getVermelhos() + verM);
-        v.setAmarelos(v.getAmarelos() + amV);
-        v.setVermelhos(v.getVermelhos() + verV);
-
-        if (gM > gV) {
-            m.setPontos(m.getPontos() + 3);
-            m.setVitorias(m.getVitorias() + 1);
-            v.setDerrotas(v.getDerrotas() + 1);
-        } else if (gV > gM) {
-            v.setPontos(v.getPontos() + 3);
-            v.setVitorias(v.getVitorias() + 1);
-            m.setDerrotas(m.getDerrotas() + 1);
-        } else {
-            m.setPontos(m.getPontos() + 1);
-            v.setPontos(v.getPontos() + 1);
-            m.setEmpates(m.getEmpates() + 1);
-            v.setEmpates(v.getEmpates() + 1);
-        }
-    }
-
-    private int compararConfrontoDireto(AcumuladorStatus a, AcumuladorStatus b,
-                                        List<PartidaClassificacaoProjection> partidas,
-                                        Map<String, AcumuladorStatus> mapa) {
-        int pontosA = 0;
-        int pontosB = 0;
-
-        for (PartidaClassificacaoProjection p : partidas) {
-            AcumuladorStatus realMandanteAcc = resolverAcumulador(mapa, p.mandanteId());
-            AcumuladorStatus realVisitanteAcc = resolverAcumulador(mapa, p.visitanteId());
-
-            if (realMandanteAcc == null || realVisitanteAcc == null) continue;
-
-            String mId = realMandanteAcc.getJogadorClubeId();
-            String vId = realVisitanteAcc.getJogadorClubeId();
-
-            if ((mId.equals(a.getJogadorClubeId()) && vId.equals(b.getJogadorClubeId())) ||
-                    (mId.equals(b.getJogadorClubeId()) && vId.equals(a.getJogadorClubeId()))) {
-
-                int gM = p.golsMandante() != null ? p.golsMandante() : 0;
-                int gV = p.golsVisitante() != null ? p.golsVisitante() : 0;
-
-                if (gM > gV) {
-                    if (mId.equals(a.getJogadorClubeId())) pontosA += 3; else pontosB += 3;
-                } else if (gV > gM) {
-                    if (vId.equals(a.getJogadorClubeId())) pontosA += 3; else pontosB += 3;
-                } else {
-                    pontosA += 1;
-                    pontosB += 1;
-                }
-            }
-        }
-        return pontosB - pontosA;
-    }
-
-    private AcumuladorStatus resolverAcumulador(Map<String, AcumuladorStatus> mapa, JogadorClube jogador) {
-        if (jogador == null) return null;
-
-        if (mapa.containsKey(jogador.getId())) {
-            return mapa.get(jogador.getId());
-        }
-
-        if (jogador.getIdDeQuemMeSubstituiu() != null) {
-            return mapa.get(jogador.getIdDeQuemMeSubstituiu());
-        }
-
-        return null;
-    }
-
     private List<LinhaClassificacaoDTO> atribuirZonasEPosicao(List<AcumuladorStatus> lista, List<ZonaFase> zonas, List<ParticipacaoFaseDTO> participacoes) {
         List<LinhaClassificacaoDTO> resultado = new ArrayList<>();
 
@@ -850,25 +766,18 @@ public class ClassificacaoService {
                     zona != null ? zona.getNome() : "",
                     zona != null ? zona.getCorHex() : "#FFFFFF"
             ));
-
-            if (p != null) {
-                boolean mudouPosicao = !Objects.equals(p.posicaoClassificacao(), pos);
-                boolean mudouPontos = !Objects.equals(p.pontos(), acc.pontos);
-
-                if (mudouPosicao || mudouPontos) {
-                    participacaoRepository.atualizarPosicaoEPontos(p.id(), pos, acc.pontos);
-                }
-            }
         }
 
         return resultado;
     }
 
+    @Transactional
     public void recalcularETransmitir(FaseTorneio fase) {
-        List<LinhaClassificacaoDTO> dtos = calcularClassificacao(fase);
+        ResultadoClassificacao resultado = calcularClassificacaoCompleto(fase);
+        persistirClassificacao(resultado);
 
         String topico = "/topic/classificacao/" + fase.getId();
-        messagingTemplate.convertAndSend(topico, dtos);
+        messagingTemplate.convertAndSend(topico, resultado.linhas());
     }
 
     @Getter
@@ -915,7 +824,7 @@ public class ClassificacaoService {
 
         ResultadoClassificacao resultado = calcularClassificacaoCompleto(fase);
         List<LinhaClassificacaoDTO> novaClassificacao = resultado.linhas();
-        //atualizarPosicoesNoBanco(novaClassificacao, resultado.participacoes());
+        persistirClassificacao(resultado);
 
         try {
             String topico = "/topic/classificacao/" + fase.getId();
