@@ -373,4 +373,12 @@ public class JogadorController {
         Jogador jogadorMesclado = jogadorService.mesclarContas(request.idPrincipal(), request.idsAntigos());
         return ResponseEntity.ok(new JogadorDTO(jogadorMesclado));
     }
+
+    @PreAuthorize("hasAuthority('PROPRIETARIO')")
+    @PutMapping("/{id}")
+    public ResponseEntity<JogadorDTO> editarJogadorAdmin(
+            @PathVariable String id,
+            @RequestBody JogadorEditarRequest request) {
+        return ResponseEntity.ok(jogadorService.editarJogadorAdmin(id, request));
+    }
 }

@@ -73,4 +73,11 @@ public class TorneioController {
         return ResponseEntity.ok(new TransparenciaCompletaDTO(economico, coeficiente));
     }
 
+    @PutMapping("/{id}")
+    public ResponseEntity<TorneioDTO> editarTorneio(
+            @PathVariable String id,
+            @RequestBody @Valid TorneioRequest request) {
+        return ResponseEntity.ok(torneioService.editarTorneio(id, request));
+    }
+
 }

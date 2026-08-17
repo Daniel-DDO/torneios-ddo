@@ -6,6 +6,7 @@ import com.ddo.torneios.model.FaseTorneio;
 import com.ddo.torneios.model.ParticipacaoFase;
 import com.ddo.torneios.repository.FaseTorneioRepository;
 import com.ddo.torneios.repository.ParticipacaoFaseRepository;
+import com.ddo.torneios.request.AtualizarParticipacaoFaseRequest;
 import com.ddo.torneios.request.ParticipacaoFaseRequest;
 import com.ddo.torneios.service.ClassificacaoService;
 import com.ddo.torneios.service.ParticipacaoFaseService;
@@ -95,5 +96,12 @@ public class ParticipacaoFaseController {
                 .toList();
 
         return ResponseEntity.ok(dtos);
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<ParticipacaoFaseDTO> editarParticipante(
+            @PathVariable String id,
+            @RequestBody AtualizarParticipacaoFaseRequest request) {
+        return ResponseEntity.ok(participacaoFaseService.editarParticipante(id, request));
     }
 }

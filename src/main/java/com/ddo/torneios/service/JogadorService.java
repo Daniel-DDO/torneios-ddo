@@ -1065,4 +1065,26 @@ public class JogadorService {
     private BigDecimal nzBig(BigDecimal valor) {
         return valor == null ? BigDecimal.ZERO : valor;
     }
+
+    @Transactional
+    public JogadorDTO editarJogadorAdmin(String id, JogadorEditarRequest request) {
+        Jogador jogador = jogadorRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Jogador não encontrado com ID: " + id));
+
+        if (StringUtils.hasText(request.getNome())) {
+            jogador.setNome(request.getNome());
+        }
+
+        if (StringUtils.hasText(request.getImagem())) {
+            jogador.setImagem(request.getImagem());
+        }
+
+        if (StringUtils.hasText(request.getDescricao())) {
+            jogador.setDescricao(request.getDescricao());
+        }
+
+        jogador.setModificacaoConta(LocalDateTime.now());
+
+        return new JogadorDTO(jogadorRepository.save(jogador));
+    }
 }
