@@ -40,6 +40,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.PATCH, "/jogador/perfil").authenticated()
                         .requestMatchers(HttpMethod.PUT, "/jogador/me/credenciais").authenticated()
                         .requestMatchers(HttpMethod.GET, "/jogador/{id}/transacoes").authenticated()
+                        .requestMatchers(HttpMethod.GET, "/jogador/{id}/planilha").authenticated()
                         .requestMatchers(HttpMethod.POST, "/jogador/{partidaId}/analisar-problema").hasAnyAuthority("PROPRIETARIO", "DIRETOR", "ADMINISTRADOR")
 
                         .requestMatchers(HttpMethod.POST, "/jogador/cadastrar").hasAnyAuthority("PROPRIETARIO", "DIRETOR")

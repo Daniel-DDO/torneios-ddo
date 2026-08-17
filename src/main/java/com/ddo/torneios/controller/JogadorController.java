@@ -6,6 +6,7 @@ import com.ddo.torneios.model.Jogador;
 import com.ddo.torneios.model.StatusJogador;
 import com.ddo.torneios.request.*;
 import com.ddo.torneios.service.JogadorService;
+import com.ddo.torneios.service.PlanilhaJogadorService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -13,6 +14,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -35,6 +37,9 @@ public class JogadorController {
 
     @Autowired
     private JogadorService jogadorService;
+
+    @Autowired
+    private PlanilhaJogadorService planilhaJogadorService;
 
     @PostMapping("/cadastrar")
     public ResponseEntity<?> cadastrarJogador(@RequestBody JogadorRequest jogador) {
@@ -380,5 +385,16 @@ public class JogadorController {
             @PathVariable String id,
             @RequestBody JogadorEditarRequest request) {
         return ResponseEntity.ok(jogadorService.editarJogadorAdmin(id, request));
+    }
+
+    @GetMapping("/{id}/planilha")
+    public ResponseEntity<byte[]> baixarPlanilha(@PathVariable String id) {
+        byte[] arquivo = planilhaJogadorService.gerarPlanilha(id);
+        String nomeArquivo = "estatisticas-" + id + ".xlsx";
+
+        return ResponseEntity.ok()
+                .contentType(MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + nomeArquivo + "\"")
+                .body(arquivo);
     }
 }
