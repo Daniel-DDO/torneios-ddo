@@ -677,9 +677,34 @@ public class JogadorService {
         Jogador j2 = jogadorRepository.findById(idJogador2)
                 .orElseThrow(() -> new RuntimeException("Jogador 2 não encontrado (ID: " + idJogador2 + ")"));
 
+        List<PartidaHistoricoDTO> confrontos = partidaRepository.buscarConfrontosDiretos(idJogador1, idJogador2);
+
+        int vitoriasJ1 = 0;
+        int vitoriasJ2 = 0;
+        int empates = 0;
+
+        for (PartidaHistoricoDTO p : confrontos) {
+            if (p.golsMandante() == null || p.golsVisitante() == null) continue;
+
+            boolean mandanteEhJ1 = p.mandante().jogadorId().equals(idJogador1);
+
+            int golsJ1 = mandanteEhJ1 ? p.golsMandante() : p.golsVisitante();
+            int golsJ2 = mandanteEhJ1 ? p.golsVisitante() : p.golsMandante();
+
+            if (golsJ1 > golsJ2) {
+                vitoriasJ1++;
+            } else if (golsJ2 > golsJ1) {
+                vitoriasJ2++;
+            } else {
+                empates++;
+            }
+        }
+
         return new ComparacaoJogadoresDTO(
                 mapearDadosComparacao(j1),
-                mapearDadosComparacao(j2)
+                mapearDadosComparacao(j2),
+                confrontos,
+                new ResumoConfrontoDiretoDTO(vitoriasJ1, vitoriasJ2, empates)
         );
     }
 

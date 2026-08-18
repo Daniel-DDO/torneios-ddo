@@ -636,4 +636,38 @@ public interface PartidaRepository extends JpaRepository<Partida, String> {
     LIMIT :limite
     """, nativeQuery = true)
     List<TopJogadorWoProjection> buscarTopJogadoresDerrotasWo(@Param("limite") int limite);
+
+    @Query("""
+    SELECT NEW com.ddo.torneios.dto.PartidaHistoricoDTO(
+        p.id,
+        p.fase.id,
+        r.id,
+        r.numero,
+        p.dataHora,
+        p.estadio,
+        NEW com.ddo.torneios.dto.JogadorClubeResumoDTO(
+            m.id, mj.id, mj.nome, mj.imagem, mc.id, mc.nome, mc.imagem, mc.sigla
+        ),
+        NEW com.ddo.torneios.dto.JogadorClubeResumoDTO(
+            v.id, vj.id, vj.nome, vj.imagem, vc.id, vc.nome, vc.imagem, vc.sigla
+        ),
+        p.golsMandante,
+        p.golsVisitante,
+        p.realizada,
+        p.wo,
+        CASE WHEN p.penaltis.golsMandante IS NOT NULL AND p.penaltis.golsVisitante IS NOT NULL THEN true ELSE false END,
+        p.penaltis.golsMandante,
+        p.penaltis.golsVisitante,
+        p.anulada,
+        p.motivoAnulacao
+    )
+    FROM Partida p
+    JOIN p.mandante m JOIN m.jogador mj JOIN m.clube mc
+    JOIN p.visitante v JOIN v.jogador vj JOIN v.clube vc
+    LEFT JOIN p.rodada r
+    WHERE p.realizada = true
+    AND ((mj.id = :id1 AND vj.id = :id2) OR (mj.id = :id2 AND vj.id = :id1))
+    ORDER BY p.dataHora DESC
+    """)
+    List<PartidaHistoricoDTO> buscarConfrontosDiretos(@Param("id1") String id1, @Param("id2") String id2);
 }

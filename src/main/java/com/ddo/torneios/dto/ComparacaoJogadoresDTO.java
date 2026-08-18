@@ -1,8 +1,13 @@
 package com.ddo.torneios.dto;
 
+import java.math.BigDecimal;
+import java.util.List;
+
 public record ComparacaoJogadoresDTO(
         DadosJogadorComparacao jogador1,
-        DadosJogadorComparacao jogador2
+        DadosJogadorComparacao jogador2,
+        List<PartidaHistoricoDTO> confrontosDiretos,
+        ResumoConfrontoDiretoDTO resumoConfrontoDireto
 ) {
     public record DadosJogadorComparacao(
             String id,
@@ -16,7 +21,7 @@ public record ComparacaoJogadoresDTO(
             Integer golsMarcados,
             Integer golsSofridos,
             String aproveitamento,
-            java.math.BigDecimal saldo,
-            java.math.BigDecimal pontosCoeficiente
+            BigDecimal saldo,
+            BigDecimal pontosCoeficiente
     ) {}
 }
