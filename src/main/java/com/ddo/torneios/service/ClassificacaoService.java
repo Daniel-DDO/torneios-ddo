@@ -143,6 +143,9 @@ public class ClassificacaoService {
         if (fase.getTipoTorneio() == TipoTorneio.MATA_MATA) {
             processarMataMata(dto, pMandante, pVisitante);
             bracketService.processarAvancoVencedor(partida);
+
+            String etapaStr = partida.getEtapaMataMata() != null ? partida.getEtapaMataMata().name() : null;
+            bracketService.notificarAtualizacaoBracket(fase.getId(), etapaStr, partida.getChaveIndex());
         } else {
             processarLiga(dto, pMandante, pVisitante);
         }

@@ -3,13 +3,15 @@ package com.ddo.torneios.service;
 import com.ddo.torneios.dto.PartidaBracketDTO;
 import com.ddo.torneios.dto.PartidaBracketProjection;
 import com.ddo.torneios.dto.PartidaConfrontoDTO;
-import com.ddo.torneios.dto.PartidaDTO;
 import com.ddo.torneios.model.*;
 import com.ddo.torneios.repository.PartidaRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -20,6 +22,29 @@ import java.util.stream.Collectors;
 public class BracketService {
 
     private final PartidaRepository partidaRepository;
+    private final SimpMessagingTemplate messagingTemplate;
+
+    public void notificarAtualizacaoBracket(String faseId, String etapaMataMata, Integer chaveIndex) {
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+            @Override
+            public void afterCommit() {
+                try {
+                    //TelaBracket (visão geral do chaveamento)
+                    messagingTemplate.convertAndSend("/topic/bracket/" + faseId, "ATUALIZADO");
+
+                    //TelaBracketJogos (visão específica do confronto)
+                    if (etapaMataMata != null && chaveIndex != null) {
+                        messagingTemplate.convertAndSend(
+                                "/topic/bracket/" + faseId + "/chave/" + etapaMataMata + "/" + chaveIndex,
+                                "ATUALIZADO"
+                        );
+                    }
+                } catch (Exception e) {
+                    log.warn("Falha ao notificar atualizações do bracket via WebSocket", e);
+                }
+            }
+        });
+    }
 
     public Map<String, List<PartidaBracketDTO>> obterBracket(FaseTorneio fase) {
         List<PartidaBracketProjection> partidas = partidaRepository.buscarBracketPorFase(fase);
