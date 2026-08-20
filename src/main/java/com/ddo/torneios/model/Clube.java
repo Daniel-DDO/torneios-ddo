@@ -18,6 +18,7 @@ import java.util.List;
 @Entity
 @NoArgsConstructor
 @AllArgsConstructor
+@Table(indexes = { @Index(name = "idx_clube_liga", columnList = "liga_clube") })
 public class Clube {
 
     @Id

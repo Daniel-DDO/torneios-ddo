@@ -21,6 +21,10 @@ import java.util.concurrent.ThreadLocalRandom;
 @Getter
 @Setter
 @Entity
+@Table(indexes = {
+        @Index(name = "idx_jogador_discord", columnList = "discord"),
+        @Index(name = "idx_jogador_email", columnList = "email")
+})
 public class Jogador implements UserDetails {
 
     @Id

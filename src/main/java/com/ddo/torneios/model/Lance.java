@@ -12,9 +12,16 @@ import java.time.LocalDateTime;
 @Data
 @Entity
 @NoArgsConstructor
-@Table(uniqueConstraints = {
-        @UniqueConstraint(columnNames = {"jogador_id", "leilao_id", "prioridade"})
-})
+@Table(
+        uniqueConstraints = {
+                @UniqueConstraint(columnNames = {"jogador_id", "leilao_id", "prioridade"})
+        },
+        indexes = {
+                @Index(name = "idx_lance_leilao_jogador", columnList = "leilao_id, jogador_id"),
+                @Index(name = "idx_lance_leilao_clube_prioridade", columnList = "leilao_id, clube_id, prioridade"),
+                @Index(name = "idx_lance_leilao_clube", columnList = "leilao_id, clube_id")
+        }
+)
 public class Lance {
 
     @Id

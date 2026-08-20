@@ -119,12 +119,12 @@ public class JogadorController {
     }
 
     @GetMapping("/jogadores")
-    public ResponseEntity<Page<Jogador>> listarJogadoresPaginado(
+    public ResponseEntity<Page<JogadorDTO>> listarJogadoresPaginado(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size
     ) {
         PageRequest pageRequest = PageRequest.of(page, size, Sort.by("nome").ascending());
-        Page<Jogador> jogadores = jogadorService.listarTodosPaginado(pageRequest);
+        Page<JogadorDTO> jogadores = jogadorService.listarTodosPaginado(pageRequest).map(JogadorDTO::new);
         return ResponseEntity.ok(jogadores);
     }
 

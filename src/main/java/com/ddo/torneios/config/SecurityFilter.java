@@ -1,7 +1,6 @@
 package com.ddo.torneios.config;
 
-import com.ddo.torneios.model.Jogador;
-import com.ddo.torneios.model.StatusJogador;
+import com.ddo.torneios.dto.JogadorLogadoDTO;
 import com.ddo.torneios.repository.JogadorRepository;
 import com.ddo.torneios.service.TokenService;
 import jakarta.servlet.FilterChain;
@@ -33,16 +32,13 @@ public class SecurityFilter extends OncePerRequestFilter {
             String idJogador = tokenService.validarTokenEObterId(token);
 
             if (idJogador != null) {
-                Jogador jogador = jogadorRepository.findParaAutenticacaoById(idJogador).orElse(null);
+                JogadorLogadoDTO jogadorLogado = jogadorRepository.buscarParaAutenticacao(idJogador).orElse(null);
 
-                if (jogador != null
-                        && jogador.isContaReivindicada()
-                        && jogador.getStatusJogador() == StatusJogador.ATIVO) {
-
+                if (jogadorLogado != null) {
                     UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
-                            jogador,
+                            jogadorLogado,
                             null,
-                            jogador.getAuthorities()
+                            jogadorLogado.getAuthorities()
                     );
                     SecurityContextHolder.getContext().setAuthentication(authentication);
                 }

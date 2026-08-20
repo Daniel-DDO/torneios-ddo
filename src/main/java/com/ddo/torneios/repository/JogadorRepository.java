@@ -226,4 +226,19 @@ public interface JogadorRepository extends JpaRepository<Jogador, String> {
 
     @EntityGraph(attributePaths = "insignias", type = EntityGraph.EntityGraphType.FETCH)
     Optional<Jogador> findComInsigniasById(String id);
+
+    // JogadorRepository.java
+
+    @Query("""
+    SELECT new com.ddo.torneios.dto.JogadorLogadoDTO(j.id, j.cargo)
+    FROM Jogador j
+    WHERE j.id = :id
+    AND j.contaReivindicada = true
+    AND j.statusJogador = com.ddo.torneios.model.StatusJogador.ATIVO
+    """)
+    Optional<JogadorLogadoDTO> buscarParaAutenticacao(@Param("id") String id);
+
+    @Query("select new com.ddo.torneios.dto.JogadorLeilaoDTO(j.id, j.nome, j.discord, j.imagem, j.cargo, j.saldoVirtual) " +
+            "from Jogador j where j.id = :id")
+    Optional<JogadorLeilaoDTO> buscarParaLeilao(@Param("id") String id);
 }

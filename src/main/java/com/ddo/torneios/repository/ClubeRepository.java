@@ -1,5 +1,7 @@
 package com.ddo.torneios.repository;
 
+import com.ddo.torneios.dto.ClubeBasicoDTO;
+import com.ddo.torneios.dto.ClubeLeilaoDTO;
 import com.ddo.torneios.dto.ClubeResumoConcessaoView;
 import com.ddo.torneios.dto.RecordeClubeDTO;
 import com.ddo.torneios.model.Clube;
@@ -55,4 +57,13 @@ public interface ClubeRepository extends JpaRepository<Clube, String> {
     @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("UPDATE Clube c SET c.titulos = COALESCE(c.titulos, 0) + :qtd WHERE c.id = :id")
     void incrementarTitulos(@Param("id") String id, @Param("qtd") int qtd);
+
+    @Query("SELECT new com.ddo.torneios.dto.ClubeBasicoDTO(c.id, c.nome, c.imagem, c.lanceMinimo) FROM Clube c WHERE c.id = :id")
+    Optional<ClubeBasicoDTO> buscarBasico(@Param("id") String id);
+
+    @Query("select new com.ddo.torneios.dto.ClubeLeilaoDTO(" +
+            "c.id, c.nome, c.nomeExtenso, c.imagem, c.sigla, " +
+            "c.lanceMinimo, c.valorAvaliado, c.ligaClube, c.estrelas) " +
+            "from Clube c where c.id = :id")
+    Optional<ClubeLeilaoDTO> buscarParaLeilao(@Param("id") String id);
 }
