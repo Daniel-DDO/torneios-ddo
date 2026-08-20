@@ -41,6 +41,8 @@ public class TituloService {
     private ImgBBService imgBBService;
     @Autowired
     private ConquistaRepository conquistaRepository;
+    @Autowired
+    private ConquistaImagemAsyncService conquistaImagemAsyncService;
 
     @Transactional
     public Conquista concederTituloAoJogador(String jogadorClubeId, String idTitulo, String nomeEdicao) {
@@ -78,7 +80,21 @@ public class TituloService {
         jogadorRepository.incrementarTitulos(view.getJogadorId());
         clubeRepository.incrementarTitulos(view.getClubeId());
 
-        gerarImagemEAtualizarLeve(novaConquista, titulo, view.getClubeImagem(), view.getJogadorId(), view.getJogadorNome(), view.getJogadorImagem(), "titulo_");
+        if (titulo.getImagemGerarPost() != null && !titulo.getImagemGerarPost().isEmpty()) {
+            String urlLogoParaPost = (view.getClubeImagem() != null && !view.getClubeImagem().isEmpty())
+                    ? view.getClubeImagem()
+                    : view.getJogadorImagem();
+
+            conquistaImagemAsyncService.processarImagemComRetentativas(
+                    novaConquista.getId(),
+                    titulo.getImagemGerarPost(),
+                    urlLogoParaPost,
+                    view.getJogadorId(),
+                    view.getJogadorNome(),
+                    "titulo_"
+            );
+        }
+        //gerarImagemEAtualizarLeve(novaConquista, titulo, view.getClubeImagem(), view.getJogadorId(), view.getJogadorNome(), view.getJogadorImagem(), "titulo_");
 
         return novaConquista;
     }
