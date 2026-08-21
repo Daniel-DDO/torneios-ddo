@@ -12,6 +12,9 @@ import lombok.extern.slf4j.Slf4j;
 @Service
 public class ConquistaImagemAsyncService {
 
+    private static final long[] INTERVALOS_MS = {0, 30_000, 120_000};
+    private static final int MAX_TENTATIVAS = 3;
+
     @Autowired
     private PostGeradorService postGeradorService;
 
@@ -26,17 +29,14 @@ public class ConquistaImagemAsyncService {
                                                String urlLogoParaPost, String jogadorId,
                                                String jogadorNome, String prefixoArquivo) {
 
-        //Intervalos entre tentativas: 0s (1ª), 30s (2ª), 120s (3ª)
-        long[] intervalosMs = {0, 30_000, 120_000};
-
-        for (int tentativa = 1; tentativa <= 3; tentativa++) {
+        for (int tentativa = 1; tentativa <= MAX_TENTATIVAS; tentativa++) {
             try {
-                long espera = intervalosMs[tentativa - 1];
+                long espera = INTERVALOS_MS[tentativa - 1];
                 if (espera > 0) {
                     Thread.sleep(espera);
                 }
 
-                log.info("Tentativa {}/3 de gerar imagem para {}", tentativa, jogadorNome);
+                log.info("Tentativa {}/{} de gerar imagem para {}", tentativa, MAX_TENTATIVAS, jogadorNome);
 
                 byte[] imagemBytes = postGeradorService.gerarImagemTitulo(
                         imagemGerarPost, urlLogoParaPost, jogadorNome
@@ -53,17 +53,17 @@ public class ConquistaImagemAsyncService {
 
                     conquistaRepository.atualizarImagem(conquistaId, urlImgBB);
                     log.info("Imagem salva com sucesso no ImgBB na tentativa {}: {}", tentativa, urlImgBB);
-                    return; // Sucesso, encerra o loop
+                    return;
                 }
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
                 log.error("Thread interrompida durante espera de retentativa", e);
                 return;
             } catch (Exception e) {
-                log.warn("Falha na tentativa {}/3 para {}: {}", tentativa, jogadorNome, e.getMessage());
+                log.warn("Falha na tentativa {}/{} para {}: {}", tentativa, MAX_TENTATIVAS, jogadorNome, e.getMessage());
             }
         }
 
-        log.error("Todas as 3 tentativas de geração de imagem falharam para {}", jogadorNome);
+        log.error("Todas as {} tentativas de geração de imagem falharam para {}", MAX_TENTATIVAS, jogadorNome);
     }
 }

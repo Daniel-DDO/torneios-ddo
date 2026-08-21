@@ -1,6 +1,7 @@
 package com.ddo.torneios.service;
 
 import com.ddo.torneios.dto.ClubeResumoConcessaoView;
+import com.ddo.torneios.dto.ConquistaParaRegeracaoView;
 import com.ddo.torneios.dto.JogadorClubeConcessaoView;
 import com.ddo.torneios.dto.JogadorResumoConcessaoView;
 import com.ddo.torneios.dto.TituloResumoDTO;
@@ -8,14 +9,12 @@ import com.ddo.torneios.model.*;
 import com.ddo.torneios.repository.*;
 import com.ddo.torneios.request.ConcederTituloColetivoRequest;
 import com.ddo.torneios.request.TituloRequest;
-import com.ddo.torneios.util.ByteArrayMultipartFile;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -35,10 +34,6 @@ public class TituloService {
     private JogadorClubeRepository jogadorClubeRepository;
     @Autowired
     private ClubeRepository clubeRepository;
-    @Autowired
-    private PostGeradorService postGeradorService;
-    @Autowired
-    private ImgBBService imgBBService;
     @Autowired
     private ConquistaRepository conquistaRepository;
     @Autowired
@@ -80,94 +75,33 @@ public class TituloService {
         jogadorRepository.incrementarTitulos(view.getJogadorId());
         clubeRepository.incrementarTitulos(view.getClubeId());
 
-        if (titulo.getImagemGerarPost() != null && !titulo.getImagemGerarPost().isEmpty()) {
-            String urlLogoParaPost = (view.getClubeImagem() != null && !view.getClubeImagem().isEmpty())
-                    ? view.getClubeImagem()
-                    : view.getJogadorImagem();
-
-            conquistaImagemAsyncService.processarImagemComRetentativas(
-                    novaConquista.getId(),
-                    titulo.getImagemGerarPost(),
-                    urlLogoParaPost,
-                    view.getJogadorId(),
-                    view.getJogadorNome(),
-                    "titulo_"
-            );
-        }
-        //gerarImagemEAtualizarLeve(novaConquista, titulo, view.getClubeImagem(), view.getJogadorId(), view.getJogadorNome(), view.getJogadorImagem(), "titulo_");
+        dispararGeracaoImagem(
+                novaConquista.getId(), titulo,
+                view.getClubeImagem(), view.getJogadorId(), view.getJogadorNome(), view.getJogadorImagem(),
+                "titulo_"
+        );
 
         return novaConquista;
     }
 
-    private void gerarImagemEAtualizarLeve(Conquista conquista, Titulo titulo,
-                                           String clubeImagem, String jogadorId,
-                                           String jogadorNome, String jogadorImagem,
-                                           String prefixoArquivo) {
-        try {
-            if (titulo.getImagemGerarPost() != null && !titulo.getImagemGerarPost().isEmpty()) {
-
-                String urlLogoParaPost = clubeImagem;
-                if (urlLogoParaPost == null || urlLogoParaPost.isEmpty()) {
-                    urlLogoParaPost = jogadorImagem;
-                }
-
-                log.info("Gerando post do título para {}", jogadorNome);
-
-                byte[] imagemBytes = postGeradorService.gerarImagemTitulo(
-                        titulo.getImagemGerarPost(), urlLogoParaPost, jogadorNome
-                );
-
-                if (imagemBytes != null) {
-                    String nomeArquivo = prefixoArquivo + jogadorId + "_" + System.currentTimeMillis() + ".png";
-
-                    MultipartFile multipartFile = new ByteArrayMultipartFile(
-                            imagemBytes, "image", nomeArquivo, "image/png"
-                    );
-
-                    String urlImgBB = imgBBService.uploadImagem(multipartFile);
-
-                    conquistaRepository.atualizarImagem(conquista.getId(), urlImgBB);
-                    conquista.setImagem(urlImgBB);
-                    log.info("Imagem salva no ImgBB: {}", urlImgBB);
-                }
-            }
-        } catch (Exception e) {
-            log.error("Erro ao gerar imagem (o título já foi concedido sem imagem): ", e);
+    private void dispararGeracaoImagem(String conquistaId, Titulo titulo,
+                                       String clubeImagem, String jogadorId,
+                                       String jogadorNome, String jogadorImagem,
+                                       String prefixoArquivo) {
+        if (titulo.getImagemGerarPost() == null || titulo.getImagemGerarPost().isEmpty()) {
+            return;
         }
-    }
 
-    private void gerarImagemEAtualizar(Conquista conquista, Titulo titulo, Clube clube, Jogador jogador, String prefixoArquivo) {
-        try {
-            if (titulo.getImagemGerarPost() != null && !titulo.getImagemGerarPost().isEmpty()) {
+        String urlLogoParaPost = (clubeImagem != null && !clubeImagem.isEmpty()) ? clubeImagem : jogadorImagem;
 
-                String urlLogoParaPost = clube.getImagem();
-                if (urlLogoParaPost == null || urlLogoParaPost.isEmpty()) {
-                    urlLogoParaPost = jogador.getImagem();
-                }
-
-                log.info("Gerando post do título para {}", jogador.getNome());
-
-                byte[] imagemBytes = postGeradorService.gerarImagemTitulo(
-                        titulo.getImagemGerarPost(), urlLogoParaPost, jogador.getNome()
-                );
-
-                if (imagemBytes != null) {
-                    String nomeArquivo = prefixoArquivo + jogador.getId() + "_" + System.currentTimeMillis() + ".png";
-
-                    MultipartFile multipartFile = new ByteArrayMultipartFile(
-                            imagemBytes, "image", nomeArquivo, "image/png"
-                    );
-
-                    String urlImgBB = imgBBService.uploadImagem(multipartFile);
-
-                    conquista.setImagem(urlImgBB);
-                    conquistaRepository.save(conquista);
-                    log.info("Imagem salva no ImgBB: {}", urlImgBB);
-                }
-            }
-        } catch (Exception e) {
-            log.error("Erro ao gerar imagem (o título já foi concedido sem imagem): ", e);
-        }
+        conquistaImagemAsyncService.processarImagemComRetentativas(
+                conquistaId,
+                titulo.getImagemGerarPost(),
+                urlLogoParaPost,
+                jogadorId,
+                jogadorNome,
+                prefixoArquivo
+        );
     }
 
     @Transactional
@@ -260,8 +194,8 @@ public class TituloService {
         jogadorRepository.incrementarTitulosEmLote(List.of(jogadorId));
         clubeRepository.incrementarTitulos(clubeId, 1);
 
-        gerarImagemEAtualizarLeve(
-                novaConquista, titulo,
+        dispararGeracaoImagem(
+                novaConquista.getId(), titulo,
                 clubeView.getImagem(), jogadorId, jogadorView.getNome(), jogadorView.getImagem(),
                 "titulo_legado_"
         );
@@ -317,8 +251,8 @@ public class TituloService {
                 continue;
             }
 
-            gerarImagemEAtualizarLeve(
-                    novaConquista, titulo,
+            dispararGeracaoImagem(
+                    novaConquista.getId(), titulo,
                     clubeView.getImagem(), jogadorId, jv.getNome(), jv.getImagem(),
                     "titulo_coletivo_"
             );
@@ -333,6 +267,29 @@ public class TituloService {
         }
 
         return conquistasGeradas;
+    }
+
+    @Transactional(readOnly = true)
+    public void forcarGeracaoArteCampeao(String conquistaId) {
+        ConquistaParaRegeracaoView view = conquistaRepository.buscarParaRegeracaoImagem(conquistaId)
+                .orElseThrow(() -> new RuntimeException("Conquista não encontrada: " + conquistaId));
+
+        if (view.getTituloImagemGerarPost() == null || view.getTituloImagemGerarPost().isEmpty()) {
+            throw new RuntimeException("O título \"" + view.getTituloNome() + "\" não possui template de imagem configurado.");
+        }
+
+        String urlLogoParaPost = (view.getClubeImagem() != null && !view.getClubeImagem().isEmpty())
+                ? view.getClubeImagem()
+                : view.getJogadorImagem();
+
+        conquistaImagemAsyncService.processarImagemComRetentativas(
+                conquistaId,
+                view.getTituloImagemGerarPost(),
+                urlLogoParaPost,
+                view.getJogadorId(),
+                view.getJogadorNome(),
+                "titulo_forcado_"
+        );
     }
 
     public List<TituloResumoDTO> buscarAutocomplete(String termo) {

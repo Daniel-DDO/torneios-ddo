@@ -1,6 +1,7 @@
 package com.ddo.torneios.repository;
 
 import com.ddo.torneios.dto.ConquistaDashboardDTO;
+import com.ddo.torneios.dto.ConquistaParaRegeracaoView;
 import com.ddo.torneios.dto.TituloCampeaoDTO;
 import com.ddo.torneios.model.Conquista;
 import org.springframework.data.domain.Pageable;
@@ -9,6 +10,7 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -46,7 +48,20 @@ public interface ConquistaRepository extends JpaRepository<Conquista, String> {
     """)
     List<ConquistaDashboardDTO> buscarUltimasConquistasDTO(Pageable pageable);
 
+    @Transactional
     @Modifying
-    @Query("UPDATE Conquista c SET c.imagem = :urlImagem WHERE c.id = :id")
-    void atualizarImagem(@Param("id") String id, @Param("urlImagem") String urlImagem);
+    @Query("UPDATE Conquista c SET c.imagem = :imagem WHERE c.id = :id")
+    void atualizarImagem(@Param("id") String id, @Param("imagem") String imagem);
+
+    @Query("""
+        SELECT c.titulo.imagemGerarPost AS tituloImagemGerarPost,
+               c.titulo.nome AS tituloNome,
+               c.jogador.id AS jogadorId,
+               c.jogador.nome AS jogadorNome,
+               c.jogador.imagem AS jogadorImagem,
+               c.clube.imagem AS clubeImagem
+        FROM Conquista c
+        WHERE c.id = :conquistaId
+        """)
+    Optional<ConquistaParaRegeracaoView> buscarParaRegeracaoImagem(@Param("conquistaId") String conquistaId);
 }
