@@ -1,5 +1,6 @@
 package com.ddo.torneios.controller;
 
+import com.ddo.torneios.dto.ConquistaResumoDTO;
 import com.ddo.torneios.dto.TituloResumoDTO;
 import com.ddo.torneios.model.Conquista;
 import com.ddo.torneios.model.Titulo;
@@ -146,5 +147,10 @@ public class TituloController {
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest().body(Map.of("erro", e.getMessage()));
         }
+    }
+
+    @GetMapping("/conquistas")
+    public ResponseEntity<List<ConquistaResumoDTO>> listarConquistas() {
+        return ResponseEntity.ok(tituloService.listarTodasConquistas());
     }
 }

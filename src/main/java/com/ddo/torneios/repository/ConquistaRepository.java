@@ -2,6 +2,7 @@ package com.ddo.torneios.repository;
 
 import com.ddo.torneios.dto.ConquistaDashboardDTO;
 import com.ddo.torneios.dto.ConquistaParaRegeracaoView;
+import com.ddo.torneios.dto.ConquistaResumoDTO;
 import com.ddo.torneios.dto.TituloCampeaoDTO;
 import com.ddo.torneios.model.Conquista;
 import org.springframework.data.domain.Pageable;
@@ -64,4 +65,14 @@ public interface ConquistaRepository extends JpaRepository<Conquista, String> {
         WHERE c.id = :conquistaId
         """)
     Optional<ConquistaParaRegeracaoView> buscarParaRegeracaoImagem(@Param("conquistaId") String conquistaId);
+
+    @Query("""
+        SELECT NEW com.ddo.torneios.dto.ConquistaResumoDTO(
+            c.id, c.titulo.nome, c.titulo.imagem, c.nomeEdicao,
+            c.jogador.nome, c.clube.nome, c.imagem, c.dataConquista
+        )
+        FROM Conquista c
+        ORDER BY c.dataConquista DESC
+        """)
+    List<ConquistaResumoDTO> buscarTodasResumo();
 }

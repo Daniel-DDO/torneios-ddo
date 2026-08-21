@@ -115,6 +115,9 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/competicao/cadastrar").hasAuthority("PROPRIETARIO")
                         .requestMatchers(HttpMethod.PATCH, "/competicao/{id}/vincular-titulo").hasAuthority("PROPRIETARIO")
 
+                        .requestMatchers(HttpMethod.GET, "/titulos/conquistas").hasAnyAuthority("PROPRIETARIO", "DIRETOR")
+                        .requestMatchers(HttpMethod.POST, "/titulos/conquistas/*/forcar-arte").hasAnyAuthority("PROPRIETARIO", "DIRETOR")
+
                         .anyRequest().permitAll()
                 );
 

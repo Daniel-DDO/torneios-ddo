@@ -1,10 +1,6 @@
 package com.ddo.torneios.service;
 
-import com.ddo.torneios.dto.ClubeResumoConcessaoView;
-import com.ddo.torneios.dto.ConquistaParaRegeracaoView;
-import com.ddo.torneios.dto.JogadorClubeConcessaoView;
-import com.ddo.torneios.dto.JogadorResumoConcessaoView;
-import com.ddo.torneios.dto.TituloResumoDTO;
+import com.ddo.torneios.dto.*;
 import com.ddo.torneios.model.*;
 import com.ddo.torneios.repository.*;
 import com.ddo.torneios.request.ConcederTituloColetivoRequest;
@@ -303,5 +299,10 @@ public class TituloService {
     public Titulo buscarPorId(String id) {
         return tituloRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Título não encontrado: " + id));
+    }
+
+    @Transactional(readOnly = true)
+    public List<ConquistaResumoDTO> listarTodasConquistas() {
+        return conquistaRepository.buscarTodasResumo();
     }
 }
