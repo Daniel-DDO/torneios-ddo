@@ -33,6 +33,7 @@ public class CompeticaoService {
             throw new CompeticaoExisteException(competicao.getNome());
         }
 
+        competicao.setAtivo(true);
         competicaoRepository.save(competicao);
     }
 
@@ -52,9 +53,9 @@ public class CompeticaoService {
         Page<Competicao> paginaEntidades;
 
         if (nomeFiltro != null && !nomeFiltro.isBlank()) {
-            paginaEntidades = competicaoRepository.findByNomeContainingIgnoreCase(nomeFiltro, pageable);
+            paginaEntidades = competicaoRepository.findByAtivoTrueAndNomeContainingIgnoreCase(nomeFiltro, pageable);
         } else {
-            paginaEntidades = competicaoRepository.findAll(pageable);
+            paginaEntidades = competicaoRepository.findByAtivoTrue(pageable);
         }
 
         return new PaginacaoDTO<>(
@@ -68,7 +69,10 @@ public class CompeticaoService {
     }
 
     public List<Competicao> listarTodasSemPaginacao() {
-        return competicaoRepository.findAll(Sort.by(Sort.Direction.ASC, "nome"));
+        return competicaoRepository.findAll(Sort.by(Sort.Direction.ASC, "nome"))
+                .stream()
+                .filter(Competicao::getAtivo)
+                .toList();
     }
 
     public List<Competicao> buscarAutocomplete(String termo) {
@@ -78,7 +82,7 @@ public class CompeticaoService {
 
         Pageable limit = PageRequest.of(0, 10, Sort.by("nome").ascending());
 
-        return competicaoRepository.findByNomeContainingIgnoreCase(termo.trim(), limit)
+        return competicaoRepository.findByAtivoTrueAndNomeContainingIgnoreCase(termo.trim(), limit)
                 .getContent();
     }
 
@@ -100,6 +104,15 @@ public class CompeticaoService {
             competicao.setTitulo(titulo);
         }
 
+        competicaoRepository.save(competicao);
+    }
+
+    @Transactional
+    public void alternarStatus(String competicaoId, boolean ativo) {
+        Competicao competicao = competicaoRepository.findById(competicaoId)
+                .orElseThrow(() -> new EntityNotFoundException("Competição não encontrada com ID: " + competicaoId));
+
+        competicao.setAtivo(ativo);
         competicaoRepository.save(competicao);
     }
 }

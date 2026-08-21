@@ -29,4 +29,7 @@ public class Competicao {
     @JoinColumn(name = "titulo_id", nullable = true)
     @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
     private Titulo titulo;
+
+    @Column(nullable = false)
+    private Boolean ativo = true;
 }
