@@ -1,9 +1,6 @@
 package com.ddo.torneios.repository;
 
-import com.ddo.torneios.dto.ConquistaDashboardDTO;
-import com.ddo.torneios.dto.ConquistaParaRegeracaoView;
-import com.ddo.torneios.dto.ConquistaResumoDTO;
-import com.ddo.torneios.dto.TituloCampeaoDTO;
+import com.ddo.torneios.dto.*;
 import com.ddo.torneios.model.Conquista;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -75,4 +72,16 @@ public interface ConquistaRepository extends JpaRepository<Conquista, String> {
         ORDER BY c.dataConquista DESC
         """)
     List<ConquistaResumoDTO> buscarTodasResumo();
+
+    @Query("""
+        SELECT NEW com.ddo.torneios.dto.JogadorDestaqueClubeDTO(
+            j.id, j.nome, j.imagem, COUNT(c)
+        )
+        FROM Conquista c
+        JOIN c.jogador j
+        WHERE c.clube.id = :clubeId
+        GROUP BY j.id, j.nome, j.imagem
+        ORDER BY COUNT(c) DESC
+        """)
+    List<JogadorDestaqueClubeDTO> buscarJogadorDestaquePorClube(String clubeId, Pageable pageable);
 }

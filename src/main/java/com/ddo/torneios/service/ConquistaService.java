@@ -1,6 +1,7 @@
 package com.ddo.torneios.service;
 
 import com.ddo.torneios.dto.ConquistaDashboardDTO;
+import com.ddo.torneios.dto.JogadorDestaqueClubeDTO;
 import com.ddo.torneios.dto.TituloCampeaoDTO;
 import com.ddo.torneios.model.Conquista;
 import com.ddo.torneios.repository.ConquistaRepository;
@@ -77,5 +78,12 @@ public class ConquistaService {
     @Transactional(readOnly = true)
     public List<TituloCampeaoDTO> buscarTop3CampeoesPorTitulo(String tituloId) {
         return conquistaRepository.findTop3CampeoesPorTitulo(tituloId, PageRequest.of(0, 3));
+    }
+
+    @Transactional(readOnly = true)
+    public Optional<JogadorDestaqueClubeDTO> buscarJogadorDestaquePorClube(String clubeId) {
+        return conquistaRepository.buscarJogadorDestaquePorClube(clubeId, PageRequest.of(0, 1))
+                .stream()
+                .findFirst();
     }
 }
