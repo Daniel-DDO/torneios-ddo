@@ -670,4 +670,28 @@ public interface PartidaRepository extends JpaRepository<Partida, String> {
     ORDER BY p.dataHora DESC
     """)
     List<PartidaHistoricoDTO> buscarConfrontosDiretos(@Param("id1") String id1, @Param("id2") String id2);
+
+    @Query("""
+    select p.id as id,
+           p.golsMandante as golsMandante,
+           p.golsVisitante as golsVisitante,
+           cm.estrelas as estrelasMandante,
+           cv.estrelas as estrelasVisitante,
+           comp.valor as valorCompeticao
+    from Partida p
+    join p.mandante jcm join jcm.clube cm
+    join p.visitante jcv join jcv.clube cv
+    join p.fase f join f.torneio t join t.competicao comp
+    where p.id = :id
+    """)
+    Optional<PartidaCoeficienteProjection> buscarDadosParaCoeficiente(@Param("id") String id);
+
+    @Query("""
+    select p from Partida p
+    join fetch p.mandante m join fetch m.jogador jm join fetch m.clube
+    join fetch p.visitante v join fetch v.jogador jv join fetch v.clube
+    join fetch p.fase f join fetch f.torneio t join fetch t.competicao
+    where p.id = :id
+    """)
+    Optional<Partida> buscarPartidaCompleta(@Param("id") String id);
 }

@@ -57,7 +57,7 @@ public class ClassificacaoService {
     public void registrarResultado(PartidaDTO dto) {
         if (!dto.realizada()) return;
 
-        Partida partida = partidaRepository.findById(dto.id())
+        Partida partida = partidaRepository.buscarPartidaCompleta(dto.id())
                 .orElseThrow(() -> new RuntimeException("Partida não encontrada"));
 
         if (partida.isAnulada()) {
@@ -141,7 +141,7 @@ public class ClassificacaoService {
         economiaService.processarEconomiaPartida(partida);
 
         if (fase.getTipoTorneio() == TipoTorneio.MATA_MATA) {
-            processarMataMata(dto, pMandante, pVisitante);
+            processarMataMata(partida, dto, pMandante, pVisitante);
             bracketService.processarAvancoVencedor(partida);
 
             String etapaStr = partida.getEtapaMataMata() != null ? partida.getEtapaMataMata().name() : null;
@@ -395,15 +395,11 @@ public class ClassificacaoService {
         }
     }
 
-    private void processarMataMata(PartidaDTO dto, ParticipacaoFase pMandante, ParticipacaoFase pVisitante) {
-        Partida partida = partidaRepository.findById(dto.id())
-                .orElseThrow(() -> new RuntimeException("Partida não encontrada"));
-
+    private void processarMataMata(Partida partida, PartidaDTO dto, ParticipacaoFase pMandante, ParticipacaoFase pVisitante) {
         FaseTorneio fase = partida.getFase();
         FaseMataMata etapa = partida.getEtapaMataMata();
         Integer chave = partida.getChaveIndex();
 
-        //Se ainda tem jogo pendente (ex: acabou de jogar a IDA), não muda status de classificação de ninguém ainda.
         if (partidaRepository.existeJogoPendente(fase, etapa, chave)) {
             return;
         }
@@ -794,7 +790,8 @@ public class ClassificacaoService {
 
     @Transactional
     public void desfazerResultado(String partidaId) {
-        Partida partida = partidaRepository.findById(partidaId)
+
+        Partida partida = partidaRepository.buscarPartidaCompleta(partidaId)
                 .orElseThrow(() -> new RuntimeException("Partida não encontrada"));
 
         if (!partida.isRealizada()) return;

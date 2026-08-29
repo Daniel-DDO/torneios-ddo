@@ -6,6 +6,8 @@ import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 import lombok.Setter;
 import org.hibernate.annotations.ColumnDefault;
+import org.hibernate.annotations.Fetch;
+import org.hibernate.annotations.FetchMode;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -81,6 +83,7 @@ public class Jogador implements UserDetails {
     private BigDecimal saldoVirtual;
 
     @ManyToMany(fetch = FetchType.EAGER)
+    @Fetch(FetchMode.SUBSELECT)
     @JoinTable(
             name = "jogador_insignias",
             joinColumns = @JoinColumn(name = "jogador_id"),
@@ -96,6 +99,7 @@ public class Jogador implements UserDetails {
     private LocalDateTime validadeCodigoReivindicacao;
 
     @OneToMany(mappedBy = "jogador", cascade = CascadeType.ALL, fetch = FetchType.EAGER)
+    @Fetch(FetchMode.SUBSELECT)
     private List<Conquista> conquistas = new ArrayList<>();
 
     @ColumnDefault("0")
