@@ -1112,4 +1112,20 @@ public class JogadorService {
 
         return new JogadorDTO(jogadorRepository.save(jogador));
     }
+
+    public EstatisticasCasaForaDTO obterEstatisticasCasaFora(String jogadorId) {
+        JogadorResumoDTO jogador = buscarResumoPorId(jogadorId);
+
+        AgregadoCasaForaDTO a = partidaRepository.buscarAgregadoCasaFora(jogadorId);
+
+        return new EstatisticasCasaForaDTO(
+                jogadorId, jogador.nome(), jogador.discord(), jogador.imagem(),
+                nz(a.vClubeCasa()), nz(a.eClubeCasa()), nz(a.dClubeCasa()),
+                nz(a.vSelecaoCasa()), nz(a.eSelecaoCasa()), nz(a.dSelecaoCasa()),
+                nz(a.vClubeFora()), nz(a.eClubeFora()), nz(a.dClubeFora()),
+                nz(a.vSelecaoFora()), nz(a.eSelecaoFora()), nz(a.dSelecaoFora())
+        );
+    }
+
+    private long nz(Long v) { return v == null ? 0L : v; }
 }

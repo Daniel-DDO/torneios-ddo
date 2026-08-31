@@ -694,4 +694,89 @@ public interface PartidaRepository extends JpaRepository<Partida, String> {
     where p.id = :id
     """)
     Optional<Partida> buscarPartidaCompleta(@Param("id") String id);
+
+    @Query("""
+    SELECT new com.ddo.torneios.dto.EstatisticasCasaForaDTO(
+        j.id, j.nome, j.discord, j.imagem,
+
+        SUM(CASE WHEN p.mandante.jogador.id = :jogadorId AND p.mandante.clube.ligaClube <> 'SELECAO'
+                 AND p.golsMandante > p.golsVisitante THEN 1L ELSE 0L END),
+        SUM(CASE WHEN p.mandante.jogador.id = :jogadorId AND p.mandante.clube.ligaClube <> 'SELECAO'
+                 AND p.golsMandante = p.golsVisitante THEN 1L ELSE 0L END),
+        SUM(CASE WHEN p.mandante.jogador.id = :jogadorId AND p.mandante.clube.ligaClube <> 'SELECAO'
+                 AND p.golsMandante < p.golsVisitante THEN 1L ELSE 0L END),
+
+        SUM(CASE WHEN p.mandante.jogador.id = :jogadorId AND p.mandante.clube.ligaClube = 'SELECAO'
+                 AND p.golsMandante > p.golsVisitante THEN 1L ELSE 0L END),
+        SUM(CASE WHEN p.mandante.jogador.id = :jogadorId AND p.mandante.clube.ligaClube = 'SELECAO'
+                 AND p.golsMandante = p.golsVisitante THEN 1L ELSE 0L END),
+        SUM(CASE WHEN p.mandante.jogador.id = :jogadorId AND p.mandante.clube.ligaClube = 'SELECAO'
+                 AND p.golsMandante < p.golsVisitante THEN 1L ELSE 0L END),
+
+        SUM(CASE WHEN p.visitante.jogador.id = :jogadorId AND p.visitante.clube.ligaClube <> 'SELECAO'
+                 AND p.golsVisitante > p.golsMandante THEN 1L ELSE 0L END),
+        SUM(CASE WHEN p.visitante.jogador.id = :jogadorId AND p.visitante.clube.ligaClube <> 'SELECAO'
+                 AND p.golsVisitante = p.golsMandante THEN 1L ELSE 0L END),
+        SUM(CASE WHEN p.visitante.jogador.id = :jogadorId AND p.visitante.clube.ligaClube <> 'SELECAO'
+                 AND p.golsVisitante < p.golsMandante THEN 1L ELSE 0L END),
+
+        SUM(CASE WHEN p.visitante.jogador.id = :jogadorId AND p.visitante.clube.ligaClube = 'SELECAO'
+                 AND p.golsVisitante > p.golsMandante THEN 1L ELSE 0L END),
+        SUM(CASE WHEN p.visitante.jogador.id = :jogadorId AND p.visitante.clube.ligaClube = 'SELECAO'
+                 AND p.golsVisitante = p.golsMandante THEN 1L ELSE 0L END),
+        SUM(CASE WHEN p.visitante.jogador.id = :jogadorId AND p.visitante.clube.ligaClube = 'SELECAO'
+                 AND p.golsVisitante < p.golsMandante THEN 1L ELSE 0L END)
+    )
+    FROM Partida p
+    JOIN p.mandante.jogador j
+    WHERE (p.mandante.jogador.id = :jogadorId OR p.visitante.jogador.id = :jogadorId)
+      AND p.anulada = false
+      AND p.golsMandante IS NOT NULL
+      AND p.golsVisitante IS NOT NULL
+    GROUP BY j.id, j.nome, j.discord, j.imagem
+    """)
+    Optional<EstatisticasCasaForaDTO> buscarEstatisticasCasaFora(@Param("jogadorId") String jogadorId);
+
+    @Query("""
+    SELECT new com.ddo.torneios.dto.AgregadoCasaForaDTO(
+        SUM(CASE WHEN m.jogador.id = :jogadorId AND cm.ligaClube <> 'SELECAO'
+                 AND p.golsMandante > p.golsVisitante THEN 1L ELSE 0L END),
+        SUM(CASE WHEN m.jogador.id = :jogadorId AND cm.ligaClube <> 'SELECAO'
+                 AND p.golsMandante = p.golsVisitante THEN 1L ELSE 0L END),
+        SUM(CASE WHEN m.jogador.id = :jogadorId AND cm.ligaClube <> 'SELECAO'
+                 AND p.golsMandante < p.golsVisitante THEN 1L ELSE 0L END),
+
+        SUM(CASE WHEN m.jogador.id = :jogadorId AND cm.ligaClube = 'SELECAO'
+                 AND p.golsMandante > p.golsVisitante THEN 1L ELSE 0L END),
+        SUM(CASE WHEN m.jogador.id = :jogadorId AND cm.ligaClube = 'SELECAO'
+                 AND p.golsMandante = p.golsVisitante THEN 1L ELSE 0L END),
+        SUM(CASE WHEN m.jogador.id = :jogadorId AND cm.ligaClube = 'SELECAO'
+                 AND p.golsMandante < p.golsVisitante THEN 1L ELSE 0L END),
+
+        SUM(CASE WHEN v.jogador.id = :jogadorId AND cv.ligaClube <> 'SELECAO'
+                 AND p.golsVisitante > p.golsMandante THEN 1L ELSE 0L END),
+        SUM(CASE WHEN v.jogador.id = :jogadorId AND cv.ligaClube <> 'SELECAO'
+                 AND p.golsVisitante = p.golsMandante THEN 1L ELSE 0L END),
+        SUM(CASE WHEN v.jogador.id = :jogadorId AND cv.ligaClube <> 'SELECAO'
+                 AND p.golsVisitante < p.golsMandante THEN 1L ELSE 0L END),
+
+        SUM(CASE WHEN v.jogador.id = :jogadorId AND cv.ligaClube = 'SELECAO'
+                 AND p.golsVisitante > p.golsMandante THEN 1L ELSE 0L END),
+        SUM(CASE WHEN v.jogador.id = :jogadorId AND cv.ligaClube = 'SELECAO'
+                 AND p.golsVisitante = p.golsMandante THEN 1L ELSE 0L END),
+        SUM(CASE WHEN v.jogador.id = :jogadorId AND cv.ligaClube = 'SELECAO'
+                 AND p.golsVisitante < p.golsMandante THEN 1L ELSE 0L END)
+    )
+    FROM Partida p
+    JOIN p.mandante m
+    JOIN m.clube cm
+    JOIN p.visitante v
+    JOIN v.clube cv
+    WHERE (m.jogador.id = :jogadorId OR v.jogador.id = :jogadorId)
+      AND p.anulada = false
+      AND p.golsMandante IS NOT NULL
+      AND p.golsVisitante IS NOT NULL
+    """)
+    AgregadoCasaForaDTO buscarAgregadoCasaFora(@Param("jogadorId") String jogadorId);
+
 }

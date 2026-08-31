@@ -397,4 +397,9 @@ public class JogadorController {
                 .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + nomeArquivo + "\"")
                 .body(arquivo);
     }
+
+    @GetMapping("/{id}/estatisticas-casa-fora")
+    public ResponseEntity<EstatisticasCasaForaDTO> estatisticasCasaFora(@PathVariable String id) {
+        return ResponseEntity.ok(jogadorService.obterEstatisticasCasaFora(id));
+    }
 }
