@@ -241,4 +241,15 @@ public interface JogadorRepository extends JpaRepository<Jogador, String> {
     @Query("select new com.ddo.torneios.dto.JogadorLeilaoDTO(j.id, j.nome, j.discord, j.imagem, j.cargo, j.saldoVirtual) " +
             "from Jogador j where j.id = :id")
     Optional<JogadorLeilaoDTO> buscarParaLeilao(@Param("id") String id);
+
+    @Query("""
+    SELECT new com.ddo.torneios.dto.JogadorComparacaoBaseDTO(
+        j.id, j.nome, j.discord, j.imagem,
+        j.titulos, j.finais, j.partidasJogadas, j.vitorias, j.empates, j.derrotas,
+        j.golsMarcados, j.golsSofridos, j.saldoVirtual, j.pontosCoeficiente
+    )
+    FROM Jogador j
+    WHERE j.id = :id
+    """)
+    Optional<JogadorComparacaoBaseDTO> buscarBaseComparacaoPorId(@Param("id") String id);
 }

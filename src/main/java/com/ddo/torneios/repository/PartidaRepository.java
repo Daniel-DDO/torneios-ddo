@@ -779,4 +779,62 @@ public interface PartidaRepository extends JpaRepository<Partida, String> {
     """)
     AgregadoCasaForaDTO buscarAgregadoCasaFora(@Param("jogadorId") String jogadorId);
 
+    @Query("""
+    SELECT new com.ddo.torneios.dto.AgregadoCasaForaParDTO(
+        SUM(CASE WHEN m.jogador.id = :id1 AND cm.ligaClube <> 'SELECAO' AND p.golsMandante > p.golsVisitante THEN 1L ELSE 0L END),
+        SUM(CASE WHEN m.jogador.id = :id1 AND cm.ligaClube <> 'SELECAO' AND p.golsMandante = p.golsVisitante THEN 1L ELSE 0L END),
+        SUM(CASE WHEN m.jogador.id = :id1 AND cm.ligaClube <> 'SELECAO' AND p.golsMandante < p.golsVisitante THEN 1L ELSE 0L END),
+        SUM(CASE WHEN m.jogador.id = :id1 AND cm.ligaClube = 'SELECAO' AND p.golsMandante > p.golsVisitante THEN 1L ELSE 0L END),
+        SUM(CASE WHEN m.jogador.id = :id1 AND cm.ligaClube = 'SELECAO' AND p.golsMandante = p.golsVisitante THEN 1L ELSE 0L END),
+        SUM(CASE WHEN m.jogador.id = :id1 AND cm.ligaClube = 'SELECAO' AND p.golsMandante < p.golsVisitante THEN 1L ELSE 0L END),
+        SUM(CASE WHEN v.jogador.id = :id1 AND cv.ligaClube <> 'SELECAO' AND p.golsVisitante > p.golsMandante THEN 1L ELSE 0L END),
+        SUM(CASE WHEN v.jogador.id = :id1 AND cv.ligaClube <> 'SELECAO' AND p.golsVisitante = p.golsMandante THEN 1L ELSE 0L END),
+        SUM(CASE WHEN v.jogador.id = :id1 AND cv.ligaClube <> 'SELECAO' AND p.golsVisitante < p.golsMandante THEN 1L ELSE 0L END),
+        SUM(CASE WHEN v.jogador.id = :id1 AND cv.ligaClube = 'SELECAO' AND p.golsVisitante > p.golsMandante THEN 1L ELSE 0L END),
+        SUM(CASE WHEN v.jogador.id = :id1 AND cv.ligaClube = 'SELECAO' AND p.golsVisitante = p.golsMandante THEN 1L ELSE 0L END),
+        SUM(CASE WHEN v.jogador.id = :id1 AND cv.ligaClube = 'SELECAO' AND p.golsVisitante < p.golsMandante THEN 1L ELSE 0L END),
+
+        SUM(CASE WHEN m.jogador.id = :id2 AND cm.ligaClube <> 'SELECAO' AND p.golsMandante > p.golsVisitante THEN 1L ELSE 0L END),
+        SUM(CASE WHEN m.jogador.id = :id2 AND cm.ligaClube <> 'SELECAO' AND p.golsMandante = p.golsVisitante THEN 1L ELSE 0L END),
+        SUM(CASE WHEN m.jogador.id = :id2 AND cm.ligaClube <> 'SELECAO' AND p.golsMandante < p.golsVisitante THEN 1L ELSE 0L END),
+        SUM(CASE WHEN m.jogador.id = :id2 AND cm.ligaClube = 'SELECAO' AND p.golsMandante > p.golsVisitante THEN 1L ELSE 0L END),
+        SUM(CASE WHEN m.jogador.id = :id2 AND cm.ligaClube = 'SELECAO' AND p.golsMandante = p.golsVisitante THEN 1L ELSE 0L END),
+        SUM(CASE WHEN m.jogador.id = :id2 AND cm.ligaClube = 'SELECAO' AND p.golsMandante < p.golsVisitante THEN 1L ELSE 0L END),
+        SUM(CASE WHEN v.jogador.id = :id2 AND cv.ligaClube <> 'SELECAO' AND p.golsVisitante > p.golsMandante THEN 1L ELSE 0L END),
+        SUM(CASE WHEN v.jogador.id = :id2 AND cv.ligaClube <> 'SELECAO' AND p.golsVisitante = p.golsMandante THEN 1L ELSE 0L END),
+        SUM(CASE WHEN v.jogador.id = :id2 AND cv.ligaClube <> 'SELECAO' AND p.golsVisitante < p.golsMandante THEN 1L ELSE 0L END),
+        SUM(CASE WHEN v.jogador.id = :id2 AND cv.ligaClube = 'SELECAO' AND p.golsVisitante > p.golsMandante THEN 1L ELSE 0L END),
+        SUM(CASE WHEN v.jogador.id = :id2 AND cv.ligaClube = 'SELECAO' AND p.golsVisitante = p.golsMandante THEN 1L ELSE 0L END),
+        SUM(CASE WHEN v.jogador.id = :id2 AND cv.ligaClube = 'SELECAO' AND p.golsVisitante < p.golsMandante THEN 1L ELSE 0L END)
+    )
+    FROM Partida p
+    JOIN p.mandante m
+    JOIN m.clube cm
+    JOIN p.visitante v
+    JOIN v.clube cv
+    WHERE (m.jogador.id IN (:id1, :id2) OR v.jogador.id IN (:id1, :id2))
+      AND p.anulada = false
+      AND p.golsMandante IS NOT NULL
+      AND p.golsVisitante IS NOT NULL
+    """)
+    AgregadoCasaForaParDTO buscarAgregadoCasaForaPar(@Param("id1") String id1, @Param("id2") String id2);
+
+    @Query("""
+    SELECT new com.ddo.torneios.dto.AgregadoEstiloParDTO(
+        SUM(CASE WHEN jc.jogador.id = :id1 THEN jc.partidasJogadas ELSE 0 END),
+        SUM(CASE WHEN jc.jogador.id = :id1 THEN jc.totalGolsMarcados ELSE 0 END),
+        SUM(CASE WHEN jc.jogador.id = :id1 THEN jc.totalGolsSofridos ELSE 0 END),
+        AVG(CASE WHEN jc.jogador.id = :id1 THEN c.estrelas ELSE NULL END),
+
+        SUM(CASE WHEN jc.jogador.id = :id2 THEN jc.partidasJogadas ELSE 0 END),
+        SUM(CASE WHEN jc.jogador.id = :id2 THEN jc.totalGolsMarcados ELSE 0 END),
+        SUM(CASE WHEN jc.jogador.id = :id2 THEN jc.totalGolsSofridos ELSE 0 END),
+        AVG(CASE WHEN jc.jogador.id = :id2 THEN c.estrelas ELSE NULL END)
+    )
+    FROM JogadorClube jc
+    JOIN jc.clube c
+    WHERE jc.jogador.id IN (:id1, :id2)
+      AND jc.partidasJogadas > 0
+    """)
+    AgregadoEstiloParDTO buscarAgregadoEstiloPar(@Param("id1") String id1, @Param("id2") String id2);
 }

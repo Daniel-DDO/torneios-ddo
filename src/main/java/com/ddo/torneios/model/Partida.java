@@ -10,6 +10,14 @@ import java.time.LocalDateTime;
 @Getter
 @Setter
 @Entity
+@Table(
+        indexes = {
+                @Index(name = "idx_partida_mandante", columnList = "mandante_id"),
+                @Index(name = "idx_partida_visitante", columnList = "visitante_id"),
+                @Index(name = "idx_partida_anulada", columnList = "anulada"),
+                @Index(name = "idx_partida_realizada_data", columnList = "realizada, data_hora")
+        }
+)
 public class Partida {
 
     @Id

@@ -74,6 +74,9 @@ public class JogadorService {
     @Autowired
     private TransferenciaRepository transferenciaRepository;
 
+    @Autowired
+    private EstiloGlobalCache estiloGlobalCache;
+
     public void cadastrarJogador(JogadorRequest request) {
         if (jogadorRepository.existsJogadorByDiscord(request.getDiscord())) {
             throw new JogadorExisteException(request.getDiscord());
@@ -672,69 +675,273 @@ public class JogadorService {
     }
 
     public ComparacaoJogadoresDTO compararJogadores(String idJogador1, String idJogador2) {
-        Jogador j1 = jogadorRepository.findById(idJogador1)
+        JogadorComparacaoBaseDTO j1 = jogadorRepository.buscarBaseComparacaoPorId(idJogador1)
                 .orElseThrow(() -> new RuntimeException("Jogador 1 não encontrado (ID: " + idJogador1 + ")"));
-
-        Jogador j2 = jogadorRepository.findById(idJogador2)
+        JogadorComparacaoBaseDTO j2 = jogadorRepository.buscarBaseComparacaoPorId(idJogador2)
                 .orElseThrow(() -> new RuntimeException("Jogador 2 não encontrado (ID: " + idJogador2 + ")"));
 
         List<PartidaHistoricoDTO> confrontos = partidaRepository.buscarConfrontosDiretos(idJogador1, idJogador2);
 
-        int vitoriasJ1 = 0;
-        int vitoriasJ2 = 0;
-        int empates = 0;
-
+        int vitoriasJ1 = 0, vitoriasJ2 = 0, empates = 0;
         for (PartidaHistoricoDTO p : confrontos) {
             if (p.golsMandante() == null || p.golsVisitante() == null) continue;
-
             boolean mandanteEhJ1 = p.mandante().jogadorId().equals(idJogador1);
-
             int golsJ1 = mandanteEhJ1 ? p.golsMandante() : p.golsVisitante();
             int golsJ2 = mandanteEhJ1 ? p.golsVisitante() : p.golsMandante();
-
-            if (golsJ1 > golsJ2) {
-                vitoriasJ1++;
-            } else if (golsJ2 > golsJ1) {
-                vitoriasJ2++;
-            } else {
-                empates++;
-            }
+            if (golsJ1 > golsJ2) vitoriasJ1++;
+            else if (golsJ2 > golsJ1) vitoriasJ2++;
+            else empates++;
         }
 
+        // 1 query em vez de 2
+        AgregadoCasaForaParDTO cfPar = partidaRepository.buscarAgregadoCasaForaPar(idJogador1, idJogador2);
+        EstatisticasCasaForaDTO cf1 = montarCasaFora(idJogador1, j1.nome(), j1.discord(), j1.imagem(), cfPar, true);
+        EstatisticasCasaForaDTO cf2 = montarCasaFora(idJogador2, j2.nome(), j2.discord(), j2.imagem(), cfPar, false);
+
+        // 1 query em vez de 2
+        AgregadoEstiloParDTO estiloPar = jogadorClubeRepository.buscarAgregadoEstiloPar(idJogador1, idJogador2);
+        double[] mediasGlobais = estiloGlobalCache.obterMediasGlobais();
+        EstiloJogadorDTO estilo1 = montarEstilo(idJogador1, estiloPar.partidasJ1(), estiloPar.golsMarcadosJ1(), estiloPar.golsSofridosJ1(), estiloPar.mediaEstrelasJ1(), mediasGlobais);
+        EstiloJogadorDTO estilo2 = montarEstilo(idJogador2, estiloPar.partidasJ2(), estiloPar.golsMarcadosJ2(), estiloPar.golsSofridosJ2(), estiloPar.mediaEstrelasJ2(), mediasGlobais);
+
+        ComparacaoJogadoresDTO.FormaRecenteDTO forma1 = calcularFormaRecente(idJogador1);
+        ComparacaoJogadoresDTO.FormaRecenteDTO forma2 = calcularFormaRecente(idJogador2);
+
+        var dadosJ1 = mapearDadosComparacao(j1, cf1, estilo1, forma1);
+        var dadosJ2 = mapearDadosComparacao(j2, cf2, estilo2, forma2);
+
+        int jogos1 = nz(j1.partidasJogadas());
+        int jogos2 = nz(j2.partidasJogadas());
+        double aproveitamento1 = jogos1 > 0 ? ((nz(j1.vitorias()) * 3.0 + nz(j1.empates())) / (jogos1 * 3.0)) * 100.0 : 0.0;
+        double aproveitamento2 = jogos2 > 0 ? ((nz(j2.vitorias()) * 3.0 + nz(j2.empates())) / (jogos2 * 3.0)) * 100.0 : 0.0;
+        int saldoGols1 = nz(j1.golsMarcados()) - nz(j1.golsSofridos());
+        int saldoGols2 = nz(j2.golsMarcados()) - nz(j2.golsSofridos());
+
+        var analise = montarAnaliseComparativa(
+                j1.nome(), estilo1.estiloProvavel(), cf1, forma1, aproveitamento1, saldoGols1, jogos1,
+                j2.nome(), estilo2.estiloProvavel(), cf2, forma2, aproveitamento2, saldoGols2, jogos2
+        );
+
         return new ComparacaoJogadoresDTO(
-                mapearDadosComparacao(j1),
-                mapearDadosComparacao(j2),
-                confrontos,
-                new ResumoConfrontoDiretoDTO(vitoriasJ1, vitoriasJ2, empates)
+                dadosJ1, dadosJ2, confrontos,
+                new ResumoConfrontoDiretoDTO(vitoriasJ1, vitoriasJ2, empates),
+                analise
         );
     }
 
-    private ComparacaoJogadoresDTO.DadosJogadorComparacao mapearDadosComparacao(Jogador j) {
-        int jogos = j.getPartidasJogadas() != null ? j.getPartidasJogadas() : 0;
-        int vitorias = j.getVitorias() != null ? j.getVitorias() : 0;
+    private EstatisticasCasaForaDTO montarCasaFora(String jogadorId, String nome, String discord, String imagem,
+                                                   AgregadoCasaForaParDTO p, boolean isJ1) {
+        if (isJ1) {
+            return new EstatisticasCasaForaDTO(jogadorId, nome, discord, imagem,
+                    nz(p.vClubeCasaJ1()), nz(p.eClubeCasaJ1()), nz(p.dClubeCasaJ1()),
+                    nz(p.vSelecaoCasaJ1()), nz(p.eSelecaoCasaJ1()), nz(p.dSelecaoCasaJ1()),
+                    nz(p.vClubeForaJ1()), nz(p.eClubeForaJ1()), nz(p.dClubeForaJ1()),
+                    nz(p.vSelecaoForaJ1()), nz(p.eSelecaoForaJ1()), nz(p.dSelecaoForaJ1()));
+        }
+        return new EstatisticasCasaForaDTO(jogadorId, nome, discord, imagem,
+                nz(p.vClubeCasaJ2()), nz(p.eClubeCasaJ2()), nz(p.dClubeCasaJ2()),
+                nz(p.vSelecaoCasaJ2()), nz(p.eSelecaoCasaJ2()), nz(p.dSelecaoCasaJ2()),
+                nz(p.vClubeForaJ2()), nz(p.eClubeForaJ2()), nz(p.dClubeForaJ2()),
+                nz(p.vSelecaoForaJ2()), nz(p.eSelecaoForaJ2()), nz(p.dSelecaoForaJ2()));
+    }
+
+
+    private ComparacaoJogadoresDTO.FormaRecenteDTO calcularFormaRecente(String jogadorId) {
+        List<String> ultimos = partidaRepository.buscarUltimos5Resultados(jogadorId); // já existe
+
+        int pontos = ultimos.stream().mapToInt(r -> switch (r) {
+            case "V" -> 3;
+            case "E" -> 1;
+            default -> 0;
+        }).sum();
+
+        String tendencia;
+        if (ultimos.size() < 3) {
+            tendencia = "Amostra insuficiente";
+        } else {
+            int metadeRecente = 0, metadeAntiga = 0;
+            int meio = ultimos.size() / 2;
+            for (int i = 0; i < ultimos.size(); i++) {
+                int valor = switch (ultimos.get(i)) { case "V" -> 3; case "E" -> 1; default -> 0; };
+                if (i < meio) metadeAntiga += valor; else metadeRecente += valor;
+            }
+            tendencia = metadeRecente > metadeAntiga ? "Em ascensão"
+                    : metadeRecente < metadeAntiga ? "Em queda"
+                    : "Estável";
+        }
+
+        return new ComparacaoJogadoresDTO.FormaRecenteDTO(ultimos, pontos, tendencia);
+    }
+
+    private ComparacaoJogadoresDTO.AnaliseComparativaDTO montarAnaliseComparativa(
+            String nome1, String estilo1, EstatisticasCasaForaDTO cf1, ComparacaoJogadoresDTO.FormaRecenteDTO forma1, double aproveitamento1, int saldoGols1, int jogos1,
+            String nome2, String estilo2, EstatisticasCasaForaDTO cf2, ComparacaoJogadoresDTO.FormaRecenteDTO forma2, double aproveitamento2, int saldoGols2, int jogos2) {
+
+        double vantagemMando1 = parsePercent(cf1.aproveitamentoCasa()) - parsePercent(cf1.aproveitamentoFora());
+        double vantagemMando2 = parsePercent(cf2.aproveitamentoCasa()) - parsePercent(cf2.aproveitamentoFora());
+
+        // Score combinado: aproveitamento geral (peso maior) + saldo de gols/jogo + forma recente
+        double score1 = aproveitamento1
+                + (jogos1 > 0 ? (saldoGols1 / (double) jogos1) * 10.0 : 0)
+                + forma1.pontuacaoForma() * 1.5;
+
+        double score2 = aproveitamento2
+                + (jogos2 > 0 ? (saldoGols2 / (double) jogos2) * 10.0 : 0)
+                + forma2.pontuacaoForma() * 1.5;
+
+        double diferenca = Math.abs(score1 - score2);
+        double margem = Math.min(100, diferenca); // simples, cap em 100
+
+        String favorito = diferenca < 3
+                ? "Equilibrado, sem favorito claro"
+                : (score1 > score2 ? nome1 : nome2);
+
+        String leitura = cruzarEstilos(estilo1, estilo2, nome1, nome2);
+
+        List<String> pontosAtencao = new ArrayList<>();
+        if (Math.abs(vantagemMando1) > 15) {
+            pontosAtencao.add(nome1 + " tem forte dependência de mando de campo (" + String.format("%+.1f pp", vantagemMando1) + " jogando em casa)");
+        }
+        if (Math.abs(vantagemMando2) > 15) {
+            pontosAtencao.add(nome2 + " tem forte dependência de mando de campo (" + String.format("%+.1f pp", vantagemMando2) + " jogando em casa)");
+        }
+        if (!forma1.tendencia().equals(forma2.tendencia())) {
+            pontosAtencao.add("Momentos opostos: " + nome1 + " está \"" + forma1.tendencia().toLowerCase() +
+                    "\" enquanto " + nome2 + " está \"" + forma2.tendencia().toLowerCase() + "\"");
+        }
+
+        return new ComparacaoJogadoresDTO.AnaliseComparativaDTO(
+                round1(vantagemMando1), round1(vantagemMando2), favorito, round1(margem), leitura, pontosAtencao
+        );
+    }
+
+    private String cruzarEstilos(String estilo1, String estilo2, String nome1, String nome2) {
+        boolean j1ContraAtaque = estilo1.contains("contra-ataque");
+        boolean j1Posse = estilo1.contains("posse de bola");
+        boolean j1Retranca = estilo1.contains("retranca");
+        boolean j2ContraAtaque = estilo2.contains("contra-ataque");
+        boolean j2Posse = estilo2.contains("posse de bola");
+        boolean j2Retranca = estilo2.contains("retranca");
+
+        if (j1ContraAtaque && j2Posse) {
+            return "Confronto favorável estilisticamente para " + nome1 + ": times de posse costumam deixar espaços que o contra-ataque de " + nome1 + " pode explorar (provável, com base no padrão histórico de jogo)";
+        }
+        if (j2ContraAtaque && j1Posse) {
+            return "Confronto favorável estilisticamente para " + nome2 + ": mesma lógica invertida (provável)";
+        }
+        if (j1ContraAtaque && j2Retranca) {
+            return "Confronto difícil para " + nome1 + ": contra-ataque tende a render pouco contra times fechados como o estilo de " + nome2 + " (provável)";
+        }
+        if (j2ContraAtaque && j1Retranca) {
+            return "Confronto difícil para " + nome2 + " pelo mesmo motivo (provável)";
+        }
+        if (j1Retranca && j2Retranca) {
+            return "Tendência de jogo truncado e com poucos gols entre os dois estilos (provável)";
+        }
+        if (j1Posse && j2Posse) {
+            return "Tendência de jogo mais aberto e disputado no meio-campo, sem espaços fáceis pra nenhum dos dois (provável)";
+        }
+        return "Estilos sem cruzamento tático claro de vantagem — confronto mais equilibrado nesse critério (provável)";
+    }
+
+    private EstiloJogadorDTO montarEstilo(String jogadorId, Long partidasL, Long golsMarcadosL, Long golsSofridosL,
+                                          Double mediaEstrelasObj, double[] mediasGlobais) {
+
+        long partidasLong = nz(partidasL);
+        if (partidasLong == 0) {
+            throw new RegraNegocioException("Jogador não possui partidas suficientes para estimar um estilo de jogo.");
+        }
+        int partidas = (int) partidasLong;
+
+        double mediaMarcados = nz(golsMarcadosL) / (double) partidas;
+        double mediaSofridos = nz(golsSofridosL) / (double) partidas;
+        double mediaEstrelas = nz(mediaEstrelasObj);
+
+        double globalMarcados = mediasGlobais[0];
+        double globalSofridos = mediasGlobais[1];
+        double globalEstrelas = mediasGlobais[2];
+
+        double difMarcados = globalMarcados == 0 ? 0 : (mediaMarcados - globalMarcados) / globalMarcados;
+        double difSofridos = globalSofridos == 0 ? 0 : (mediaSofridos - globalSofridos) / globalSofridos;
+        double difEstrelas = globalEstrelas == 0 ? 0 : (mediaEstrelas - globalEstrelas) / globalEstrelas;
+
+        List<String> caracteristicas = new ArrayList<>();
+        String estilo;
+
+        boolean ataqueForte = difMarcados > 0.15;
+        boolean ataqueFraco = difMarcados < -0.15;
+        boolean defesaSolida = difSofridos < -0.15;
+        boolean defesaFragil = difSofridos > 0.15;
+        boolean timesFortes = difEstrelas > 0.10;
+
+        if (ataqueForte && defesaFragil) {
+            estilo = "Provavelmente ofensivo / trocação (joga aberto, marca e sofre muito)";
+            caracteristicas.add("Ataque bem acima da média (" + pct(difMarcados) + ")");
+            caracteristicas.add("Defesa abaixo da média, sofre mais que o normal (" + pct(difSofridos) + ")");
+        } else if (ataqueForte && defesaSolida) {
+            estilo = "Provavelmente posse de bola / controle de jogo (domina e sofre pouco)";
+            caracteristicas.add("Ataque acima da média (" + pct(difMarcados) + ")");
+            caracteristicas.add("Defesa sólida, sofre bem menos que a média (" + pct(difSofridos) + ")");
+        } else if (ataqueFraco && defesaSolida) {
+            estilo = "Provavelmente retranca / defensivo (prioriza não sofrer, ataca pouco)";
+            caracteristicas.add("Ataque abaixo da média (" + pct(difMarcados) + ")");
+            caracteristicas.add("Defesa sólida (" + pct(difSofridos) + ")");
+        } else if (ataqueFraco && defesaFragil) {
+            estilo = "Provavelmente irregular / sem padrão claro (ataca pouco e sofre bastante)";
+            caracteristicas.add("Ataque abaixo da média (" + pct(difMarcados) + ")");
+            caracteristicas.add("Defesa também abaixo da média (" + pct(difSofridos) + ")");
+        } else if (defesaFragil) {
+            estilo = "Provavelmente contra-ataque (ataque na média, mas sofre mais que o normal)";
+            caracteristicas.add("Ataque próximo da média");
+            caracteristicas.add("Sofre mais gols que a média (" + pct(difSofridos) + ")");
+        } else {
+            estilo = "Provavelmente equilibrado (ataque e defesa próximos da média geral)";
+            caracteristicas.add("Ataque e defesa dentro da faixa normal");
+        }
+
+        if (timesFortes) {
+            caracteristicas.add("Historicamente jogou em clubes acima da média de estrelas (" + pct(difEstrelas) + "), o que pode indicar mais tempo de posse típico desses elencos");
+        } else if (difEstrelas < -0.10) {
+            caracteristicas.add("Historicamente jogou em clubes abaixo da média de estrelas (" + pct(difEstrelas) + "), cenário mais propenso a contra-ataque por necessidade");
+        }
+
+        return new EstiloJogadorDTO(
+                jogadorId, partidas,
+                round2(mediaMarcados), round2(mediaSofridos), round2(mediaEstrelas),
+                round2(globalMarcados), round2(globalSofridos), round2(globalEstrelas),
+                estilo, caracteristicas
+        );
+    }
+
+    private ComparacaoJogadoresDTO.DadosJogadorComparacao mapearDadosComparacao(
+            JogadorComparacaoBaseDTO j,
+            EstatisticasCasaForaDTO casaFora,
+            EstiloJogadorDTO estilo,
+            ComparacaoJogadoresDTO.FormaRecenteDTO formaRecente) {
+
+        int jogos = nz(j.partidasJogadas());
+        int vitorias = nz(j.vitorias());
 
         String aproveitamento = "0.0%";
         if (jogos > 0) {
-            double pct = ((double) vitorias / jogos) * 100;
-            aproveitamento = String.format("%.1f%%", pct);
+            aproveitamento = String.format("%.1f%%", ((double) vitorias / jogos) * 100);
         }
 
         return new ComparacaoJogadoresDTO.DadosJogadorComparacao(
-                j.getId(),
-                j.getNome(),
-                j.getDiscord(),
-                j.getImagem(),
-                j.getTitulos() != null ? j.getTitulos() : 0,
-                j.getFinais() != null ? j.getFinais() : 0,
-                jogos,
-                vitorias,
-                j.getGolsMarcados() != null ? j.getGolsMarcados() : 0,
-                j.getGolsSofridos() != null ? j.getGolsSofridos() : 0,
-                aproveitamento,
-                j.getSaldoVirtual() != null ? j.getSaldoVirtual() : BigDecimal.ZERO,
-                j.getPontosCoeficiente() != null ? j.getPontosCoeficiente() : BigDecimal.ZERO
+                j.id(), j.nome(), j.discord(), j.imagem(),
+                nz(j.titulos()), nz(j.finais()), jogos, vitorias,
+                nz(j.golsMarcados()), nz(j.golsSofridos()), aproveitamento,
+                j.saldoVirtual() != null ? j.saldoVirtual() : BigDecimal.ZERO,
+                j.pontosCoeficiente() != null ? j.pontosCoeficiente() : BigDecimal.ZERO,
+                casaFora, estilo, formaRecente
         );
     }
+
+    private double parsePercent(String pct) {
+        return Double.parseDouble(pct.replace("%", "").replace(",", "."));
+    }
+
+    private double round1(double v) { return Math.round(v * 10.0) / 10.0; }
 
     public JogadorResumoDTO buscarResumoPorId(String id) {
         return jogadorRepository.findResumoById(id)
@@ -1088,6 +1295,10 @@ public class JogadorService {
         return valor == null ? 0L : valor;
     }
 
+    private long nz(Long valor) {
+        return valor == null ? 0L : valor;
+    }
+
     private BigDecimal nzBig(BigDecimal valor) {
         return valor == null ? BigDecimal.ZERO : valor;
     }
@@ -1128,8 +1339,6 @@ public class JogadorService {
         );
     }
 
-    private long nz(Long v) { return v == null ? 0L : v; }
-
     @Transactional(readOnly = true)
     public MelhorTemporadaDTO obterMelhorTemporada(String jogadorId) {
         List<MelhorTemporadaDTO> resultado = jogadorClubeRepository
@@ -1141,25 +1350,18 @@ public class JogadorService {
         return resultado.get(0);
     }
 
-    @Cacheable("mediasGlobaisEstilo")
-    public double[] obterMediasGlobaisCacheadas() {
-        MediasGlobaisEstiloDTO r = jogadorClubeRepository.buscarMediasGlobaisEstilo();
-        if (r == null) {
-            return new double[] {0.0, 0.0, 0.0};
-        }
-        return new double[] {
-                nz(r.mediaGolsMarcadosGlobal()),
-                nz(r.mediaGolsSofridosGlobal()),
-                nz(r.mediaEstrelasGlobal())
-        };
-    }
-
     private double nz(Double v) {
         return v == null ? 0.0 : v;
     }
 
     @Transactional(readOnly = true)
     public EstiloJogadorDTO obterEstiloProvavel(String jogadorId) {
+        double[] globais = estiloGlobalCache.obterMediasGlobais();
+        return obterEstiloProvavel(jogadorId, globais);
+    }
+
+    @Transactional(readOnly = true)
+    public EstiloJogadorDTO obterEstiloProvavel(String jogadorId, double[] mediasGlobais) {
         AgregadoEstiloDTO agregado = jogadorClubeRepository.buscarAgregadoEstiloJogador(jogadorId);
 
         if (agregado == null || agregado.partidasJogadas() == null || agregado.partidasJogadas() == 0) {
@@ -1171,10 +1373,9 @@ public class JogadorService {
         double mediaSofridos = agregado.golsSofridos() / (double) partidas;
         double mediaEstrelas = agregado.mediaEstrelas() == null ? 0.0 : agregado.mediaEstrelas();
 
-        double[] globais = obterMediasGlobaisCacheadas();
-        double globalMarcados = globais[0];
-        double globalSofridos = globais[1];
-        double globalEstrelas = globais[2];
+        double globalMarcados = mediasGlobais[0];
+        double globalSofridos = mediasGlobais[1];
+        double globalEstrelas = mediasGlobais[2];
 
         // Posição relativa do jogador em relação à média global (%). > 0 = acima da média.
         double difMarcados = globalMarcados == 0 ? 0 : (mediaMarcados - globalMarcados) / globalMarcados;
@@ -1186,9 +1387,9 @@ public class JogadorService {
 
         boolean ataqueForte = difMarcados > 0.15;
         boolean ataqueFraco = difMarcados < -0.15;
-        boolean defesaSolida = difSofridos < -0.15; // sofre bem menos que a média
-        boolean defesaFragil = difSofridos > 0.15;  // sofre bem mais que a média
-        boolean timesFortes = difEstrelas > 0.10;   // jogou mais em clubes acima da média de estrelas
+        boolean defesaSolida = difSofridos < -0.15;
+        boolean defesaFragil = difSofridos > 0.15;
+        boolean timesFortes = difEstrelas > 0.10;
 
         if (ataqueForte && defesaFragil) {
             estilo = "Provavelmente ofensivo / trocação (joga aberto, marca e sofre muito)";

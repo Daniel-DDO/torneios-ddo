@@ -159,4 +159,23 @@ public interface JogadorClubeRepository extends JpaRepository<JogadorClube, Stri
     WHERE jc.partidasJogadas > 0
     """)
     MediasGlobaisEstiloDTO buscarMediasGlobaisEstilo();
+
+    @Query("""
+    SELECT new com.ddo.torneios.dto.AgregadoEstiloParDTO(
+        SUM(CASE WHEN jc.jogador.id = :id1 THEN jc.partidasJogadas ELSE 0 END),
+        SUM(CASE WHEN jc.jogador.id = :id1 THEN jc.totalGolsMarcados ELSE 0 END),
+        SUM(CASE WHEN jc.jogador.id = :id1 THEN jc.totalGolsSofridos ELSE 0 END),
+        AVG(CASE WHEN jc.jogador.id = :id1 THEN c.estrelas ELSE NULL END),
+
+        SUM(CASE WHEN jc.jogador.id = :id2 THEN jc.partidasJogadas ELSE 0 END),
+        SUM(CASE WHEN jc.jogador.id = :id2 THEN jc.totalGolsMarcados ELSE 0 END),
+        SUM(CASE WHEN jc.jogador.id = :id2 THEN jc.totalGolsSofridos ELSE 0 END),
+        AVG(CASE WHEN jc.jogador.id = :id2 THEN c.estrelas ELSE NULL END)
+    )
+    FROM JogadorClube jc
+    JOIN jc.clube c
+    WHERE jc.jogador.id IN (:id1, :id2)
+      AND jc.partidasJogadas > 0
+    """)
+    AgregadoEstiloParDTO buscarAgregadoEstiloPar(@Param("id1") String id1, @Param("id2") String id2);
 }
