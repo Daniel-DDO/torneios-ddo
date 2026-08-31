@@ -112,4 +112,51 @@ public interface JogadorClubeRepository extends JpaRepository<JogadorClube, Stri
     WHERE jc.temporada.id = :temporadaId
 """)
     List<EstatisticaTemporadaDTO> buscarEstatisticasTemporada(@Param("temporadaId") String temporadaId);
+
+    @Query("""
+    SELECT new com.ddo.torneios.dto.MelhorTemporadaDTO(
+        t.id, t.nome, t.dataInicio, t.dataFim, t.ativa,
+        jc.partidasJogadas, jc.vitorias, jc.empates, jc.derrotas,
+        jc.totalGolsMarcados, jc.totalGolsSofridos,
+        (jc.totalGolsMarcados - jc.totalGolsSofridos),
+        (1.0 * jc.totalGolsMarcados / jc.partidasJogadas),
+        (1.0 * jc.totalGolsSofridos / jc.partidasJogadas),
+        jc.aproveitamento,
+        jc.aproveitamento
+            + (1.0 * (jc.totalGolsMarcados - jc.totalGolsSofridos) / jc.partidasJogadas) * 10.0
+            + LEAST(jc.partidasJogadas, 20) * 0.5
+    )
+    FROM JogadorClube jc
+    JOIN jc.temporada t
+    WHERE jc.jogador.id = :jogadorId
+      AND jc.partidasJogadas > 0
+    ORDER BY 16 DESC
+    """)
+    List<MelhorTemporadaDTO> buscarMelhoresTemporadas(@Param("jogadorId") String jogadorId, Pageable pageable);
+
+    @Query("""
+    SELECT new com.ddo.torneios.dto.AgregadoEstiloDTO(
+        SUM(jc.partidasJogadas),
+        SUM(jc.totalGolsMarcados),
+        SUM(jc.totalGolsSofridos),
+        AVG(c.estrelas)
+    )
+    FROM JogadorClube jc
+    JOIN jc.clube c
+    WHERE jc.jogador.id = :jogadorId
+      AND jc.partidasJogadas > 0
+    """)
+    AgregadoEstiloDTO buscarAgregadoEstiloJogador(@Param("jogadorId") String jogadorId);
+
+    @Query("""
+    SELECT new com.ddo.torneios.dto.MediasGlobaisEstiloDTO(
+        AVG(1.0 * jc.totalGolsMarcados / jc.partidasJogadas),
+        AVG(1.0 * jc.totalGolsSofridos / jc.partidasJogadas),
+        AVG(c.estrelas)
+    )
+    FROM JogadorClube jc
+    JOIN jc.clube c
+    WHERE jc.partidasJogadas > 0
+    """)
+    MediasGlobaisEstiloDTO buscarMediasGlobaisEstilo();
 }

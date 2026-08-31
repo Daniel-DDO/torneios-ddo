@@ -13,6 +13,7 @@ import jakarta.validation.constraints.NotNull;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -1128,4 +1129,111 @@ public class JogadorService {
     }
 
     private long nz(Long v) { return v == null ? 0L : v; }
+
+    @Transactional(readOnly = true)
+    public MelhorTemporadaDTO obterMelhorTemporada(String jogadorId) {
+        List<MelhorTemporadaDTO> resultado = jogadorClubeRepository
+                .buscarMelhoresTemporadas(jogadorId, PageRequest.of(0, 1));
+
+        if (resultado.isEmpty()) {
+            throw new RegraNegocioException("Jogador não possui temporadas com partidas registradas.");
+        }
+        return resultado.get(0);
+    }
+
+    @Cacheable("mediasGlobaisEstilo")
+    public double[] obterMediasGlobaisCacheadas() {
+        MediasGlobaisEstiloDTO r = jogadorClubeRepository.buscarMediasGlobaisEstilo();
+        if (r == null) {
+            return new double[] {0.0, 0.0, 0.0};
+        }
+        return new double[] {
+                nz(r.mediaGolsMarcadosGlobal()),
+                nz(r.mediaGolsSofridosGlobal()),
+                nz(r.mediaEstrelasGlobal())
+        };
+    }
+
+    private double nz(Double v) {
+        return v == null ? 0.0 : v;
+    }
+
+    @Transactional(readOnly = true)
+    public EstiloJogadorDTO obterEstiloProvavel(String jogadorId) {
+        AgregadoEstiloDTO agregado = jogadorClubeRepository.buscarAgregadoEstiloJogador(jogadorId);
+
+        if (agregado == null || agregado.partidasJogadas() == null || agregado.partidasJogadas() == 0) {
+            throw new RegraNegocioException("Jogador não possui partidas suficientes para estimar um estilo de jogo.");
+        }
+
+        int partidas = agregado.partidasJogadas().intValue();
+        double mediaMarcados = agregado.golsMarcados() / (double) partidas;
+        double mediaSofridos = agregado.golsSofridos() / (double) partidas;
+        double mediaEstrelas = agregado.mediaEstrelas() == null ? 0.0 : agregado.mediaEstrelas();
+
+        double[] globais = obterMediasGlobaisCacheadas();
+        double globalMarcados = globais[0];
+        double globalSofridos = globais[1];
+        double globalEstrelas = globais[2];
+
+        // Posição relativa do jogador em relação à média global (%). > 0 = acima da média.
+        double difMarcados = globalMarcados == 0 ? 0 : (mediaMarcados - globalMarcados) / globalMarcados;
+        double difSofridos = globalSofridos == 0 ? 0 : (mediaSofridos - globalSofridos) / globalSofridos;
+        double difEstrelas = globalEstrelas == 0 ? 0 : (mediaEstrelas - globalEstrelas) / globalEstrelas;
+
+        List<String> caracteristicas = new ArrayList<>();
+        String estilo;
+
+        boolean ataqueForte = difMarcados > 0.15;
+        boolean ataqueFraco = difMarcados < -0.15;
+        boolean defesaSolida = difSofridos < -0.15; // sofre bem menos que a média
+        boolean defesaFragil = difSofridos > 0.15;  // sofre bem mais que a média
+        boolean timesFortes = difEstrelas > 0.10;   // jogou mais em clubes acima da média de estrelas
+
+        if (ataqueForte && defesaFragil) {
+            estilo = "Provavelmente ofensivo / trocação (joga aberto, marca e sofre muito)";
+            caracteristicas.add("Ataque bem acima da média (" + pct(difMarcados) + ")");
+            caracteristicas.add("Defesa abaixo da média, sofre mais que o normal (" + pct(difSofridos) + ")");
+        } else if (ataqueForte && defesaSolida) {
+            estilo = "Provavelmente posse de bola / controle de jogo (domina e sofre pouco)";
+            caracteristicas.add("Ataque acima da média (" + pct(difMarcados) + ")");
+            caracteristicas.add("Defesa sólida, sofre bem menos que a média (" + pct(difSofridos) + ")");
+        } else if (ataqueFraco && defesaSolida) {
+            estilo = "Provavelmente retranca / defensivo (prioriza não sofrer, ataca pouco)";
+            caracteristicas.add("Ataque abaixo da média (" + pct(difMarcados) + ")");
+            caracteristicas.add("Defesa sólida (" + pct(difSofridos) + ")");
+        } else if (ataqueFraco && defesaFragil) {
+            estilo = "Provavelmente irregular / sem padrão claro (ataca pouco e sofre bastante)";
+            caracteristicas.add("Ataque abaixo da média (" + pct(difMarcados) + ")");
+            caracteristicas.add("Defesa também abaixo da média (" + pct(difSofridos) + ")");
+        } else if (defesaFragil) {
+            estilo = "Provavelmente contra-ataque (ataque na média, mas sofre mais que o normal)";
+            caracteristicas.add("Ataque próximo da média");
+            caracteristicas.add("Sofre mais gols que a média (" + pct(difSofridos) + ")");
+        } else {
+            estilo = "Provavelmente equilibrado (ataque e defesa próximos da média geral)";
+            caracteristicas.add("Ataque e defesa dentro da faixa normal");
+        }
+
+        if (timesFortes) {
+            caracteristicas.add("Historicamente jogou em clubes acima da média de estrelas (" + pct(difEstrelas) + "), o que pode indicar mais tempo de posse típico desses elencos");
+        } else if (difEstrelas < -0.10) {
+            caracteristicas.add("Historicamente jogou em clubes abaixo da média de estrelas (" + pct(difEstrelas) + "), cenário mais propenso a contra-ataque por necessidade");
+        }
+
+        return new EstiloJogadorDTO(
+                jogadorId, partidas,
+                round2(mediaMarcados), round2(mediaSofridos), round2(mediaEstrelas),
+                round2(globalMarcados), round2(globalSofridos), round2(globalEstrelas),
+                estilo, caracteristicas
+        );
+    }
+
+    private String pct(double v) {
+        return String.format("%+.1f%%", v * 100.0);
+    }
+
+    private double round2(double v) {
+        return Math.round(v * 100.0) / 100.0;
+    }
 }

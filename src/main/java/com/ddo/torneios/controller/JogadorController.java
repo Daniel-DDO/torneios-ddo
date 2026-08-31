@@ -402,4 +402,14 @@ public class JogadorController {
     public ResponseEntity<EstatisticasCasaForaDTO> estatisticasCasaFora(@PathVariable String id) {
         return ResponseEntity.ok(jogadorService.obterEstatisticasCasaFora(id));
     }
+
+    @GetMapping("/{id}/melhor-temporada")
+    public ResponseEntity<MelhorTemporadaDTO> melhorTemporada(@PathVariable String id) {
+        return ResponseEntity.ok(jogadorService.obterMelhorTemporada(id));
+    }
+
+    @GetMapping("/{id}/estilo-provavel")
+    public ResponseEntity<EstiloJogadorDTO> estiloProvavel(@PathVariable String id) {
+        return ResponseEntity.ok(jogadorService.obterEstiloProvavel(id));
+    }
 }
