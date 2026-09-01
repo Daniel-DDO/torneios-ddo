@@ -5,6 +5,7 @@ import com.ddo.torneios.model.Partida;
 import com.ddo.torneios.model.ReportPartida;
 import com.ddo.torneios.repository.PartidaRepository;
 import com.ddo.torneios.repository.ReportPartidaRepository;
+import com.ddo.torneios.request.AnularEmMassaRequest;
 import com.ddo.torneios.request.AnularPartidaRequest;
 import com.ddo.torneios.request.DefinirParticipanteRequest;
 import com.ddo.torneios.request.RelatoProblemaRequest;
@@ -13,6 +14,7 @@ import com.ddo.torneios.service.JuizVirtualService;
 import com.ddo.torneios.service.PartidaService;
 import com.ddo.torneios.service.ProbabilidadeService;
 import jakarta.persistence.EntityNotFoundException;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -243,5 +245,29 @@ public class PartidaController {
     @PreAuthorize("hasRole('PROPRIETARIO')")
     public ResponseEntity<PartidaDTO> desanular(@PathVariable String id) {
         return ResponseEntity.ok(partidaService.desanularPartida(id));
+    }
+
+    @PostMapping("/fase/{faseId}/anular-todas")
+    @PreAuthorize("hasRole('PROPRIETARIO')")
+    public ResponseEntity<AnulacaoEmMassaResultadoDTO> anularTodasPorFase(
+            @PathVariable String faseId,
+            @Valid @RequestBody AnularEmMassaRequest request) {
+        return ResponseEntity.ok(partidaService.anularPorFase(faseId, request.motivo()));
+    }
+
+    @PostMapping("/torneio/{torneioId}/anular-todas")
+    @PreAuthorize("hasRole('PROPRIETARIO')")
+    public ResponseEntity<AnulacaoEmMassaResultadoDTO> anularTodasPorTorneio(
+            @PathVariable String torneioId,
+            @Valid @RequestBody AnularEmMassaRequest request) {
+        return ResponseEntity.ok(partidaService.anularPorTorneio(torneioId, request.motivo()));
+    }
+
+    @PostMapping("/temporada/{temporadaId}/anular-todas")
+    @PreAuthorize("hasRole('PROPRIETARIO')")
+    public ResponseEntity<AnulacaoEmMassaResultadoDTO> anularTodasPorTemporada(
+            @PathVariable String temporadaId,
+            @Valid @RequestBody AnularEmMassaRequest request) {
+        return ResponseEntity.ok(partidaService.anularPorTemporada(temporadaId, request.motivo()));
     }
 }

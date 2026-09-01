@@ -10,6 +10,7 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
@@ -930,4 +931,34 @@ public interface PartidaRepository extends JpaRepository<Partida, String> {
     @Modifying
     @Query("UPDATE Partida p SET p.visitante = :jogadorClube WHERE p.id = :partidaId")
     int atualizarVisitante(@Param("partidaId") String partidaId, @Param("jogadorClube") JogadorClube jogadorClube);
+
+    @Modifying
+    @Query("""
+    UPDATE Partida p
+    SET p.anulada = true, p.motivoAnulacao = :motivo, p.anuladaEm = :agora
+    WHERE p.fase.id = :faseId
+      AND p.realizada = false
+      AND p.anulada = false
+    """)
+    int anularPorFase(@Param("faseId") String faseId, @Param("motivo") String motivo, @Param("agora") LocalDateTime agora);
+
+    @Modifying
+    @Query("""
+    UPDATE Partida p
+    SET p.anulada = true, p.motivoAnulacao = :motivo, p.anuladaEm = :agora
+    WHERE p.fase.torneio.id = :torneioId
+      AND p.realizada = false
+      AND p.anulada = false
+    """)
+    int anularPorTorneio(@Param("torneioId") String torneioId, @Param("motivo") String motivo, @Param("agora") LocalDateTime agora);
+
+    @Modifying
+    @Query("""
+    UPDATE Partida p
+    SET p.anulada = true, p.motivoAnulacao = :motivo, p.anuladaEm = :agora
+    WHERE p.fase.torneio.temporada.id = :temporadaId
+      AND p.realizada = false
+      AND p.anulada = false
+    """)
+    int anularPorTemporada(@Param("temporadaId") String temporadaId, @Param("motivo") String motivo, @Param("agora") LocalDateTime agora);
 }

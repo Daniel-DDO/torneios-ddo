@@ -249,4 +249,22 @@ public class PartidaService {
                 .map(p -> new TopJogadorWoDTO(p.getJogadorId(), p.getNomeJogador(), p.getTotalDerrotasWo()))
                 .collect(Collectors.toList());
     }
+
+    @Transactional
+    public AnulacaoEmMassaResultadoDTO anularPorFase(String faseId, String motivo) {
+        int total = partidaRepository.anularPorFase(faseId, motivo, LocalDateTime.now());
+        return new AnulacaoEmMassaResultadoDTO(total, motivo);
+    }
+
+    @Transactional
+    public AnulacaoEmMassaResultadoDTO anularPorTorneio(String torneioId, String motivo) {
+        int total = partidaRepository.anularPorTorneio(torneioId, motivo, LocalDateTime.now());
+        return new AnulacaoEmMassaResultadoDTO(total, motivo);
+    }
+
+    @Transactional
+    public AnulacaoEmMassaResultadoDTO anularPorTemporada(String temporadaId, String motivo) {
+        int total = partidaRepository.anularPorTemporada(temporadaId, motivo, LocalDateTime.now());
+        return new AnulacaoEmMassaResultadoDTO(total, motivo);
+    }
 }
