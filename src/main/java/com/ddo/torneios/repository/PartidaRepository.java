@@ -837,4 +837,68 @@ public interface PartidaRepository extends JpaRepository<Partida, String> {
       AND jc.partidasJogadas > 0
     """)
     AgregadoEstiloParDTO buscarAgregadoEstiloPar(@Param("id1") String id1, @Param("id2") String id2);
+
+    @Query("""
+    SELECT new com.ddo.torneios.dto.PartidaProbabilidadeDTO(
+        p.id, p.realizada, p.fase.id, p.chaveIndex, p.tipoPartida,
+
+        jm.id, jm.nome, jm.partidasJogadas, jm.vitorias, jm.golsMarcados, jm.golsSofridos,
+        m.partidasJogadas, m.aproveitamento, m.totalGolsMarcados, m.totalGolsSofridos, cm.estrelas,
+
+        jv.id, jv.nome, jv.partidasJogadas, jv.vitorias, jv.golsMarcados, jv.golsSofridos,
+        v.partidasJogadas, v.aproveitamento, v.totalGolsMarcados, v.totalGolsSofridos, cv.estrelas
+    )
+    FROM Partida p
+    LEFT JOIN p.mandante m
+    LEFT JOIN m.jogador jm
+    LEFT JOIN m.clube cm
+    LEFT JOIN p.visitante v
+    LEFT JOIN v.jogador jv
+    LEFT JOIN v.clube cv
+    WHERE p.id = :id
+    """)
+    Optional<PartidaProbabilidadeDTO> buscarPartidaParaProbabilidade(@Param("id") String id);
+
+    @Query("""
+    SELECT new com.ddo.torneios.dto.PartidaIdaResultadoDTO(p.golsMandante, p.golsVisitante)
+    FROM Partida p
+    WHERE p.fase.id = :faseId
+      AND p.chaveIndex = :chaveIndex
+      AND p.tipoPartida = :tipo
+      AND p.realizada = true
+    """)
+    Optional<PartidaIdaResultadoDTO> buscarResultadoPartidaIda(
+            @Param("faseId") String faseId,
+            @Param("chaveIndex") Integer chaveIndex,
+            @Param("tipo") TipoPartida tipo
+    );
+
+    @Query("""
+    SELECT new com.ddo.torneios.dto.PartidaIdaResultadoDTO(p.golsMandante, p.golsVisitante)
+    FROM Partida p
+    WHERE p.proximaPartida.id = :partidaVoltaId
+      AND p.realizada = true
+      AND p.anulada = false
+    """)
+    Optional<PartidaIdaResultadoDTO> buscarResultadoPartidaIdaPorProximaPartida(@Param("partidaVoltaId") String partidaVoltaId);
+
+    @Query("""
+    SELECT new com.ddo.torneios.dto.MediasGolsCasaForaDTO(
+        AVG(CASE WHEN m.jogador.id = :mandanteId THEN p.golsMandante ELSE NULL END),
+        AVG(CASE WHEN m.jogador.id = :mandanteId THEN p.golsVisitante ELSE NULL END),
+        AVG(CASE WHEN v.jogador.id = :visitanteId THEN p.golsVisitante ELSE NULL END),
+        AVG(CASE WHEN v.jogador.id = :visitanteId THEN p.golsMandante ELSE NULL END)
+    )
+    FROM Partida p
+    JOIN p.mandante m
+    JOIN p.visitante v
+    WHERE (m.jogador.id = :mandanteId OR v.jogador.id = :visitanteId)
+      AND p.anulada = false
+      AND p.golsMandante IS NOT NULL
+      AND p.golsVisitante IS NOT NULL
+    """)
+    MediasGolsCasaForaDTO buscarMediasGolsCasaFora(
+            @Param("mandanteId") String mandanteId,
+            @Param("visitanteId") String visitanteId
+    );
 }

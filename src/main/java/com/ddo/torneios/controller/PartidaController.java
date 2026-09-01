@@ -186,7 +186,7 @@ public class PartidaController {
 
     @GetMapping("/{id}/probabilidade")
     public ResponseEntity<ProbabilidadePartidaDTO> getProbabilidadePartida(@PathVariable String id) {
-        Partida partida = partidaRepository.findById(id)
+        PartidaProbabilidadeDTO partida = partidaRepository.buscarPartidaParaProbabilidade(id)
                 .orElseThrow(() -> new RuntimeException("Partida não encontrada: " + id));
 
         ProbabilidadePartidaDTO probabilidade = probabilidadeService.calcularProbabilidade(partida);
