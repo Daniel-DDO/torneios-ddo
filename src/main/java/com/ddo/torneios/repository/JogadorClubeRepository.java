@@ -178,4 +178,11 @@ public interface JogadorClubeRepository extends JpaRepository<JogadorClube, Stri
       AND jc.partidasJogadas > 0
     """)
     AgregadoEstiloParDTO buscarAgregadoEstiloPar(@Param("id1") String id1, @Param("id2") String id2);
+
+    @Query("""
+    SELECT new com.ddo.torneios.dto.JogadorClubeBaseDTO(jc.id, jc.clube.id, jc.temporada.id)
+    FROM JogadorClube jc
+    WHERE jc.id = :id
+    """)
+    Optional<JogadorClubeBaseDTO> buscarBasePorId(@Param("id") String id);
 }

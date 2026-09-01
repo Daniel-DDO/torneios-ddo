@@ -4,6 +4,7 @@ import com.ddo.torneios.dto.*;
 import com.ddo.torneios.request.ConfirmacaoSorteioRequest;
 import com.ddo.torneios.request.JogadorClubeRequest;
 import com.ddo.torneios.request.SorteioRequest;
+import com.ddo.torneios.request.TrocarJogadorClubePartidaRequest;
 import com.ddo.torneios.service.JogadorClubeService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -116,5 +117,13 @@ public class JogadorClubeController {
     public ResponseEntity<Void> desfazerSubstituicao(@PathVariable String idJogadorClubeAntigo) {
         jogadorClubeService.desfazerSubstituicao(idJogadorClubeAntigo);
         return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/trocar-na-partida")
+    public ResponseEntity<TrocaJogadorClubePartidaResultadoDTO> trocarJogadorNaPartida(
+            @Valid @RequestBody TrocarJogadorClubePartidaRequest request) {
+
+        TrocaJogadorClubePartidaResultadoDTO resultado = jogadorClubeService.trocarJogadorNaPartida(request);
+        return ResponseEntity.ok(resultado);
     }
 }

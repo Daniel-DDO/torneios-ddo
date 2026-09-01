@@ -74,6 +74,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.PUT, "/inscricao/desfazer-substituicao/**").hasAuthority("PROPRIETARIO")
                         .requestMatchers(HttpMethod.POST, "/inscricao/sorteio").hasAnyAuthority("PROPRIETARIO", "DIRETOR")
                         .requestMatchers(HttpMethod.POST, "/inscricao/sorteio/confirmar").hasAnyAuthority("PROPRIETARIO", "DIRETOR")
+                        .requestMatchers(HttpMethod.POST, "/inscricao/trocar-na-partida").hasAuthority("PROPRIETARIO")
 
                         .requestMatchers(HttpMethod.POST, "/participacao-fase/add").hasAuthority("PROPRIETARIO")
                         .requestMatchers(HttpMethod.PUT, "/participacao-fase/**").hasAuthority("PROPRIETARIO")

@@ -1,10 +1,7 @@
 package com.ddo.torneios.repository;
 
 import com.ddo.torneios.dto.*;
-import com.ddo.torneios.model.FaseMataMata;
-import com.ddo.torneios.model.FaseTorneio;
-import com.ddo.torneios.model.Partida;
-import com.ddo.torneios.model.TipoPartida;
+import com.ddo.torneios.model.*;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -901,4 +898,36 @@ public interface PartidaRepository extends JpaRepository<Partida, String> {
             @Param("mandanteId") String mandanteId,
             @Param("visitanteId") String visitanteId
     );
+
+    @Query("""
+    SELECT new com.ddo.torneios.dto.PartidaTrocaProjection(
+        p.id, p.fase.id, p.tipoPartida, p.realizada, m.id, v.id, pp.id
+    )
+    FROM Partida p
+    LEFT JOIN p.mandante m
+    LEFT JOIN p.visitante v
+    LEFT JOIN p.proximaPartida pp
+    WHERE p.id = :id
+    """)
+    Optional<PartidaTrocaProjection> buscarParaTroca(@Param("id") String id);
+
+    @Query("""
+    SELECT new com.ddo.torneios.dto.PartidaTrocaProjection(
+        p.id, p.fase.id, p.tipoPartida, p.realizada, m.id, v.id, pp.id
+    )
+    FROM Partida p
+    LEFT JOIN p.mandante m
+    LEFT JOIN p.visitante v
+    LEFT JOIN p.proximaPartida pp
+    WHERE p.proximaPartida.id = :partidaVoltaId
+    """)
+    Optional<PartidaTrocaProjection> buscarPartidaIdaPorProxima(@Param("partidaVoltaId") String partidaVoltaId);
+
+    @Modifying
+    @Query("UPDATE Partida p SET p.mandante = :jogadorClube WHERE p.id = :partidaId")
+    int atualizarMandante(@Param("partidaId") String partidaId, @Param("jogadorClube") JogadorClube jogadorClube);
+
+    @Modifying
+    @Query("UPDATE Partida p SET p.visitante = :jogadorClube WHERE p.id = :partidaId")
+    int atualizarVisitante(@Param("partidaId") String partidaId, @Param("jogadorClube") JogadorClube jogadorClube);
 }

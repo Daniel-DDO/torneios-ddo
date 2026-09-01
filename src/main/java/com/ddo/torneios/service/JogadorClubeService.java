@@ -1,14 +1,13 @@
 package com.ddo.torneios.service;
 
-import com.ddo.torneios.dto.JogadorClubeDTO;
-import com.ddo.torneios.dto.JogadorClubeInscritoDTO;
-import com.ddo.torneios.dto.SorteioResultadoDTO;
+import com.ddo.torneios.dto.*;
 import com.ddo.torneios.exception.RegraNegocioException;
 import com.ddo.torneios.model.*;
 import com.ddo.torneios.repository.*;
 import com.ddo.torneios.request.ConfirmacaoSorteioRequest;
 import com.ddo.torneios.request.JogadorClubeRequest;
 import com.ddo.torneios.request.SorteioRequest;
+import com.ddo.torneios.request.TrocarJogadorClubePartidaRequest;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
@@ -19,6 +18,7 @@ import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 public class JogadorClubeService {
@@ -43,6 +43,126 @@ public class JogadorClubeService {
 
     @Autowired
     private PartidaRepository partidaRepository;
+
+    @Autowired
+    private FaseTorneioRepository faseTorneioRepository;
+
+
+    @Transactional
+    public TrocaJogadorClubePartidaResultadoDTO trocarJogadorNaPartida(TrocarJogadorClubePartidaRequest request) {
+
+        PartidaTrocaProjection partidaAtual = partidaRepository.buscarParaTroca(request.partidaId())
+                .orElseThrow(() -> new EntityNotFoundException("Partida não encontrada: " + request.partidaId()));
+
+        if (partidaAtual.realizada()) {
+            throw new RegraNegocioException("Não é possível trocar jogador de uma partida já realizada.");
+        }
+
+        boolean antigoEhMandante = request.jogadorClubeAntigoId().equals(partidaAtual.mandanteId());
+        boolean antigoEhVisitante = request.jogadorClubeAntigoId().equals(partidaAtual.visitanteId());
+
+        if (!antigoEhMandante && !antigoEhVisitante) {
+            throw new RegraNegocioException("O jogador informado não participa desta partida.");
+        }
+
+        JogadorClubeBaseDTO antigoJC = jogadorClubeRepository.buscarBasePorId(request.jogadorClubeAntigoId())
+                .orElseThrow(() -> new EntityNotFoundException("Inscrição (JogadorClube) antiga não encontrada."));
+
+        boolean[] jogadorClubeCriado = new boolean[1];
+        JogadorClube novoJC = jogadorClubeRepository.findByJogadorIdAndTemporadaId(request.novoJogadorId(), antigoJC.temporadaId())
+                .orElseGet(() -> {
+                    jogadorClubeCriado[0] = true;
+                    return criarNovoJogadorClube(request.novoJogadorId(), antigoJC);
+                });
+
+        boolean participacaoCriada = garantirParticipacaoFase(partidaAtual.faseId(), novoJC);
+
+        List<String> partidasAtualizadas = new ArrayList<>();
+        atualizarLadoDaPartida(partidaAtual.id(), antigoEhMandante, novoJC);
+        partidasAtualizadas.add(partidaAtual.id());
+
+        if (ehTipoIdaOuVolta(partidaAtual.tipoPartida())) {
+            resolverPartidaPar(partidaAtual).ifPresent(par -> {
+                if (par.realizada()) return;
+
+                boolean antigoEhMandanteNoPar = request.jogadorClubeAntigoId().equals(par.mandanteId());
+                boolean antigoEhVisitanteNoPar = request.jogadorClubeAntigoId().equals(par.visitanteId());
+
+                if (antigoEhMandanteNoPar || antigoEhVisitanteNoPar) {
+                    atualizarLadoDaPartida(par.id(), antigoEhMandanteNoPar, novoJC);
+                    partidasAtualizadas.add(par.id());
+                }
+            });
+        }
+
+        return new TrocaJogadorClubePartidaResultadoDTO(
+                novoJC.getId(), jogadorClubeCriado[0], participacaoCriada, partidasAtualizadas
+        );
+    }
+
+    private JogadorClube criarNovoJogadorClube(String novoJogadorId, JogadorClubeBaseDTO antigoJC) {
+        JogadorClube novo = new JogadorClube();
+        novo.setJogador(jogadorRepository.getReferenceById(novoJogadorId));
+        novo.setClube(clubeRepository.getReferenceById(antigoJC.clubeId()));
+        novo.setTemporada(temporadaRepository.getReferenceById(antigoJC.temporadaId()));
+        novo.setBalancoFinanceiro(BigDecimal.ZERO);
+        novo.setPontosCoeficiente(BigDecimal.ZERO);
+        novo.setTotalGolsMarcados(0);
+        novo.setTotalGolsSofridos(0);
+        novo.setPartidasJogadas(0);
+        novo.setVitorias(0);
+        novo.setEmpates(0);
+        novo.setDerrotas(0);
+        novo.setAproveitamento(0.0);
+        novo.setStatusTemporada(StatusClassificacao.ATIVO);
+        return jogadorClubeRepository.save(novo);
+    }
+
+    private boolean garantirParticipacaoFase(String faseId, JogadorClube jogadorClube) {
+        if (participacaoFaseRepository.existsByFaseIdAndJogadorClubeId(faseId, jogadorClube.getId())) {
+            return false;
+        }
+        ParticipacaoFase participacao = new ParticipacaoFase();
+        participacao.setFase(faseTorneioRepository.getReferenceById(faseId));
+        participacao.setJogadorClube(jogadorClube);
+        participacao.setPontos(0);
+        participacao.setPartidasJogadas(0);
+        participacao.setVitorias(0);
+        participacao.setEmpates(0);
+        participacao.setDerrotas(0);
+        participacao.setGolsPro(0);
+        participacao.setGolsContra(0);
+        participacao.setSaldoGols(0);
+        participacao.setStatusClassificacao(jogadorClube.getStatusTemporada());
+        participacaoFaseRepository.save(participacao);
+        return true;
+    }
+
+    private void atualizarLadoDaPartida(String partidaId, boolean isMandante, JogadorClube novoJC) {
+        if (isMandante) {
+            partidaRepository.atualizarMandante(partidaId, novoJC);
+        } else {
+            partidaRepository.atualizarVisitante(partidaId, novoJC);
+        }
+    }
+
+    private boolean ehTipoIdaOuVolta(TipoPartida tipo) {
+        return tipo == TipoPartida.MATA_MATA_IDA || tipo == TipoPartida.MATA_MATA_VOLTA
+                || tipo == TipoPartida.FINAL_IDA || tipo == TipoPartida.FINAL_VOLTA;
+    }
+
+    private Optional<PartidaTrocaProjection> resolverPartidaPar(PartidaTrocaProjection partida) {
+        boolean ehVolta = partida.tipoPartida() == TipoPartida.MATA_MATA_VOLTA
+                || partida.tipoPartida() == TipoPartida.FINAL_VOLTA;
+
+        if (ehVolta) {
+            return partidaRepository.buscarPartidaIdaPorProxima(partida.id());
+        }
+        if (partida.proximaPartidaId() == null) {
+            return Optional.empty();
+        }
+        return partidaRepository.buscarParaTroca(partida.proximaPartidaId());
+    }
 
     @Transactional
     public JogadorClubeDTO inscreverJogador(JogadorClubeRequest request) {
