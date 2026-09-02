@@ -1,12 +1,16 @@
 package com.ddo.torneios.controller;
 
 import com.ddo.torneios.dto.ClubeLeilaoDTO;
+import com.ddo.torneios.dto.MercadoStatusDTO;
+import com.ddo.torneios.dto.MultiplicacaoResultadoDTO;
 import com.ddo.torneios.dto.PaginacaoDTO;
 import com.ddo.torneios.model.Clube;
 import com.ddo.torneios.model.LigaClube;
 import com.ddo.torneios.request.AtualizarValoresClubeRequest;
 import com.ddo.torneios.request.ClubeRequest;
+import com.ddo.torneios.request.MultiplicarValoresRequest;
 import com.ddo.torneios.service.ClubeService;
+import com.ddo.torneios.service.MercadoFinanceiroService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -15,6 +19,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -25,6 +30,9 @@ public class ClubeController {
 
     @Autowired
     private ClubeService clubeService;
+
+    @Autowired
+    private MercadoFinanceiroService mercadoFinanceiroService;
 
     @PostMapping("/cadastrar")
     public ResponseEntity<?> cadastrarClube(@Valid @RequestBody ClubeRequest request) {
@@ -132,11 +140,40 @@ public class ClubeController {
     }
 
     @PatchMapping("/{id}/valores")
+    @PreAuthorize("hasRole('PROPRIETARIO')")
     public ResponseEntity<Void> atualizarValores(
             @PathVariable String id,
             @RequestBody @Valid AtualizarValoresClubeRequest request) {
 
         clubeService.atualizarValoresClube(id, request);
         return ResponseEntity.noContent().build();
+    }
+
+    @PatchMapping("/mercado/multiplicar-todos")
+    @PreAuthorize("hasRole('PROPRIETARIO')")
+    public ResponseEntity<MultiplicacaoResultadoDTO> multiplicarValoresDeTodos(
+            @Valid @RequestBody MultiplicarValoresRequest request) {
+        return ResponseEntity.ok(clubeService.multiplicarValoresDeTodos(request.multiplicador()));
+    }
+
+    @PatchMapping("/{id}/mercado/multiplicar")
+    @PreAuthorize("hasRole('PROPRIETARIO')")
+    public ResponseEntity<Void> multiplicarValorDoClube(
+            @PathVariable String id,
+            @Valid @RequestBody MultiplicarValoresRequest request) {
+        clubeService.multiplicarValorDoClube(id, request.multiplicador());
+        return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/mercado/status")
+    public ResponseEntity<MercadoStatusDTO> consultarStatusMercado() {
+        return ResponseEntity.ok(mercadoFinanceiroService.consultarStatus());
+    }
+
+    @PostMapping("/mercado/forcar-atualizacao")
+    @PreAuthorize("hasRole('PROPRIETARIO')")
+    public ResponseEntity<MercadoStatusDTO> forcarAtualizacaoMercado() {
+        mercadoFinanceiroService.forcarAtualizacaoAgora();
+        return ResponseEntity.ok(mercadoFinanceiroService.consultarStatus());
     }
 }

@@ -14,6 +14,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
 
@@ -66,4 +67,22 @@ public interface ClubeRepository extends JpaRepository<Clube, String> {
             "c.lanceMinimo, c.valorAvaliado, c.ligaClube, c.estrelas) " +
             "from Clube c where c.id = :id")
     Optional<ClubeLeilaoDTO> buscarParaLeilao(@Param("id") String id);
+
+    @Modifying
+    @Query(value = """
+    UPDATE clube
+    SET valor_avaliado = GREATEST(valor_avaliado * :fator, :piso),
+        lance_minimo = GREATEST(valor_avaliado * :fator, :piso) * 0.5
+    WHERE valor_avaliado IS NOT NULL
+    """, nativeQuery = true)
+    int aplicarFatorGlobal(@Param("fator") BigDecimal fator, @Param("piso") BigDecimal piso);
+
+    @Modifying
+    @Query(value = """
+    UPDATE clube
+    SET valor_avaliado = GREATEST(valor_avaliado * :fator, :piso),
+        lance_minimo = GREATEST(valor_avaliado * :fator, :piso) * 0.5
+    WHERE id = :id AND valor_avaliado IS NOT NULL
+    """, nativeQuery = true)
+    int aplicarFatorIndividual(@Param("id") String id, @Param("fator") BigDecimal fator, @Param("piso") BigDecimal piso);
 }
