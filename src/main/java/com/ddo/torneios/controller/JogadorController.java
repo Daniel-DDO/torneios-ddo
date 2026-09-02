@@ -6,6 +6,7 @@ import com.ddo.torneios.model.Jogador;
 import com.ddo.torneios.model.StatusJogador;
 import com.ddo.torneios.request.*;
 import com.ddo.torneios.service.JogadorService;
+import com.ddo.torneios.service.PlanilhaJogadorService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -13,8 +14,10 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -34,6 +37,9 @@ public class JogadorController {
 
     @Autowired
     private JogadorService jogadorService;
+
+    @Autowired
+    private PlanilhaJogadorService planilhaJogadorService;
 
     @PostMapping("/cadastrar")
     public ResponseEntity<?> cadastrarJogador(@RequestBody JogadorRequest jogador) {
@@ -113,12 +119,12 @@ public class JogadorController {
     }
 
     @GetMapping("/jogadores")
-    public ResponseEntity<Page<Jogador>> listarJogadoresPaginado(
+    public ResponseEntity<Page<JogadorDTO>> listarJogadoresPaginado(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size
     ) {
         PageRequest pageRequest = PageRequest.of(page, size, Sort.by("nome").ascending());
-        Page<Jogador> jogadores = jogadorService.listarTodosPaginado(pageRequest);
+        Page<JogadorDTO> jogadores = jogadorService.listarTodosPaginado(pageRequest).map(JogadorDTO::new);
         return ResponseEntity.ok(jogadores);
     }
 
@@ -287,5 +293,123 @@ public class JogadorController {
     @GetMapping("/{id}/resumo")
     public ResponseEntity<JogadorResumoDTO> buscarJogadorResumo(@PathVariable String id) {
         return ResponseEntity.ok(jogadorService.buscarResumoPorId(id));
+    }
+
+    @PreAuthorize("hasAuthority('PROPRIETARIO')")
+    @PatchMapping("/{id}/discord")
+    public ResponseEntity<JogadorDTO> trocarDiscord(
+            @PathVariable String id,
+            @RequestBody @Valid TrocarDiscordRequest request) {
+        return ResponseEntity.ok(jogadorService.trocarDiscord(id, request.novoDiscord()));
+    }
+
+    @PreAuthorize("hasAuthority('PROPRIETARIO')")
+    @PatchMapping("/{id}/email-admin")
+    public ResponseEntity<JogadorDTO> atualizarEmailAdmin(
+            @PathVariable String id,
+            @RequestBody @Valid AtualizarEmailAdminRequest request) {
+        return ResponseEntity.ok(jogadorService.atualizarEmailAdmin(id, request.novoEmail()));
+    }
+
+    @PreAuthorize("hasAuthority('PROPRIETARIO')")
+    @PatchMapping("/{id}/saldo/zerar")
+    public ResponseEntity<BigDecimal> zerarSaldoJogador(
+            @PathVariable String id,
+            @RequestBody(required = false) ZerarSaldoRequest request,
+            @AuthenticationPrincipal UserDetails userDetails) {
+
+        String motivo = request != null ? request.motivo() : null;
+        String responsavel = userDetails != null ? userDetails.getUsername() : "SISTEMA";
+
+        BigDecimal novoSaldo = jogadorService.zerarSaldoJogador(id, motivo, responsavel);
+        return ResponseEntity.ok(novoSaldo);
+    }
+
+    @PreAuthorize("hasAuthority('PROPRIETARIO')")
+    @PostMapping("/saldo/zerar-todos")
+    public ResponseEntity<String> zerarSaldoDeTodos(
+            @RequestBody(required = false) ZerarSaldoRequest request,
+            @AuthenticationPrincipal UserDetails userDetails) {
+
+        String motivo = request != null ? request.motivo() : null;
+        String responsavel = userDetails != null ? userDetails.getUsername() : "SISTEMA";
+
+        int afetados = jogadorService.zerarSaldoDeTodosOsJogadores(motivo, responsavel);
+        return ResponseEntity.ok(afetados + " jogadores tiveram o saldo zerado.");
+    }
+
+    @PreAuthorize("hasAuthority('PROPRIETARIO')")
+    @PostMapping("/saldo/distribuir")
+    public ResponseEntity<String> distribuirSaldoParaTodos(
+            @RequestBody @Valid DistribuirSaldoRequest request,
+            @AuthenticationPrincipal UserDetails userDetails) {
+
+        String responsavel = userDetails != null ? userDetails.getUsername() : "SISTEMA";
+
+        int afetados = jogadorService.distribuirSaldoParaTodos(request.valor(), request.motivo(), responsavel);
+        return ResponseEntity.ok(afetados + " jogadores receberam o saldo.");
+    }
+
+    @PreAuthorize("hasAuthority('PROPRIETARIO')")
+    @PatchMapping("/{id}/resetar-senha")
+    public ResponseEntity<Void> resetarSenhaAdmin(
+            @PathVariable String id,
+            @RequestBody @Valid ResetarSenhaRequest request) {
+        jogadorService.resetarSenhaAdmin(id, request.novaSenha());
+        return ResponseEntity.noContent().build();
+    }
+
+    @PreAuthorize("hasAuthority('PROPRIETARIO')")
+    @PatchMapping("/{id}/resetar-pin")
+    public ResponseEntity<Integer> resetarPinAdmin(@PathVariable String id) {
+        return ResponseEntity.ok(jogadorService.resetarPinAdmin(id));
+    }
+
+    @PreAuthorize("hasAuthority('PROPRIETARIO')")
+    @DeleteMapping("/{id}/deletar")
+    public ResponseEntity<Void> deletarJogador(@PathVariable String id) {
+        jogadorService.deletarJogador(id);
+        return ResponseEntity.noContent().build();
+    }
+
+    @PreAuthorize("hasAuthority('PROPRIETARIO')")
+    @PostMapping("/mesclar-contas")
+    public ResponseEntity<JogadorDTO> mesclarContas(@RequestBody @Valid MesclarContasRequest request) {
+        Jogador jogadorMesclado = jogadorService.mesclarContas(request.idPrincipal(), request.idsAntigos());
+        return ResponseEntity.ok(new JogadorDTO(jogadorMesclado));
+    }
+
+    @PreAuthorize("hasAuthority('PROPRIETARIO')")
+    @PutMapping("/{id}")
+    public ResponseEntity<JogadorDTO> editarJogadorAdmin(
+            @PathVariable String id,
+            @RequestBody JogadorEditarRequest request) {
+        return ResponseEntity.ok(jogadorService.editarJogadorAdmin(id, request));
+    }
+
+    @GetMapping("/{id}/planilha")
+    public ResponseEntity<byte[]> baixarPlanilha(@PathVariable String id) {
+        byte[] arquivo = planilhaJogadorService.gerarPlanilha(id);
+        String nomeArquivo = "estatisticas-" + id + ".xlsx";
+
+        return ResponseEntity.ok()
+                .contentType(MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + nomeArquivo + "\"")
+                .body(arquivo);
+    }
+
+    @GetMapping("/{id}/estatisticas-casa-fora")
+    public ResponseEntity<EstatisticasCasaForaDTO> estatisticasCasaFora(@PathVariable String id) {
+        return ResponseEntity.ok(jogadorService.obterEstatisticasCasaFora(id));
+    }
+
+    @GetMapping("/{id}/melhor-temporada")
+    public ResponseEntity<MelhorTemporadaDTO> melhorTemporada(@PathVariable String id) {
+        return ResponseEntity.ok(jogadorService.obterMelhorTemporada(id));
+    }
+
+    @GetMapping("/{id}/estilo-provavel")
+    public ResponseEntity<EstiloJogadorDTO> estiloProvavel(@PathVariable String id) {
+        return ResponseEntity.ok(jogadorService.obterEstiloProvavel(id));
     }
 }

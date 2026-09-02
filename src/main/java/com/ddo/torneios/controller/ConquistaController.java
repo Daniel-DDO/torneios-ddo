@@ -1,6 +1,8 @@
 package com.ddo.torneios.controller;
 
 import com.ddo.torneios.dto.ConquistaDashboardDTO;
+import com.ddo.torneios.dto.JogadorDestaqueClubeDTO;
+import com.ddo.torneios.dto.TituloCampeaoDTO;
 import com.ddo.torneios.service.ConquistaService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -47,5 +49,18 @@ public class ConquistaController {
     public ResponseEntity<List<ConquistaDashboardDTO>> getHistoricoDoTitulo(@PathVariable String id) {
         List<ConquistaDashboardDTO> historico = conquistaService.buscarPorTitulo(id);
         return ResponseEntity.ok(historico);
+    }
+
+    @GetMapping("/titulo/{id}/top3-campeoes")
+    public ResponseEntity<List<TituloCampeaoDTO>> getTop3CampeoesPorTitulo(@PathVariable String id) {
+        List<TituloCampeaoDTO> top3 = conquistaService.buscarTop3CampeoesPorTitulo(id);
+        return ResponseEntity.ok(top3);
+    }
+
+    @GetMapping("/clube/{id}/jogador-destaque")
+    public ResponseEntity<JogadorDestaqueClubeDTO> getJogadorDestaquePorClube(@PathVariable String id) {
+        return conquistaService.buscarJogadorDestaquePorClube(id)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.noContent().build());
     }
 }

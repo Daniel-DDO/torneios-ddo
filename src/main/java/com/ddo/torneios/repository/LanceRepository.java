@@ -1,15 +1,13 @@
 package com.ddo.torneios.repository;
 
-import com.ddo.torneios.dto.ClubeDisputadoDTO;
-import com.ddo.torneios.dto.FeedItemDTO;
-import com.ddo.torneios.dto.HistoricoLancesClubeDTO;
-import com.ddo.torneios.dto.LanceResumoDTO;
+import com.ddo.torneios.dto.*;
 import com.ddo.torneios.model.Clube;
 import com.ddo.torneios.model.Jogador;
 import com.ddo.torneios.model.Lance;
 import com.ddo.torneios.model.Leilao;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -96,4 +94,75 @@ public interface LanceRepository extends JpaRepository<Lance, String> {
     List<Lance> findByLeilaoOrderByPrioridadeAscValorDesc(Leilao leilao);
 
     Optional<Lance> findTopByLeilaoAndClubeAndPrioridadeOrderByValorDesc(Leilao leilao, Clube clube, Integer prioridade);
+
+    @Query("SELECT l.id, l.leilao.id, l.prioridade, l.valor FROM Lance l WHERE l.jogador.id = :jogadorId")
+    List<Object[]> buscarChavesPorJogador(String jogadorId);
+
+    @Query("SELECT l.id, l.leilao.id, l.prioridade, l.valor FROM Lance l WHERE l.jogador.id IN :jogadorIds")
+    List<Object[]> buscarChavesPorJogadores(List<String> jogadorIds);
+
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("UPDATE Lance l SET l.jogador = :principal WHERE l.id IN :ids")
+    void reatribuirJogador(List<String> ids, Jogador principal);
+
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("DELETE FROM Lance l WHERE l.id IN :ids")
+    void deletarPorIds(List<String> ids);
+
+    @Query("""
+    SELECT new com.ddo.torneios.dto.LanceAlgoritmoDTO(
+        l.id, l.jogador.id, l.jogador.nome,
+        l.clube.id, l.clube.nome, l.clube.imagem,
+        l.valor, l.prioridade, l.dataHoraLance
+    )
+    FROM Lance l
+    WHERE l.leilao.id = :leilaoId
+""")
+    List<LanceAlgoritmoDTO> buscarParaAlgoritmo(@Param("leilaoId") String leilaoId);
+
+    @Query("""
+    SELECT new com.ddo.torneios.dto.LanceResumoDTO(l.clube.id, l.valor, l.jogador.nome, l.jogador.id)
+    FROM Lance l
+    WHERE l.leilao.id = :leilaoId AND l.clube.id IN :clubeIds
+    AND l.valor = (
+        SELECT MAX(l2.valor) FROM Lance l2
+        WHERE l2.clube.id = l.clube.id AND l2.leilao.id = :leilaoId
+    )
+""")
+    List<LanceResumoDTO> encontrarMaioresLancesPorClubes(@Param("leilaoId") String leilaoId,
+                                                         @Param("clubeIds") java.util.Set<String> clubeIds);
+
+    @Query("""
+    SELECT new com.ddo.torneios.dto.ItemDisputaDTO(l.jogador.nome, l.valor, l.prioridade, l.dataHoraLance)
+    FROM Lance l
+    WHERE l.leilao.id = :leilaoId AND l.clube.id = :clubeId
+    ORDER BY l.prioridade ASC, l.valor DESC
+""")
+    List<ItemDisputaDTO> buscarDisputaProjetada(@Param("leilaoId") String leilaoId, @Param("clubeId") String clubeId);
+
+    @Query("SELECT COUNT(l) FROM Lance l WHERE l.leilao.id = :leilaoId AND l.clube.id = :clubeId")
+    long contarLancesDoClube(@Param("leilaoId") String leilaoId, @Param("clubeId") String clubeId);
+
+    @Query("""
+    SELECT new com.ddo.torneios.dto.HistoricoLancesClubeDTO(
+        l.jogador.id, l.jogador.nome, l.jogador.imagem, l.valor, l.dataLance
+    )
+    FROM Lance l
+    WHERE l.leilao.id = :leilaoId AND l.clube.id = :clubeId
+    ORDER BY l.valor DESC
+""")
+    org.springframework.data.domain.Page<HistoricoLancesClubeDTO> buscarHistoricoLancesDoClube(
+            String leilaoId, String clubeId, org.springframework.data.domain.Pageable pageable);
+
+    @Query("select new com.ddo.torneios.dto.LiderLanceDTO(l.jogador.id, l.jogador.nome, l.valor, l.dataHoraLance) " +
+            "from Lance l " +
+            "where l.leilao = :leilao and l.clube = :clube and l.prioridade = :prioridade " +
+            "order by l.valor desc")
+    List<LiderLanceDTO> buscarLiderProjetado(@Param("leilao") Leilao leilao,
+                                             @Param("clube") Clube clube,
+                                             @Param("prioridade") Integer prioridade,
+                                             Pageable pageable);
+
+    @Query("select l from Lance l where l.leilao.id = :leilaoId and l.jogador.id = :jogadorId")
+    List<Lance> findByLeilaoIdAndJogadorId(@Param("leilaoId") String leilaoId, @Param("jogadorId") String jogadorId);
 }

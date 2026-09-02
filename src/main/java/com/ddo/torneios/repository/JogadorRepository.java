@@ -4,15 +4,18 @@ import com.ddo.torneios.dto.AproveitamentoProjection;
 import com.ddo.torneios.dto.*;
 import com.ddo.torneios.model.Cargo;
 import com.ddo.torneios.model.Jogador;
+import com.ddo.torneios.model.RankJogador;
 import jakarta.validation.constraints.NotBlank;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
 
@@ -143,4 +146,110 @@ public interface JogadorRepository extends JpaRepository<Jogador, String> {
     LIMIT 1
 """, nativeQuery = true)
     Optional<AproveitamentoProjection> findMelhorAproveitamento(@Param("minimoPartidas") int minimoPartidas);
+
+    @Query("SELECT new com.ddo.torneios.dto.SaldoProjecaoDTO(j.id, j.saldoVirtual) FROM Jogador j WHERE j.contaReivindicada = true")
+    List<SaldoProjecaoDTO> buscarSaldosDeJogadoresAtivos();
+
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("UPDATE Jogador j SET j.saldoVirtual = :novoSaldo, j.modificacaoConta = CURRENT_TIMESTAMP WHERE j.contaReivindicada = true")
+    void zerarSaldoDeTodosOsJogadores(@Param("novoSaldo") BigDecimal novoSaldo);
+
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("UPDATE Jogador j SET j.saldoVirtual = j.saldoVirtual + :valor, j.modificacaoConta = CURRENT_TIMESTAMP WHERE j.contaReivindicada = true")
+    void distribuirSaldoParaTodosOsJogadores(@Param("valor") BigDecimal valor);
+
+    @Query("SELECT j.id as id, j.nome as nome, j.imagem as imagem FROM Jogador j WHERE j.id = :id")
+    Optional<JogadorResumoConcessaoView> buscarResumoParaConcessao(@Param("id") String id);
+
+    @Query("SELECT j.id as id, j.nome as nome, j.imagem as imagem FROM Jogador j WHERE j.id IN :ids")
+    List<JogadorResumoConcessaoView> buscarResumosParaConcessao(@Param("ids") List<String> ids);
+
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("UPDATE Jogador j SET j.titulos = COALESCE(j.titulos, 0) + 1 WHERE j.id IN :ids")
+    void incrementarTitulosEmLote(@Param("ids") List<String> ids);
+
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("UPDATE Jogador j SET j.titulos = COALESCE(j.titulos, 0) + 1 WHERE j.id = :id")
+    void incrementarTitulos(@Param("id") String id);
+
+    @Query("SELECT j.id FROM Jogador j")
+    List<String> buscarTodosIds();
+
+    @Query("""
+        SELECT new com.ddo.torneios.dto.RankingEstadoDTO(
+            j.id, j.nome, j.rank, j.rankPoints, j.partidasRankeadas, j.strikesRebaixamento
+        )
+        FROM Jogador j WHERE j.id = :jogadorId
+    """)
+    Optional<RankingEstadoDTO> buscarEstadoRanking(@Param("jogadorId") String jogadorId);
+
+    @Query("""
+        SELECT new com.ddo.torneios.dto.RankingEstadoDTO(
+            j.id, j.nome, j.rank, j.rankPoints, j.partidasRankeadas, j.strikesRebaixamento
+        )
+        FROM Jogador j ORDER BY j.rankPoints DESC
+    """)
+    List<RankingEstadoDTO> buscarTabelaRanking();
+
+    @Modifying
+    @Query("""
+        UPDATE Jogador j
+        SET j.rankPoints = :rankPoints, j.rank = :rank,
+            j.partidasRankeadas = :partidasRankeadas, j.strikesRebaixamento = :strikes
+        WHERE j.id = :jogadorId
+    """)
+    void atualizarEstadoRanking(@Param("jogadorId") String jogadorId,
+                                @Param("rankPoints") int rankPoints,
+                                @Param("rank") RankJogador rank,
+                                @Param("partidasRankeadas") int partidasRankeadas,
+                                @Param("strikes") int strikes);
+
+    @Modifying
+    @Query("""
+        UPDATE Jogador j SET j.rankPoints = 0, j.rank = com.ddo.torneios.model.RankJogador.SEM_RANK,
+        j.partidasRankeadas = 0, j.strikesRebaixamento = 0 WHERE j.id = :jogadorId
+    """)
+    void zerarRankingPorId(@Param("jogadorId") String jogadorId);
+
+    @Modifying
+    @Query("""
+        UPDATE Jogador j SET j.rankPoints = 0, j.rank = com.ddo.torneios.model.RankJogador.SEM_RANK,
+        j.partidasRankeadas = 0, j.strikesRebaixamento = 0
+    """)
+    void zerarRankingTodos();
+
+    @Modifying
+    @Query("UPDATE Jogador j SET j.rank = :rankDepois, j.rankPoints = :pontosDepois, j.strikesRebaixamento = 0 WHERE j.rank = :rankAntes")
+    void aplicarDecaimentoPorRank(@Param("rankAntes") RankJogador rankAntes,
+                                  @Param("rankDepois") RankJogador rankDepois,
+                                  @Param("pontosDepois") int pontosDepois);
+
+    @EntityGraph(attributePaths = "insignias", type = EntityGraph.EntityGraphType.FETCH)
+    Optional<Jogador> findComInsigniasById(String id);
+
+    // JogadorRepository.java
+
+    @Query("""
+    SELECT new com.ddo.torneios.dto.JogadorLogadoDTO(j.id, j.cargo)
+    FROM Jogador j
+    WHERE j.id = :id
+    AND j.contaReivindicada = true
+    AND j.statusJogador = com.ddo.torneios.model.StatusJogador.ATIVO
+    """)
+    Optional<JogadorLogadoDTO> buscarParaAutenticacao(@Param("id") String id);
+
+    @Query("select new com.ddo.torneios.dto.JogadorLeilaoDTO(j.id, j.nome, j.discord, j.imagem, j.cargo, j.saldoVirtual) " +
+            "from Jogador j where j.id = :id")
+    Optional<JogadorLeilaoDTO> buscarParaLeilao(@Param("id") String id);
+
+    @Query("""
+    SELECT new com.ddo.torneios.dto.JogadorComparacaoBaseDTO(
+        j.id, j.nome, j.discord, j.imagem,
+        j.titulos, j.finais, j.partidasJogadas, j.vitorias, j.empates, j.derrotas,
+        j.golsMarcados, j.golsSofridos, j.saldoVirtual, j.pontosCoeficiente
+    )
+    FROM Jogador j
+    WHERE j.id = :id
+    """)
+    Optional<JogadorComparacaoBaseDTO> buscarBaseComparacaoPorId(@Param("id") String id);
 }

@@ -18,54 +18,77 @@ public class GeradorMataMataSorteioDirigidoStrategy extends GeradorMataMataBase 
         validarQuantidadeParticipantes(n, fase);
 
         List<ParticipacaoFase> ranking = new ArrayList<>(participantes);
-
         ranking.sort(Comparator.comparing(ParticipacaoFase::getPosicaoClassificacao, Comparator.nullsLast(Comparator.naturalOrder())));
 
-        //DEBUG:
-        System.out.println(">>> DEBUG SORTEIO DIRIGIDO (Top 4):");
-        for (int i = 0; i < Math.min(ranking.size(), 4); i++) {
-            ParticipacaoFase p = ranking.get(i);
-            String nome = (p.getJogadorClube() != null) ? p.getJogadorClube().getJogador().getNome() : "N/A";
-            System.out.println(String.format("Pos %d: %s (Classificação DB: %d)",
-                    i+1, nome, p.getPosicaoClassificacao()));
+        int totalConfrontos = n / 2;
+
+        if (totalConfrontos % 2 != 0) {
+            throw new IllegalArgumentException(
+                    "Sorteio dirigido exige um total de participantes múltiplo de 4 (para formar quadrantes pares).");
         }
 
-        int totalConfrontos = n / 2;
-        int meioChave = totalConfrontos / 2;
+        int numQuadrantes = totalConfrontos / 2;
 
         List<ParticipacaoFase> poteA = new ArrayList<>(ranking.subList(0, totalConfrontos));
         List<ParticipacaoFase> poteB = new ArrayList<>(ranking.subList(totalConfrontos, n));
 
-        Collections.shuffle(poteB);
-        Collections.shuffle(poteB);
+        List<ParticipacaoFase> cabecasDeChave = new ArrayList<>(poteA.subList(0, numQuadrantes));
+        List<ParticipacaoFase> segundaLinha = new ArrayList<>(poteA.subList(numQuadrantes, totalConfrontos));
 
-        ParticipacaoFase[] cabecasDeChave = new ParticipacaoFase[totalConfrontos];
         Random random = new Random();
 
-        ParticipacaoFase rank1 = poteA.remove(0);
-        ParticipacaoFase rank2 = poteA.remove(0);
+        ParticipacaoFase[] cabecaPorQuadrante = new ParticipacaoFase[numQuadrantes];
 
-        List<Integer> slotsParesEsquerda = gerarSlotsPares(1, meioChave);
-        List<Integer> slotsParesDireita = gerarSlotsPares(meioChave + 1, totalConfrontos);
-
-        boolean rank1NaEsquerda = random.nextBoolean();
-
-        if (rank1NaEsquerda) {
-            posicionarEmSlotAleatorio(cabecasDeChave, rank1, slotsParesEsquerda, random);
-            posicionarEmSlotAleatorio(cabecasDeChave, rank2, slotsParesDireita, random);
-        } else {
-            posicionarEmSlotAleatorio(cabecasDeChave, rank1, slotsParesDireita, random);
-            posicionarEmSlotAleatorio(cabecasDeChave, rank2, slotsParesEsquerda, random);
+        List<Integer> quadrantesEsquerda = new ArrayList<>();
+        List<Integer> quadrantesDireita = new ArrayList<>();
+        for (int q = 0; q < numQuadrantes; q++) {
+            if (q < numQuadrantes / 2) quadrantesEsquerda.add(q);
+            else quadrantesDireita.add(q);
         }
 
-        Collections.shuffle(poteA);
-        Iterator<ParticipacaoFase> it = poteA.iterator();
+        List<ParticipacaoFase> cabecasRestantes = new ArrayList<>(cabecasDeChave);
 
-        for (int i = 0; i < totalConfrontos; i++) {
-            if (cabecasDeChave[i] == null) {
-                cabecasDeChave[i] = it.next();
-            }
+        if (cabecasRestantes.size() >= 2 && !quadrantesEsquerda.isEmpty() && !quadrantesDireita.isEmpty()) {
+            ParticipacaoFase rank1 = cabecasRestantes.remove(0);
+            ParticipacaoFase rank2 = cabecasRestantes.remove(0);
+
+            boolean rank1NaEsquerda = random.nextBoolean();
+            List<Integer> ladoRank1 = rank1NaEsquerda ? quadrantesEsquerda : quadrantesDireita;
+            List<Integer> ladoRank2 = rank1NaEsquerda ? quadrantesDireita : quadrantesEsquerda;
+
+            int qRank1 = ladoRank1.remove(random.nextInt(ladoRank1.size()));
+            int qRank2 = ladoRank2.remove(random.nextInt(ladoRank2.size()));
+
+            cabecaPorQuadrante[qRank1] = rank1;
+            cabecaPorQuadrante[qRank2] = rank2;
         }
+
+        List<Integer> quadrantesLivres = new ArrayList<>();
+        for (int q = 0; q < numQuadrantes; q++) {
+            if (cabecaPorQuadrante[q] == null) quadrantesLivres.add(q);
+        }
+        Collections.shuffle(quadrantesLivres);
+        Collections.shuffle(cabecasRestantes);
+        for (int i = 0; i < cabecasRestantes.size(); i++) {
+            cabecaPorQuadrante[quadrantesLivres.get(i)] = cabecasRestantes.get(i);
+        }
+
+        Collections.shuffle(segundaLinha);
+        ParticipacaoFase[] segundaPorQuadrante = new ParticipacaoFase[numQuadrantes];
+        for (int q = 0; q < numQuadrantes; q++) {
+            segundaPorQuadrante[q] = segundaLinha.get(q);
+        }
+
+        ParticipacaoFase[] representantesPoteA = new ParticipacaoFase[totalConfrontos];
+        for (int q = 0; q < numQuadrantes; q++) {
+            int posImpar = q * 2;
+            int posPar = q * 2 + 1;
+            representantesPoteA[posImpar] = segundaPorQuadrante[q];
+            representantesPoteA[posPar] = cabecaPorQuadrante[q];
+        }
+
+        Collections.shuffle(poteB);
+        Collections.shuffle(poteB);
 
         List<Partida> partidasGeradas = new ArrayList<>();
         FaseMataMata faseInicial = fase.getFaseInicialMataMata();
@@ -75,35 +98,17 @@ public class GeradorMataMataSorteioDirigidoStrategy extends GeradorMataMataBase 
             List<Partida> confronto = criarConfronto(
                     fase,
                     i + 1,
-                    cabecasDeChave[i],
+                    representantesPoteA[i],
                     poteB.get(i),
                     nomeFaseLog
             );
 
             confronto.forEach(p -> p.setEtapaMataMata(faseInicial));
-
             partidasGeradas.addAll(confronto);
         }
 
         vincularProximasFases(partidasGeradas, fase);
 
         return partidasGeradas;
-    }
-
-    private void posicionarEmSlotAleatorio(ParticipacaoFase[] grid, ParticipacaoFase p, List<Integer> slots, Random r) {
-        if (slots.isEmpty()) return;
-        int escolhido = slots.get(r.nextInt(slots.size()));
-        grid[escolhido - 1] = p;
-    }
-
-    private List<Integer> gerarSlotsPares(int inicio, int fim) {
-        List<Integer> pares = new ArrayList<>();
-        for (int i = inicio; i <= fim; i++) {
-            if (i % 2 == 0) pares.add(i);
-        }
-        if (pares.isEmpty()) {
-            for (int i = inicio; i <= fim; i++) pares.add(i);
-        }
-        return pares;
     }
 }

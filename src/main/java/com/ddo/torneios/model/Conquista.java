@@ -10,6 +10,24 @@ import java.time.LocalDateTime;
 @Data
 @NoArgsConstructor
 @Entity
+@Table(
+        uniqueConstraints = {
+                @UniqueConstraint(
+                        name = "uk_conquista_titulo_edicao_jogador",
+                        columnNames = {"titulo_id", "nomeEdicao", "jogador_id"}
+                )
+        },
+        indexes = {
+                @Index(
+                        name = "idx_conquista_jogador",
+                        columnList = "jogador_id"
+                ),
+                @Index(
+                        name = "idx_conquista_clube",
+                        columnList = "clube_id"
+                )
+        }
+)
 public class Conquista {
 
     @Id

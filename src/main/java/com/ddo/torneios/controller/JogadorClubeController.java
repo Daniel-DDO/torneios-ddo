@@ -1,12 +1,10 @@
 package com.ddo.torneios.controller;
 
-import com.ddo.torneios.dto.JogadorClubeDTO;
-import com.ddo.torneios.dto.JogadorClubeInscritoDTO;
-import com.ddo.torneios.dto.SorteioResultadoDTO;
-import com.ddo.torneios.dto.SubstituicaoDTO;
+import com.ddo.torneios.dto.*;
 import com.ddo.torneios.request.ConfirmacaoSorteioRequest;
 import com.ddo.torneios.request.JogadorClubeRequest;
 import com.ddo.torneios.request.SorteioRequest;
+import com.ddo.torneios.request.TrocarJogadorClubePartidaRequest;
 import com.ddo.torneios.service.JogadorClubeService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -107,5 +105,25 @@ public class JogadorClubeController {
     public ResponseEntity<Void> confirmarSorteio(@RequestBody @Valid ConfirmacaoSorteioRequest request) {
         jogadorClubeService.confirmarInscricoesEmLote(request);
         return ResponseEntity.status(HttpStatus.CREATED).build();
+    }
+
+    @PutMapping("/substituir-jogador-torneio")
+    public ResponseEntity<Void> substituirJogadorNoTorneio(@RequestBody SubstituicaoTorneioDTO dto) {
+        jogadorClubeService.substituirJogadorNoTorneio(dto.idInscricaoAntiga(), dto.idNovoJogador(), dto.torneioId());
+        return ResponseEntity.noContent().build();
+    }
+
+    @PutMapping("/desfazer-substituicao/{idJogadorClubeAntigo}")
+    public ResponseEntity<Void> desfazerSubstituicao(@PathVariable String idJogadorClubeAntigo) {
+        jogadorClubeService.desfazerSubstituicao(idJogadorClubeAntigo);
+        return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/trocar-na-partida")
+    public ResponseEntity<TrocaJogadorClubePartidaResultadoDTO> trocarJogadorNaPartida(
+            @Valid @RequestBody TrocarJogadorClubePartidaRequest request) {
+
+        TrocaJogadorClubePartidaResultadoDTO resultado = jogadorClubeService.trocarJogadorNaPartida(request);
+        return ResponseEntity.ok(resultado);
     }
 }

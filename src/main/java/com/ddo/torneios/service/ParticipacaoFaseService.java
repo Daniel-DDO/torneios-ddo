@@ -7,6 +7,7 @@ import com.ddo.torneios.model.ParticipacaoFase;
 import com.ddo.torneios.repository.FaseTorneioRepository;
 import com.ddo.torneios.repository.JogadorClubeRepository;
 import com.ddo.torneios.repository.ParticipacaoFaseRepository;
+import com.ddo.torneios.request.AtualizarParticipacaoFaseRequest;
 import com.ddo.torneios.request.ParticipacaoFaseRequest;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -109,5 +110,27 @@ public class ParticipacaoFaseService {
                 .stream()
                 .map(ParticipacaoFaseDTO::new)
                 .toList();
+    }
+
+    @Transactional
+    public ParticipacaoFaseDTO editarParticipante(String id, AtualizarParticipacaoFaseRequest request) {
+        ParticipacaoFase participacao = participacaoFaseRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Participação não encontrada com ID: " + id));
+
+        if (request.pontos() != null) participacao.setPontos(request.pontos());
+        if (request.partidasJogadas() != null) participacao.setPartidasJogadas(request.partidasJogadas());
+        if (request.vitorias() != null) participacao.setVitorias(request.vitorias());
+        if (request.empates() != null) participacao.setEmpates(request.empates());
+        if (request.derrotas() != null) participacao.setDerrotas(request.derrotas());
+        if (request.golsPro() != null) participacao.setGolsPro(request.golsPro());
+        if (request.golsContra() != null) participacao.setGolsContra(request.golsContra());
+
+        if (request.golsPro() != null || request.golsContra() != null) {
+            participacao.setSaldoGols(participacao.getGolsPro() - participacao.getGolsContra());
+        }
+
+        participacaoFaseRepository.save(participacao);
+
+        return new ParticipacaoFaseDTO(participacao);
     }
 }

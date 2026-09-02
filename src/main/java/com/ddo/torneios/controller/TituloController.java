@@ -1,5 +1,6 @@
 package com.ddo.torneios.controller;
 
+import com.ddo.torneios.dto.ConquistaResumoDTO;
 import com.ddo.torneios.dto.TituloResumoDTO;
 import com.ddo.torneios.model.Conquista;
 import com.ddo.torneios.model.Titulo;
@@ -121,8 +122,35 @@ public class TituloController {
         }
     }
 
+    @PostMapping("/conquistas/{conquistaId}/forcar-arte")
+    public ResponseEntity<?> forcarGeracaoArte(@PathVariable String conquistaId) {
+        try {
+            tituloService.forcarGeracaoArteCampeao(conquistaId);
+            return ResponseEntity.accepted().body(Map.of(
+                    "mensagem", "Geração de arte iniciada em segundo plano para a conquista " + conquistaId
+            ));
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(Map.of("erro", e.getMessage()));
+        }
+    }
+
     @GetMapping("/buscar-autocomplete")
     public ResponseEntity<List<TituloResumoDTO>> autocomplete(@RequestParam String termo) {
         return ResponseEntity.ok(tituloService.buscarAutocomplete(termo));
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<?> buscarPorId(@PathVariable String id) {
+        try {
+            Titulo titulo = tituloService.buscarPorId(id);
+            return ResponseEntity.ok(titulo);
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(Map.of("erro", e.getMessage()));
+        }
+    }
+
+    @GetMapping("/conquistas")
+    public ResponseEntity<List<ConquistaResumoDTO>> listarConquistas() {
+        return ResponseEntity.ok(tituloService.listarTodasConquistas());
     }
 }

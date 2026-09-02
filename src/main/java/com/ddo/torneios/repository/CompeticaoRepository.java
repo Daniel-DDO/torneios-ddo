@@ -16,6 +16,10 @@ import java.util.Optional;
 public interface CompeticaoRepository extends JpaRepository<Competicao, String> {
     boolean existsByNome(@NotBlank String nome);
 
+    Page<Competicao> findByAtivoTrueAndNomeContainingIgnoreCase(String nomeFiltro, Pageable pageable);
+
+    Page<Competicao> findByAtivoTrue(Pageable pageable);
+
     Page<Competicao> findByNomeContainingIgnoreCase(String nomeFiltro, Pageable pageable);
 
     @Query("""

@@ -58,7 +58,11 @@ public record PartidaDTO(
         BigDecimal receitaVisitante,
 
         Integer placarAgregadoMandante,
-        Integer placarAgregadoVisitante
+        Integer placarAgregadoVisitante,
+
+        boolean anulada,
+        String motivoAnulacao,
+        LocalDateTime anuladaEm
 ) {
     public PartidaDTO(Partida atual, Partida ida) {
         this(
@@ -95,7 +99,11 @@ public record PartidaDTO(
                 atual.getReceitaVisitante() != null ? atual.getReceitaVisitante() : BigDecimal.ZERO,
 
                 calcularAgregadoMandante(atual, ida),
-                calcularAgregadoVisitante(atual, ida)
+                calcularAgregadoVisitante(atual, ida),
+
+                atual.isAnulada(),
+                atual.getMotivoAnulacao(),
+                atual.getAnuladaEm()
         );
     }
 

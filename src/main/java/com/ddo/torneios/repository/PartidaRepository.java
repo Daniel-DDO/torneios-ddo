@@ -1,10 +1,7 @@
 package com.ddo.torneios.repository;
 
 import com.ddo.torneios.dto.*;
-import com.ddo.torneios.model.FaseMataMata;
-import com.ddo.torneios.model.FaseTorneio;
-import com.ddo.torneios.model.Partida;
-import com.ddo.torneios.model.TipoPartida;
+import com.ddo.torneios.model.*;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -13,6 +10,7 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
@@ -79,7 +77,9 @@ public interface PartidaRepository extends JpaRepository<Partida, String> {
         CASE WHEN p.penaltis.golsMandante IS NOT NULL AND p.penaltis.golsVisitante IS NOT NULL
              THEN true ELSE false END,
         p.penaltis.golsMandante,
-        p.penaltis.golsVisitante
+        p.penaltis.golsVisitante,
+        p.anulada,
+        p.motivoAnulacao
     )
     FROM Partida p
     JOIN p.fase f
@@ -88,18 +88,66 @@ public interface PartidaRepository extends JpaRepository<Partida, String> {
     JOIN p.visitante v JOIN v.jogador vj JOIN v.clube vc
     WHERE (mj.id = :jogadorId OR vj.id = :jogadorId)
     AND p.realizada = :realizada
+    AND p.anulada = false
     """,
-            countQuery = """
+                countQuery = """
     SELECT count(p)
     FROM Partida p
     JOIN p.mandante m JOIN m.jogador mj
     JOIN p.visitante v JOIN v.jogador vj
     WHERE (mj.id = :jogadorId OR vj.id = :jogadorId)
     AND p.realizada = :realizada
+    AND p.anulada = false
     """)
     Page<PartidaHistoricoDTO> findPorJogadorIdEStatus(
             @Param("jogadorId") String jogadorId,
             @Param("realizada") boolean realizada,
+            Pageable pageable
+    );
+
+    @Query(value = """
+    SELECT new com.ddo.torneios.dto.PartidaHistoricoDTO(
+        p.id,
+        f.id,
+        r.id,
+        r.numero,
+        p.dataHora,
+        p.estadio,
+        new com.ddo.torneios.dto.JogadorClubeResumoDTO(
+            m.id, mj.id, mj.nome, mj.imagem, mc.id, mc.nome, mc.imagem, mc.sigla
+        ),
+        new com.ddo.torneios.dto.JogadorClubeResumoDTO(
+            v.id, vj.id, vj.nome, vj.imagem, vc.id, vc.nome, vc.imagem, vc.sigla
+        ),
+        p.golsMandante,
+        p.golsVisitante,
+        p.realizada,
+        p.wo,
+        CASE WHEN p.penaltis.golsMandante IS NOT NULL AND p.penaltis.golsVisitante IS NOT NULL
+             THEN true ELSE false END,
+        p.penaltis.golsMandante,
+        p.penaltis.golsVisitante,
+        p.anulada,
+        p.motivoAnulacao
+    )
+    FROM Partida p
+    JOIN p.fase f
+    LEFT JOIN p.rodada r
+    JOIN p.mandante m JOIN m.jogador mj JOIN m.clube mc
+    JOIN p.visitante v JOIN v.jogador vj JOIN v.clube vc
+    WHERE (mj.id = :jogadorId OR vj.id = :jogadorId)
+    AND p.anulada = true
+    """,
+                countQuery = """
+    SELECT count(p)
+    FROM Partida p
+    JOIN p.mandante m JOIN m.jogador mj
+    JOIN p.visitante v JOIN v.jogador vj
+    WHERE (mj.id = :jogadorId OR vj.id = :jogadorId)
+    AND p.anulada = true
+    """)
+    Page<PartidaHistoricoDTO> findAnuladasPorJogadorId(
+            @Param("jogadorId") String jogadorId,
             Pageable pageable
     );
 
@@ -310,7 +358,8 @@ public interface PartidaRepository extends JpaRepository<Partida, String> {
         p.coeficienteMandante, p.coeficienteVisitante,
         p.tipoPartida,
         pp.id, p.slotNaProxima,
-        p.receitaMandante, p.receitaVisitante
+        p.receitaMandante, p.receitaVisitante,
+        p.anulada, p.motivoAnulacao, p.anuladaEm
     )
     FROM Partida p
     JOIN p.fase f
@@ -487,4 +536,429 @@ public interface PartidaRepository extends JpaRepository<Partida, String> {
 """)
     List<RecordePartidaDTO> findMaiorGoleada();
 
+    @Query("SELECT p FROM Partida p " +
+            "WHERE p.fase.torneio.id = :torneioId " +
+            "AND (p.mandante.id = :jcId OR p.visitante.id = :jcId) " +
+            "AND p.realizada = false")
+    List<Partida> findPartidasNaoRealizadasPorJogadorClubeETorneio(@Param("jcId") String jogadorClubeId,
+                                                                   @Param("torneioId") String torneioId);
+
+    @Query("SELECT COUNT(p) > 0 FROM Partida p WHERE (p.mandante.id = :jcId OR p.visitante.id = :jcId) AND p.realizada = true")
+    boolean existsPartidaRealizadaPorJogadorClube(@Param("jcId") String jogadorClubeId);
+
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("UPDATE Partida p SET p.mandante.id = :sobreviventeId WHERE p.mandante.id = :antigoId")
+    void reatribuirMandante(String antigoId, String sobreviventeId);
+
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("UPDATE Partida p SET p.visitante.id = :sobreviventeId WHERE p.visitante.id = :antigoId")
+    void reatribuirVisitante(String antigoId, String sobreviventeId);
+
+    @Query("""
+        SELECT new com.ddo.torneios.dto.PartidaResultadoDTO(
+            p.id, p.mandante.jogador.id, p.visitante.jogador.id,
+            p.golsMandante, p.golsVisitante,
+            p.penaltis.golsMandante, p.penaltis.golsVisitante,
+            p.wo, p.dataHora
+        )
+        FROM Partida p
+        WHERE p.realizada = true
+        AND (p.mandante.jogador.id = :jogadorId OR p.visitante.jogador.id = :jogadorId)
+        ORDER BY p.dataHora ASC
+    """)
+    List<PartidaResultadoDTO> buscarResultadosDoJogador(@Param("jogadorId") String jogadorId);
+
+    @Modifying
+    @Query("UPDATE Partida p SET p.rankSnapshotMandante = :snapshot WHERE p.id = :id")
+    void atualizarSnapshotMandante(@Param("id") String id, @Param("snapshot") String snapshot);
+
+    @Modifying
+    @Query("UPDATE Partida p SET p.rankSnapshotVisitante = :snapshot WHERE p.id = :id")
+    void atualizarSnapshotVisitante(@Param("id") String id, @Param("snapshot") String snapshot);
+
+    @Query("SELECT p.rankSnapshotMandante FROM Partida p WHERE p.id = :id")
+    String buscarSnapshotMandante(@Param("id") String id);
+
+    @Query("SELECT p.rankSnapshotVisitante FROM Partida p WHERE p.id = :id")
+    String buscarSnapshotVisitante(@Param("id") String id);
+
+    @Modifying
+    @Query("UPDATE Partida p SET p.rankSnapshotMandante = NULL, p.rankSnapshotVisitante = NULL")
+    void limparTodosSnapshots();
+
+    @Modifying
+    @Query("UPDATE Partida p SET p.rankSnapshotMandante = NULL WHERE p.mandante.jogador.id = :jogadorId")
+    void limparSnapshotsMandanteDoJogador(@Param("jogadorId") String jogadorId);
+
+    @Modifying
+    @Query("UPDATE Partida p SET p.rankSnapshotVisitante = NULL WHERE p.visitante.jogador.id = :jogadorId")
+    void limparSnapshotsVisitanteDoJogador(@Param("jogadorId") String jogadorId);
+
+    @Query("""
+    SELECT new com.ddo.torneios.dto.PlacarIdaDTO(p.golsMandante, p.golsVisitante, p.realizada)
+    FROM Partida p
+    WHERE p.fase.id = :faseId
+      AND p.chaveIndex = :chaveIndex
+      AND p.tipoPartida = :tipoIda
+      AND p.mandante.id = :visitanteVoltaId
+      AND p.visitante.id = :mandanteVoltaId
+    ORDER BY p.dataHora DESC
+    """)
+    List<PlacarIdaDTO> buscarPlacarIda(
+            @Param("faseId") String faseId,
+            @Param("chaveIndex") Integer chaveIndex,
+            @Param("tipoIda") TipoPartida tipoIda,
+            @Param("visitanteVoltaId") String visitanteVoltaId,
+            @Param("mandanteVoltaId") String mandanteVoltaId);
+
+    @Query(value = """
+    SELECT j.id AS jogadorId, j.nome AS nomeJogador, COUNT(*) AS totalDerrotasWo
+    FROM (
+        SELECT jc.jogador_id AS jogador_id
+        FROM partida p
+        JOIN jogador_clube jc ON jc.id = p.mandante_id
+        WHERE p.wo = true AND p.realizada = true
+          AND p.gols_mandante IS NOT NULL AND p.gols_visitante IS NOT NULL
+          AND p.gols_mandante < p.gols_visitante
+        UNION ALL
+        SELECT jc.jogador_id AS jogador_id
+        FROM partida p
+        JOIN jogador_clube jc ON jc.id = p.visitante_id
+        WHERE p.wo = true AND p.realizada = true
+          AND p.gols_mandante IS NOT NULL AND p.gols_visitante IS NOT NULL
+          AND p.gols_visitante < p.gols_mandante
+    ) derrotas
+    JOIN jogador j ON j.id = derrotas.jogador_id
+    GROUP BY j.id, j.nome
+    ORDER BY totalDerrotasWo DESC
+    LIMIT :limite
+    """, nativeQuery = true)
+    List<TopJogadorWoProjection> buscarTopJogadoresDerrotasWo(@Param("limite") int limite);
+
+    @Query("""
+    SELECT NEW com.ddo.torneios.dto.PartidaHistoricoDTO(
+        p.id,
+        p.fase.id,
+        r.id,
+        r.numero,
+        p.dataHora,
+        p.estadio,
+        NEW com.ddo.torneios.dto.JogadorClubeResumoDTO(
+            m.id, mj.id, mj.nome, mj.imagem, mc.id, mc.nome, mc.imagem, mc.sigla
+        ),
+        NEW com.ddo.torneios.dto.JogadorClubeResumoDTO(
+            v.id, vj.id, vj.nome, vj.imagem, vc.id, vc.nome, vc.imagem, vc.sigla
+        ),
+        p.golsMandante,
+        p.golsVisitante,
+        p.realizada,
+        p.wo,
+        CASE WHEN p.penaltis.golsMandante IS NOT NULL AND p.penaltis.golsVisitante IS NOT NULL THEN true ELSE false END,
+        p.penaltis.golsMandante,
+        p.penaltis.golsVisitante,
+        p.anulada,
+        p.motivoAnulacao
+    )
+    FROM Partida p
+    JOIN p.mandante m JOIN m.jogador mj JOIN m.clube mc
+    JOIN p.visitante v JOIN v.jogador vj JOIN v.clube vc
+    LEFT JOIN p.rodada r
+    WHERE p.realizada = true
+    AND ((mj.id = :id1 AND vj.id = :id2) OR (mj.id = :id2 AND vj.id = :id1))
+    ORDER BY p.dataHora DESC
+    """)
+    List<PartidaHistoricoDTO> buscarConfrontosDiretos(@Param("id1") String id1, @Param("id2") String id2);
+
+    @Query("""
+    select p.id as id,
+           p.golsMandante as golsMandante,
+           p.golsVisitante as golsVisitante,
+           cm.estrelas as estrelasMandante,
+           cv.estrelas as estrelasVisitante,
+           comp.valor as valorCompeticao
+    from Partida p
+    join p.mandante jcm join jcm.clube cm
+    join p.visitante jcv join jcv.clube cv
+    join p.fase f join f.torneio t join t.competicao comp
+    where p.id = :id
+    """)
+    Optional<PartidaCoeficienteProjection> buscarDadosParaCoeficiente(@Param("id") String id);
+
+    @Query("""
+    select p from Partida p
+    join fetch p.mandante m join fetch m.jogador jm join fetch m.clube
+    join fetch p.visitante v join fetch v.jogador jv join fetch v.clube
+    join fetch p.fase f join fetch f.torneio t join fetch t.competicao
+    where p.id = :id
+    """)
+    Optional<Partida> buscarPartidaCompleta(@Param("id") String id);
+
+    @Query("""
+    SELECT new com.ddo.torneios.dto.EstatisticasCasaForaDTO(
+        j.id, j.nome, j.discord, j.imagem,
+
+        SUM(CASE WHEN p.mandante.jogador.id = :jogadorId AND p.mandante.clube.ligaClube <> 'SELECAO'
+                 AND p.golsMandante > p.golsVisitante THEN 1L ELSE 0L END),
+        SUM(CASE WHEN p.mandante.jogador.id = :jogadorId AND p.mandante.clube.ligaClube <> 'SELECAO'
+                 AND p.golsMandante = p.golsVisitante THEN 1L ELSE 0L END),
+        SUM(CASE WHEN p.mandante.jogador.id = :jogadorId AND p.mandante.clube.ligaClube <> 'SELECAO'
+                 AND p.golsMandante < p.golsVisitante THEN 1L ELSE 0L END),
+
+        SUM(CASE WHEN p.mandante.jogador.id = :jogadorId AND p.mandante.clube.ligaClube = 'SELECAO'
+                 AND p.golsMandante > p.golsVisitante THEN 1L ELSE 0L END),
+        SUM(CASE WHEN p.mandante.jogador.id = :jogadorId AND p.mandante.clube.ligaClube = 'SELECAO'
+                 AND p.golsMandante = p.golsVisitante THEN 1L ELSE 0L END),
+        SUM(CASE WHEN p.mandante.jogador.id = :jogadorId AND p.mandante.clube.ligaClube = 'SELECAO'
+                 AND p.golsMandante < p.golsVisitante THEN 1L ELSE 0L END),
+
+        SUM(CASE WHEN p.visitante.jogador.id = :jogadorId AND p.visitante.clube.ligaClube <> 'SELECAO'
+                 AND p.golsVisitante > p.golsMandante THEN 1L ELSE 0L END),
+        SUM(CASE WHEN p.visitante.jogador.id = :jogadorId AND p.visitante.clube.ligaClube <> 'SELECAO'
+                 AND p.golsVisitante = p.golsMandante THEN 1L ELSE 0L END),
+        SUM(CASE WHEN p.visitante.jogador.id = :jogadorId AND p.visitante.clube.ligaClube <> 'SELECAO'
+                 AND p.golsVisitante < p.golsMandante THEN 1L ELSE 0L END),
+
+        SUM(CASE WHEN p.visitante.jogador.id = :jogadorId AND p.visitante.clube.ligaClube = 'SELECAO'
+                 AND p.golsVisitante > p.golsMandante THEN 1L ELSE 0L END),
+        SUM(CASE WHEN p.visitante.jogador.id = :jogadorId AND p.visitante.clube.ligaClube = 'SELECAO'
+                 AND p.golsVisitante = p.golsMandante THEN 1L ELSE 0L END),
+        SUM(CASE WHEN p.visitante.jogador.id = :jogadorId AND p.visitante.clube.ligaClube = 'SELECAO'
+                 AND p.golsVisitante < p.golsMandante THEN 1L ELSE 0L END)
+    )
+    FROM Partida p
+    JOIN p.mandante.jogador j
+    WHERE (p.mandante.jogador.id = :jogadorId OR p.visitante.jogador.id = :jogadorId)
+      AND p.anulada = false
+      AND p.golsMandante IS NOT NULL
+      AND p.golsVisitante IS NOT NULL
+    GROUP BY j.id, j.nome, j.discord, j.imagem
+    """)
+    Optional<EstatisticasCasaForaDTO> buscarEstatisticasCasaFora(@Param("jogadorId") String jogadorId);
+
+    @Query("""
+    SELECT new com.ddo.torneios.dto.AgregadoCasaForaDTO(
+        SUM(CASE WHEN m.jogador.id = :jogadorId AND cm.ligaClube <> 'SELECAO'
+                 AND p.golsMandante > p.golsVisitante THEN 1L ELSE 0L END),
+        SUM(CASE WHEN m.jogador.id = :jogadorId AND cm.ligaClube <> 'SELECAO'
+                 AND p.golsMandante = p.golsVisitante THEN 1L ELSE 0L END),
+        SUM(CASE WHEN m.jogador.id = :jogadorId AND cm.ligaClube <> 'SELECAO'
+                 AND p.golsMandante < p.golsVisitante THEN 1L ELSE 0L END),
+
+        SUM(CASE WHEN m.jogador.id = :jogadorId AND cm.ligaClube = 'SELECAO'
+                 AND p.golsMandante > p.golsVisitante THEN 1L ELSE 0L END),
+        SUM(CASE WHEN m.jogador.id = :jogadorId AND cm.ligaClube = 'SELECAO'
+                 AND p.golsMandante = p.golsVisitante THEN 1L ELSE 0L END),
+        SUM(CASE WHEN m.jogador.id = :jogadorId AND cm.ligaClube = 'SELECAO'
+                 AND p.golsMandante < p.golsVisitante THEN 1L ELSE 0L END),
+
+        SUM(CASE WHEN v.jogador.id = :jogadorId AND cv.ligaClube <> 'SELECAO'
+                 AND p.golsVisitante > p.golsMandante THEN 1L ELSE 0L END),
+        SUM(CASE WHEN v.jogador.id = :jogadorId AND cv.ligaClube <> 'SELECAO'
+                 AND p.golsVisitante = p.golsMandante THEN 1L ELSE 0L END),
+        SUM(CASE WHEN v.jogador.id = :jogadorId AND cv.ligaClube <> 'SELECAO'
+                 AND p.golsVisitante < p.golsMandante THEN 1L ELSE 0L END),
+
+        SUM(CASE WHEN v.jogador.id = :jogadorId AND cv.ligaClube = 'SELECAO'
+                 AND p.golsVisitante > p.golsMandante THEN 1L ELSE 0L END),
+        SUM(CASE WHEN v.jogador.id = :jogadorId AND cv.ligaClube = 'SELECAO'
+                 AND p.golsVisitante = p.golsMandante THEN 1L ELSE 0L END),
+        SUM(CASE WHEN v.jogador.id = :jogadorId AND cv.ligaClube = 'SELECAO'
+                 AND p.golsVisitante < p.golsMandante THEN 1L ELSE 0L END)
+    )
+    FROM Partida p
+    JOIN p.mandante m
+    JOIN m.clube cm
+    JOIN p.visitante v
+    JOIN v.clube cv
+    WHERE (m.jogador.id = :jogadorId OR v.jogador.id = :jogadorId)
+      AND p.anulada = false
+      AND p.golsMandante IS NOT NULL
+      AND p.golsVisitante IS NOT NULL
+    """)
+    AgregadoCasaForaDTO buscarAgregadoCasaFora(@Param("jogadorId") String jogadorId);
+
+    @Query("""
+    SELECT new com.ddo.torneios.dto.AgregadoCasaForaParDTO(
+        SUM(CASE WHEN m.jogador.id = :id1 AND cm.ligaClube <> 'SELECAO' AND p.golsMandante > p.golsVisitante THEN 1L ELSE 0L END),
+        SUM(CASE WHEN m.jogador.id = :id1 AND cm.ligaClube <> 'SELECAO' AND p.golsMandante = p.golsVisitante THEN 1L ELSE 0L END),
+        SUM(CASE WHEN m.jogador.id = :id1 AND cm.ligaClube <> 'SELECAO' AND p.golsMandante < p.golsVisitante THEN 1L ELSE 0L END),
+        SUM(CASE WHEN m.jogador.id = :id1 AND cm.ligaClube = 'SELECAO' AND p.golsMandante > p.golsVisitante THEN 1L ELSE 0L END),
+        SUM(CASE WHEN m.jogador.id = :id1 AND cm.ligaClube = 'SELECAO' AND p.golsMandante = p.golsVisitante THEN 1L ELSE 0L END),
+        SUM(CASE WHEN m.jogador.id = :id1 AND cm.ligaClube = 'SELECAO' AND p.golsMandante < p.golsVisitante THEN 1L ELSE 0L END),
+        SUM(CASE WHEN v.jogador.id = :id1 AND cv.ligaClube <> 'SELECAO' AND p.golsVisitante > p.golsMandante THEN 1L ELSE 0L END),
+        SUM(CASE WHEN v.jogador.id = :id1 AND cv.ligaClube <> 'SELECAO' AND p.golsVisitante = p.golsMandante THEN 1L ELSE 0L END),
+        SUM(CASE WHEN v.jogador.id = :id1 AND cv.ligaClube <> 'SELECAO' AND p.golsVisitante < p.golsMandante THEN 1L ELSE 0L END),
+        SUM(CASE WHEN v.jogador.id = :id1 AND cv.ligaClube = 'SELECAO' AND p.golsVisitante > p.golsMandante THEN 1L ELSE 0L END),
+        SUM(CASE WHEN v.jogador.id = :id1 AND cv.ligaClube = 'SELECAO' AND p.golsVisitante = p.golsMandante THEN 1L ELSE 0L END),
+        SUM(CASE WHEN v.jogador.id = :id1 AND cv.ligaClube = 'SELECAO' AND p.golsVisitante < p.golsMandante THEN 1L ELSE 0L END),
+
+        SUM(CASE WHEN m.jogador.id = :id2 AND cm.ligaClube <> 'SELECAO' AND p.golsMandante > p.golsVisitante THEN 1L ELSE 0L END),
+        SUM(CASE WHEN m.jogador.id = :id2 AND cm.ligaClube <> 'SELECAO' AND p.golsMandante = p.golsVisitante THEN 1L ELSE 0L END),
+        SUM(CASE WHEN m.jogador.id = :id2 AND cm.ligaClube <> 'SELECAO' AND p.golsMandante < p.golsVisitante THEN 1L ELSE 0L END),
+        SUM(CASE WHEN m.jogador.id = :id2 AND cm.ligaClube = 'SELECAO' AND p.golsMandante > p.golsVisitante THEN 1L ELSE 0L END),
+        SUM(CASE WHEN m.jogador.id = :id2 AND cm.ligaClube = 'SELECAO' AND p.golsMandante = p.golsVisitante THEN 1L ELSE 0L END),
+        SUM(CASE WHEN m.jogador.id = :id2 AND cm.ligaClube = 'SELECAO' AND p.golsMandante < p.golsVisitante THEN 1L ELSE 0L END),
+        SUM(CASE WHEN v.jogador.id = :id2 AND cv.ligaClube <> 'SELECAO' AND p.golsVisitante > p.golsMandante THEN 1L ELSE 0L END),
+        SUM(CASE WHEN v.jogador.id = :id2 AND cv.ligaClube <> 'SELECAO' AND p.golsVisitante = p.golsMandante THEN 1L ELSE 0L END),
+        SUM(CASE WHEN v.jogador.id = :id2 AND cv.ligaClube <> 'SELECAO' AND p.golsVisitante < p.golsMandante THEN 1L ELSE 0L END),
+        SUM(CASE WHEN v.jogador.id = :id2 AND cv.ligaClube = 'SELECAO' AND p.golsVisitante > p.golsMandante THEN 1L ELSE 0L END),
+        SUM(CASE WHEN v.jogador.id = :id2 AND cv.ligaClube = 'SELECAO' AND p.golsVisitante = p.golsMandante THEN 1L ELSE 0L END),
+        SUM(CASE WHEN v.jogador.id = :id2 AND cv.ligaClube = 'SELECAO' AND p.golsVisitante < p.golsMandante THEN 1L ELSE 0L END)
+    )
+    FROM Partida p
+    JOIN p.mandante m
+    JOIN m.clube cm
+    JOIN p.visitante v
+    JOIN v.clube cv
+    WHERE (m.jogador.id IN (:id1, :id2) OR v.jogador.id IN (:id1, :id2))
+      AND p.anulada = false
+      AND p.golsMandante IS NOT NULL
+      AND p.golsVisitante IS NOT NULL
+    """)
+    AgregadoCasaForaParDTO buscarAgregadoCasaForaPar(@Param("id1") String id1, @Param("id2") String id2);
+
+    @Query("""
+    SELECT new com.ddo.torneios.dto.AgregadoEstiloParDTO(
+        SUM(CASE WHEN jc.jogador.id = :id1 THEN jc.partidasJogadas ELSE 0 END),
+        SUM(CASE WHEN jc.jogador.id = :id1 THEN jc.totalGolsMarcados ELSE 0 END),
+        SUM(CASE WHEN jc.jogador.id = :id1 THEN jc.totalGolsSofridos ELSE 0 END),
+        AVG(CASE WHEN jc.jogador.id = :id1 THEN c.estrelas ELSE NULL END),
+
+        SUM(CASE WHEN jc.jogador.id = :id2 THEN jc.partidasJogadas ELSE 0 END),
+        SUM(CASE WHEN jc.jogador.id = :id2 THEN jc.totalGolsMarcados ELSE 0 END),
+        SUM(CASE WHEN jc.jogador.id = :id2 THEN jc.totalGolsSofridos ELSE 0 END),
+        AVG(CASE WHEN jc.jogador.id = :id2 THEN c.estrelas ELSE NULL END)
+    )
+    FROM JogadorClube jc
+    JOIN jc.clube c
+    WHERE jc.jogador.id IN (:id1, :id2)
+      AND jc.partidasJogadas > 0
+    """)
+    AgregadoEstiloParDTO buscarAgregadoEstiloPar(@Param("id1") String id1, @Param("id2") String id2);
+
+    @Query("""
+    SELECT new com.ddo.torneios.dto.PartidaProbabilidadeDTO(
+        p.id, p.realizada, p.fase.id, p.chaveIndex, p.tipoPartida,
+
+        jm.id, jm.nome, jm.partidasJogadas, jm.vitorias, jm.golsMarcados, jm.golsSofridos,
+        m.partidasJogadas, m.aproveitamento, m.totalGolsMarcados, m.totalGolsSofridos, cm.estrelas,
+
+        jv.id, jv.nome, jv.partidasJogadas, jv.vitorias, jv.golsMarcados, jv.golsSofridos,
+        v.partidasJogadas, v.aproveitamento, v.totalGolsMarcados, v.totalGolsSofridos, cv.estrelas
+    )
+    FROM Partida p
+    LEFT JOIN p.mandante m
+    LEFT JOIN m.jogador jm
+    LEFT JOIN m.clube cm
+    LEFT JOIN p.visitante v
+    LEFT JOIN v.jogador jv
+    LEFT JOIN v.clube cv
+    WHERE p.id = :id
+    """)
+    Optional<PartidaProbabilidadeDTO> buscarPartidaParaProbabilidade(@Param("id") String id);
+
+    @Query("""
+    SELECT new com.ddo.torneios.dto.PartidaIdaResultadoDTO(p.golsMandante, p.golsVisitante)
+    FROM Partida p
+    WHERE p.fase.id = :faseId
+      AND p.chaveIndex = :chaveIndex
+      AND p.tipoPartida = :tipo
+      AND p.realizada = true
+    """)
+    Optional<PartidaIdaResultadoDTO> buscarResultadoPartidaIda(
+            @Param("faseId") String faseId,
+            @Param("chaveIndex") Integer chaveIndex,
+            @Param("tipo") TipoPartida tipo
+    );
+
+    @Query("""
+    SELECT new com.ddo.torneios.dto.PartidaIdaResultadoDTO(p.golsMandante, p.golsVisitante)
+    FROM Partida p
+    WHERE p.proximaPartida.id = :partidaVoltaId
+      AND p.realizada = true
+      AND p.anulada = false
+    """)
+    Optional<PartidaIdaResultadoDTO> buscarResultadoPartidaIdaPorProximaPartida(@Param("partidaVoltaId") String partidaVoltaId);
+
+    @Query("""
+    SELECT new com.ddo.torneios.dto.MediasGolsCasaForaDTO(
+        AVG(CASE WHEN m.jogador.id = :mandanteId THEN p.golsMandante ELSE NULL END),
+        AVG(CASE WHEN m.jogador.id = :mandanteId THEN p.golsVisitante ELSE NULL END),
+        AVG(CASE WHEN v.jogador.id = :visitanteId THEN p.golsVisitante ELSE NULL END),
+        AVG(CASE WHEN v.jogador.id = :visitanteId THEN p.golsMandante ELSE NULL END)
+    )
+    FROM Partida p
+    JOIN p.mandante m
+    JOIN p.visitante v
+    WHERE (m.jogador.id = :mandanteId OR v.jogador.id = :visitanteId)
+      AND p.anulada = false
+      AND p.golsMandante IS NOT NULL
+      AND p.golsVisitante IS NOT NULL
+    """)
+    MediasGolsCasaForaDTO buscarMediasGolsCasaFora(
+            @Param("mandanteId") String mandanteId,
+            @Param("visitanteId") String visitanteId
+    );
+
+    @Query("""
+    SELECT new com.ddo.torneios.dto.PartidaTrocaProjection(
+        p.id, p.fase.id, p.tipoPartida, p.realizada, m.id, v.id, pp.id
+    )
+    FROM Partida p
+    LEFT JOIN p.mandante m
+    LEFT JOIN p.visitante v
+    LEFT JOIN p.proximaPartida pp
+    WHERE p.id = :id
+    """)
+    Optional<PartidaTrocaProjection> buscarParaTroca(@Param("id") String id);
+
+    @Query("""
+    SELECT new com.ddo.torneios.dto.PartidaTrocaProjection(
+        p.id, p.fase.id, p.tipoPartida, p.realizada, m.id, v.id, pp.id
+    )
+    FROM Partida p
+    LEFT JOIN p.mandante m
+    LEFT JOIN p.visitante v
+    LEFT JOIN p.proximaPartida pp
+    WHERE p.proximaPartida.id = :partidaVoltaId
+    """)
+    Optional<PartidaTrocaProjection> buscarPartidaIdaPorProxima(@Param("partidaVoltaId") String partidaVoltaId);
+
+    @Modifying
+    @Query("UPDATE Partida p SET p.mandante = :jogadorClube WHERE p.id = :partidaId")
+    int atualizarMandante(@Param("partidaId") String partidaId, @Param("jogadorClube") JogadorClube jogadorClube);
+
+    @Modifying
+    @Query("UPDATE Partida p SET p.visitante = :jogadorClube WHERE p.id = :partidaId")
+    int atualizarVisitante(@Param("partidaId") String partidaId, @Param("jogadorClube") JogadorClube jogadorClube);
+
+    @Modifying
+    @Query("""
+    UPDATE Partida p
+    SET p.anulada = true, p.motivoAnulacao = :motivo, p.anuladaEm = :agora
+    WHERE p.fase.id = :faseId
+      AND p.realizada = false
+      AND p.anulada = false
+    """)
+    int anularPorFase(@Param("faseId") String faseId, @Param("motivo") String motivo, @Param("agora") LocalDateTime agora);
+
+    @Modifying
+    @Query("""
+    UPDATE Partida p
+    SET p.anulada = true, p.motivoAnulacao = :motivo, p.anuladaEm = :agora
+    WHERE p.fase.torneio.id = :torneioId
+      AND p.realizada = false
+      AND p.anulada = false
+    """)
+    int anularPorTorneio(@Param("torneioId") String torneioId, @Param("motivo") String motivo, @Param("agora") LocalDateTime agora);
+
+    @Modifying
+    @Query("""
+    UPDATE Partida p
+    SET p.anulada = true, p.motivoAnulacao = :motivo, p.anuladaEm = :agora
+    WHERE p.fase.torneio.temporada.id = :temporadaId
+      AND p.realizada = false
+      AND p.anulada = false
+    """)
+    int anularPorTemporada(@Param("temporadaId") String temporadaId, @Param("motivo") String motivo, @Param("agora") LocalDateTime agora);
 }

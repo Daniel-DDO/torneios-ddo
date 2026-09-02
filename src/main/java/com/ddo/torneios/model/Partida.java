@@ -10,6 +10,14 @@ import java.time.LocalDateTime;
 @Getter
 @Setter
 @Entity
+@Table(
+        indexes = {
+                @Index(name = "idx_partida_mandante", columnList = "mandante_id"),
+                @Index(name = "idx_partida_visitante", columnList = "visitante_id"),
+                @Index(name = "idx_partida_anulada", columnList = "anulada"),
+                @Index(name = "idx_partida_realizada_data", columnList = "realizada, data_hora")
+        }
+)
 public class Partida {
 
     @Id
@@ -92,6 +100,19 @@ public class Partida {
 
     @ColumnDefault("0.00")
     private BigDecimal receitaVisitante;
+
+    @Column(columnDefinition = "TEXT")
+    private String rankSnapshotMandante;
+
+    @Column(columnDefinition = "TEXT")
+    private String rankSnapshotVisitante;
+
+    @ColumnDefault("false")
+    private boolean anulada;
+
+    private String motivoAnulacao;
+
+    private LocalDateTime anuladaEm;
 
     public boolean houvePenaltis() {
         return penaltis != null &&

@@ -80,4 +80,31 @@ public class TorneioService {
     public List<TorneioDTO> listarPorTemporada(String temporadaId) {
         return torneioRepository.buscarResumoPorTemporada(temporadaId);
     }
+
+    @Transactional
+    public TorneioDTO editarTorneio(String id, TorneioRequest request) {
+        Torneio torneio = torneioRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Torneio não encontrado com ID: " + id));
+
+        Temporada temporada = temporadaRepository.findById(request.getTemporadaId())
+                .orElseThrow(() -> new EntityNotFoundException("Temporada não encontrada com ID: " + request.getTemporadaId()));
+
+        Competicao competicao = competicaoRepository.findById(request.getCompeticaoId())
+                .orElseThrow(() -> new EntityNotFoundException("Competição não encontrada com ID: " + request.getCompeticaoId()));
+
+        boolean mudouCombinacao = !torneio.getTemporada().getId().equals(request.getTemporadaId())
+                || !torneio.getCompeticao().getId().equals(request.getCompeticaoId());
+
+        if (mudouCombinacao && torneioRepository.existsByTemporadaIdAndCompeticaoId(request.getTemporadaId(), request.getCompeticaoId())) {
+            throw new IllegalArgumentException("Esta competição já foi adicionada a esta temporada.");
+        }
+
+        torneio.setNome(request.getNome());
+        torneio.setTemporada(temporada);
+        torneio.setCompeticao(competicao);
+
+        torneioRepository.save(torneio);
+
+        return new TorneioDTO(torneio);
+    }
 }

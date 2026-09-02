@@ -60,4 +60,13 @@ public class CompeticaoController {
         competicaoService.vincularTitulo(id, request.tituloId());
         return ResponseEntity.noContent().build();
     }
+
+    @PatchMapping("/{id}/status")
+    public ResponseEntity<Void> alternarStatus(
+            @PathVariable String id,
+            @RequestParam boolean ativo) {
+
+        competicaoService.alternarStatus(id, ativo);
+        return ResponseEntity.noContent().build();
+    }
 }

@@ -7,9 +7,16 @@ import java.math.BigDecimal;
 
 @Data
 @Entity
-@Table(uniqueConstraints = {
-        @UniqueConstraint(columnNames = {"jogador_id", "temporada_id"})
-})
+@Table(
+        uniqueConstraints = {
+                @UniqueConstraint(columnNames = {"jogador_id", "temporada_id"})
+        },
+        indexes = {
+                @Index(name = "idx_jogadorclube_jogador", columnList = "jogador_id"),
+                @Index(name = "idx_jogadorclube_temporada", columnList = "temporada_id"),
+                @Index(name = "idx_jogadorclube_clube", columnList = "clube_id")
+        }
+)
 public class JogadorClube {
 
     @Id

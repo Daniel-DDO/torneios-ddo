@@ -1,6 +1,7 @@
 package com.ddo.torneios.service;
 
 import com.ddo.torneios.dto.ClubeLeilaoDTO;
+import com.ddo.torneios.dto.MultiplicacaoResultadoDTO;
 import com.ddo.torneios.dto.PaginacaoDTO;
 import com.ddo.torneios.exception.ClubeExisteException;
 import com.ddo.torneios.model.Clube;
@@ -18,6 +19,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.data.domain.Pageable;
 
+import java.math.BigDecimal;
 import java.util.Collections;
 import java.util.List;
 
@@ -249,5 +251,21 @@ public class ClubeService {
         }
 
         clubeRepository.save(clube);
+    }
+
+    private static final BigDecimal VALOR_PISO_CLUBE = new BigDecimal("40000");
+
+    @Transactional
+    public MultiplicacaoResultadoDTO multiplicarValoresDeTodos(BigDecimal multiplicador) {
+        int atualizados = clubeRepository.aplicarFatorGlobal(multiplicador, VALOR_PISO_CLUBE);
+        return new MultiplicacaoResultadoDTO(atualizados, multiplicador);
+    }
+
+    @Transactional
+    public void multiplicarValorDoClube(String id, BigDecimal multiplicador) {
+        int atualizados = clubeRepository.aplicarFatorIndividual(id, multiplicador, VALOR_PISO_CLUBE);
+        if (atualizados == 0) {
+            throw new EntityNotFoundException("Clube não encontrado ou sem valor avaliado definido: " + id);
+        }
     }
 }

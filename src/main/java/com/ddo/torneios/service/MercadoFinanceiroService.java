@@ -1,8 +1,10 @@
 package com.ddo.torneios.service;
 
+import com.ddo.torneios.dto.MercadoStatusDTO;
 import com.ddo.torneios.dto.ResumoEconomicoDTO;
-import com.ddo.torneios.model.Clube;
+import com.ddo.torneios.model.MercadoFinanceiroStatus;
 import com.ddo.torneios.repository.ClubeRepository;
+import com.ddo.torneios.repository.MercadoFinanceiroStatusRepository;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
@@ -14,7 +16,7 @@ import org.springframework.web.client.RestTemplate;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import java.util.List;
+import java.time.LocalDateTime;
 
 @Slf4j
 @Service
@@ -22,35 +24,53 @@ import java.util.List;
 public class MercadoFinanceiroService {
 
     private final ClubeRepository clubeRepository;
+    private final MercadoFinanceiroStatusRepository statusRepository;
 
     private final RestTemplate restTemplate = new RestTemplate();
     private final ObjectMapper objectMapper;
 
-    private static final String API_URL = "https://economia.awesomeapi.com.br/json/last/USD-BRL";
+    private static final String API_URL_USD = "https://economia.awesomeapi.com.br/json/last/USD-BRL";
+    private static final String API_URL_IPCA = "https://api.bcb.gov.br/dados/serie/bcdata.sgs.433/dados/ultimos/1?formato=json";
 
     private static final BigDecimal VALOR_PISO_CLUBE = new BigDecimal("50000");
-
     private static final BigDecimal FATOR_CAOS = new BigDecimal("1.0");
 
     /**
-     * Roda todos os dias à meia-noite (00:00:00)
+     * Roda todos os dias à meia-noite, horário de Recife/São Paulo (explícito — evita
+     * desalinhamento se o servidor rodar em outro timezone).
      */
-    @Scheduled(cron = "0 0 0 * * *")
+    @Scheduled(cron = "0 0 0 * * *", zone = "America/Sao_Paulo")
     @Transactional
     public void atualizarValorDeMercadoClubes() {
         log.info("Iniciando atualização diária do valor de mercado dos clubes...");
 
-        try {
-            String jsonResponse = restTemplate.getForObject(API_URL, String.class);
+        MercadoFinanceiroStatus status = obterOuCriarStatus();
+        status.setUltimaExecucao(LocalDateTime.now());
 
-            BigDecimal variacaoPercentual = obterVariacaoDaApi(jsonResponse);
+        try {
+            String jsonResponse = restTemplate.getForObject(API_URL_USD, String.class);
+            JsonNode root = objectMapper.readTree(jsonResponse);
+            JsonNode usdNode = root.path("USDBRL");
+
+            if (usdNode.isMissingNode()) {
+                throw new IllegalArgumentException("JSON inválido: Nó USDBRL não encontrado");
+            }
+
+            BigDecimal cotacaoAtual = new BigDecimal(usdNode.path("bid").asText());
+            BigDecimal variacaoPercentual = new BigDecimal(usdNode.path("pctChange").asText())
+                    .multiply(FATOR_CAOS);
 
             if (variacaoPercentual.compareTo(BigDecimal.ZERO) == 0) {
                 log.info("Sem variação cambial detectada. Valores mantidos.");
+                status.setUltimaExecucaoComSucesso(LocalDateTime.now());
+                status.setUltimaCotacaoUsd(cotacaoAtual);
+                status.setUltimaVariacaoUsdAplicada(BigDecimal.ZERO);
+                status.setClubesAtualizadosUltimaExecucao(0);
+                status.setUltimaExecucaoComErro(false);
+                status.setUltimoErro(null);
+                statusRepository.save(status);
                 return;
             }
-
-            variacaoPercentual = variacaoPercentual.multiply(FATOR_CAOS);
 
             BigDecimal fatorCorrecao = variacaoPercentual
                     .divide(new BigDecimal("100"), 6, RoundingMode.HALF_EVEN)
@@ -58,57 +78,100 @@ public class MercadoFinanceiroService {
 
             log.info("Mercado Financeiro: Variação de {}%. Fator de correção global: {}", variacaoPercentual, fatorCorrecao);
 
-            List<Clube> clubes = clubeRepository.findAll();
-            int atualizados = 0;
+            int atualizados = clubeRepository.aplicarFatorGlobal(fatorCorrecao, VALOR_PISO_CLUBE);
 
-            for (Clube clube : clubes) {
-                if (clube.getValorAvaliado() == null) continue;
+            status.setUltimaExecucaoComSucesso(LocalDateTime.now());
+            status.setUltimaCotacaoUsd(cotacaoAtual);
+            status.setUltimaVariacaoUsdAplicada(variacaoPercentual);
+            status.setClubesAtualizadosUltimaExecucao(atualizados);
+            status.setUltimaExecucaoComErro(false);
+            status.setUltimoErro(null);
+            statusRepository.save(status);
 
-                BigDecimal valorAntigo = clube.getValorAvaliado();
-
-                BigDecimal valorNovo = valorAntigo.multiply(fatorCorrecao)
-                        .setScale(2, RoundingMode.HALF_EVEN);
-
-                if (valorNovo.compareTo(VALOR_PISO_CLUBE) < 0) {
-                    valorNovo = VALOR_PISO_CLUBE;
-                }
-
-                clube.setValorAvaliado(valorNovo);
-                clube.atualizarLanceMinimo();
-                atualizados++;
-            }
-
-            clubeRepository.saveAll(clubes);
             log.info("Processo finalizado. {} clubes tiveram seus valores reajustados.", atualizados);
 
         } catch (Exception e) {
             log.error("CRÍTICO: Falha ao conectar com AwesomeAPI ou processar economia.", e);
+            status.setUltimaExecucaoComErro(true);
+            status.setUltimoErro(e.getMessage());
+            statusRepository.save(status);
         }
     }
 
-    private BigDecimal obterVariacaoDaApi(String jsonBody) {
+    /**
+     * Roda todo dia 10 às 03:00 (data usual de divulgação do IPCA pelo IBGE/BCB).
+     * Aplica a inflação mensal como segundo fator de correção, independente do dólar.
+     */
+    @Scheduled(cron = "0 0 3 10 * *", zone = "America/Sao_Paulo")
+    @Transactional
+    public void atualizarValorDeMercadoPorInflacao() {
+        log.info("Iniciando atualização mensal por IPCA...");
+
+        MercadoFinanceiroStatus status = obterOuCriarStatus();
+
         try {
-            JsonNode root = objectMapper.readTree(jsonBody);
+            String jsonResponse = restTemplate.getForObject(API_URL_IPCA, String.class);
+            JsonNode root = objectMapper.readTree(jsonResponse);
 
-            JsonNode usdNode = root.path("USDBRL");
-
-            if (usdNode.isMissingNode()) {
-                throw new IllegalArgumentException("JSON inválido: Nó USDBRL não encontrado");
+            if (!root.isArray() || root.isEmpty()) {
+                throw new IllegalArgumentException("JSON inválido: resposta do BCB vazia");
             }
 
-            String pctChangeStr = usdNode.path("pctChange").asText();
+            BigDecimal variacaoIpca = new BigDecimal(root.get(0).path("valor").asText());
 
-            return new BigDecimal(pctChangeStr);
+            if (variacaoIpca.compareTo(BigDecimal.ZERO) == 0) {
+                log.info("IPCA sem variação neste mês. Valores mantidos.");
+                return;
+            }
+
+            BigDecimal fatorCorrecao = variacaoIpca
+                    .divide(new BigDecimal("100"), 6, RoundingMode.HALF_EVEN)
+                    .add(BigDecimal.ONE);
+
+            int atualizados = clubeRepository.aplicarFatorGlobal(fatorCorrecao, VALOR_PISO_CLUBE);
+
+            status.setUltimaExecucaoIpca(LocalDateTime.now());
+            status.setUltimaVariacaoIpcaAplicada(variacaoIpca);
+            statusRepository.save(status);
+
+            log.info("IPCA aplicado: {}%. {} clubes reajustados.", variacaoIpca, atualizados);
 
         } catch (Exception e) {
-            log.error("Erro ao fazer parse do JSON da API: {}", jsonBody, e);
-            return BigDecimal.ZERO;
+            log.error("Falha ao aplicar reajuste por IPCA.", e);
         }
+    }
+
+    /**
+     * Dispara manualmente a atualização por cotação do dólar, sem esperar a meia-noite.
+     * Útil para diagnosticar se o job está funcionando, ou forçar um reajuste imediato.
+     */
+    public void forcarAtualizacaoAgora() {
+        atualizarValorDeMercadoClubes();
+    }
+
+    public MercadoStatusDTO consultarStatus() {
+        MercadoFinanceiroStatus status = obterOuCriarStatus();
+        return new MercadoStatusDTO(
+                status.getUltimaExecucao(),
+                status.getUltimaExecucaoComSucesso(),
+                status.getUltimaVariacaoUsdAplicada(),
+                status.getUltimaCotacaoUsd(),
+                status.getClubesAtualizadosUltimaExecucao(),
+                status.isUltimaExecucaoComErro(),
+                status.getUltimoErro(),
+                status.getUltimaExecucaoIpca(),
+                status.getUltimaVariacaoIpcaAplicada()
+        );
+    }
+
+    private MercadoFinanceiroStatus obterOuCriarStatus() {
+        return statusRepository.findById("SINGLETON")
+                .orElseGet(MercadoFinanceiroStatus::new);
     }
 
     public ResumoEconomicoDTO consultarSituacaoAtual() {
         try {
-            String jsonResponse = restTemplate.getForObject(API_URL, String.class);
+            String jsonResponse = restTemplate.getForObject(API_URL_USD, String.class);
 
             JsonNode root = objectMapper.readTree(jsonResponse);
             JsonNode usdNode = root.path("USDBRL");
