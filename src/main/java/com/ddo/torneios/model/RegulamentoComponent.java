@@ -33,4 +33,16 @@ public class RegulamentoComponent {
             this.textoRegulamento = "ERRO: Regulamento indisponível.";
         }
     }
+
+    private static final int LIMITE_CARACTERES_FALLBACK = 20000;
+
+    public String getTextoRegulamentoParaFallback() {
+        String texto = getTextoRegulamento();
+        if (texto.length() <= LIMITE_CARACTERES_FALLBACK) {
+            return texto;
+        }
+        return texto.substring(0, LIMITE_CARACTERES_FALLBACK)
+                + "\n\n[Regulamento truncado por limite de contexto. Se a resposta não estiver clara aqui, "
+                + "oriente o jogador a consultar um administrador ou o regulamento completo no site.]";
+    }
 }
