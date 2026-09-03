@@ -7,6 +7,7 @@ import java.math.BigDecimal;
 public record ClubeResumoDTO(
         String id,
         String nome,
+        String nomeExtenso,
         String estadio,
         String imagem,
         LigaClube ligaClube,
@@ -14,5 +15,7 @@ public record ClubeResumoDTO(
         String corPrimaria,
         String corSecundaria,
         boolean ativo,
-        BigDecimal estrelas
+        BigDecimal estrelas,
+        BigDecimal valorAvaliado,
+        BigDecimal lanceMinimo
 ) {}

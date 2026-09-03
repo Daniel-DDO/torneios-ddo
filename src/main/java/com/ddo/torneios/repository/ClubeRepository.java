@@ -85,7 +85,8 @@ public interface ClubeRepository extends JpaRepository<Clube, String> {
 
     @Query("""
     SELECT new com.ddo.torneios.dto.ClubeResumoDTO(
-        c.id, c.nome, c.estadio, c.imagem, c.ligaClube, c.sigla, c.corPrimaria, c.corSecundaria, c.ativo, c.estrelas
+        c.id, c.nome, c.nomeExtenso, c.estadio, c.imagem, c.ligaClube, c.sigla,
+        c.corPrimaria, c.corSecundaria, c.ativo, c.estrelas, c.valorAvaliado, c.lanceMinimo
     )
     FROM Clube c
     WHERE c.ligaClube = :liga
@@ -94,7 +95,8 @@ public interface ClubeRepository extends JpaRepository<Clube, String> {
 
     @Query("""
     SELECT new com.ddo.torneios.dto.ClubeResumoDTO(
-        c.id, c.nome, c.estadio, c.imagem, c.ligaClube, c.sigla, c.corPrimaria, c.corSecundaria, c.ativo, c.estrelas
+        c.id, c.nome, c.nomeExtenso, c.estadio, c.imagem, c.ligaClube, c.sigla,
+        c.corPrimaria, c.corSecundaria, c.ativo, c.estrelas, c.valorAvaliado, c.lanceMinimo
     )
     FROM Clube c
     WHERE c.ligaClube <> :liga
