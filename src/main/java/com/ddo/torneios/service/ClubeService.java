@@ -1,6 +1,7 @@
 package com.ddo.torneios.service;
 
 import com.ddo.torneios.dto.ClubeLeilaoDTO;
+import com.ddo.torneios.dto.ClubeResumoDTO;
 import com.ddo.torneios.dto.MultiplicacaoResultadoDTO;
 import com.ddo.torneios.dto.PaginacaoDTO;
 import com.ddo.torneios.exception.ClubeExisteException;
@@ -131,25 +132,25 @@ public class ClubeService {
         return clubeRepository.findTop10ByNomeContainingIgnoreCase(termo.trim());
     }
 
-    public PaginacaoDTO<Clube> listarSomenteSelecoes(int page, int size) {
+    public PaginacaoDTO<ClubeResumoDTO> listarSomenteSelecoes(int page, int size) {
         Pageable pageable = PageRequest.of(page, size, Sort.by("nome").ascending());
-        Page<Clube> pagina = clubeRepository.findByLigaClube(LigaClube.SELECAO, pageable);
+        Page<ClubeResumoDTO> pagina = clubeRepository.buscarResumoPorLiga(LigaClube.SELECAO, pageable);
         return converterParaDTO(pagina);
     }
 
-    public PaginacaoDTO<Clube> listarExcetoSelecoes(int page, int size) {
+    public PaginacaoDTO<ClubeResumoDTO> listarExcetoSelecoes(int page, int size) {
         Pageable pageable = PageRequest.of(page, size, Sort.by("nome").ascending());
-        Page<Clube> pagina = clubeRepository.findByLigaClubeNot(LigaClube.SELECAO, pageable);
+        Page<ClubeResumoDTO> pagina = clubeRepository.buscarResumoExceto(LigaClube.SELECAO, pageable);
         return converterParaDTO(pagina);
     }
 
-    public PaginacaoDTO<Clube> listarPorLiga(LigaClube liga, int page, int size) {
+    public PaginacaoDTO<ClubeResumoDTO> listarPorLiga(LigaClube liga, int page, int size) {
         Pageable pageable = PageRequest.of(page, size, Sort.by("nome").ascending());
-        Page<Clube> pagina = clubeRepository.findByLigaClube(liga, pageable);
+        Page<ClubeResumoDTO> pagina = clubeRepository.buscarResumoPorLiga(liga, pageable);
         return converterParaDTO(pagina);
     }
 
-    private PaginacaoDTO<Clube> converterParaDTO(Page<Clube> pagina) {
+    private PaginacaoDTO<ClubeResumoDTO> converterParaDTO(Page<ClubeResumoDTO> pagina) {
         return new PaginacaoDTO<>(
                 pagina.getContent(),
                 pagina.getNumber(),

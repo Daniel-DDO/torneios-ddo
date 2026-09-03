@@ -1,9 +1,6 @@
 package com.ddo.torneios.repository;
 
-import com.ddo.torneios.dto.ClubeBasicoDTO;
-import com.ddo.torneios.dto.ClubeLeilaoDTO;
-import com.ddo.torneios.dto.ClubeResumoConcessaoView;
-import com.ddo.torneios.dto.RecordeClubeDTO;
+import com.ddo.torneios.dto.*;
 import com.ddo.torneios.model.Clube;
 import com.ddo.torneios.model.LigaClube;
 import org.springframework.data.domain.Page;
@@ -85,4 +82,22 @@ public interface ClubeRepository extends JpaRepository<Clube, String> {
     WHERE id = :id AND valor_avaliado IS NOT NULL
     """, nativeQuery = true)
     int aplicarFatorIndividual(@Param("id") String id, @Param("fator") BigDecimal fator, @Param("piso") BigDecimal piso);
+
+    @Query("""
+    SELECT new com.ddo.torneios.dto.ClubeResumoDTO(
+        c.id, c.nome, c.estadio, c.imagem, c.ligaClube, c.sigla, c.corPrimaria, c.corSecundaria, c.ativo, c.estrelas
+    )
+    FROM Clube c
+    WHERE c.ligaClube = :liga
+    """)
+    Page<ClubeResumoDTO> buscarResumoPorLiga(@Param("liga") LigaClube liga, Pageable pageable);
+
+    @Query("""
+    SELECT new com.ddo.torneios.dto.ClubeResumoDTO(
+        c.id, c.nome, c.estadio, c.imagem, c.ligaClube, c.sigla, c.corPrimaria, c.corSecundaria, c.ativo, c.estrelas
+    )
+    FROM Clube c
+    WHERE c.ligaClube <> :liga
+    """)
+    Page<ClubeResumoDTO> buscarResumoExceto(@Param("liga") LigaClube liga, Pageable pageable);
 }

@@ -298,8 +298,8 @@ public class JogadorService {
         return jogadorRepository.findByDiscordContainingIgnoreCaseOrNomeContainingIgnoreCase(termo, termo, limit);
     }
 
-    public Page<Jogador> listarTodosPaginado(Pageable pageable) {
-        return jogadorRepository.findAll(pageable);
+    public Page<JogadorListagemDTO> listarTodosPaginado(Pageable pageable) {
+        return jogadorRepository.buscarListagemPaginada(pageable);
     }
 
     @Transactional
@@ -394,20 +394,18 @@ public class JogadorService {
         jogadorRepository.save(jogador);
     }
 
-    public PaginacaoDTO<JogadorDTO> listarJogadoresDinamico(int page, int size) {
+    public PaginacaoDTO<JogadorListagemDTO> listarJogadoresDinamico(int page, int size) {
         Pageable pageable = PageRequest.of(page, size, Sort.by("nome").ascending());
 
-        Page<Jogador> paginaEntidades = jogadorRepository.findAll(pageable);
-
-        Page<JogadorDTO> paginaDTO = paginaEntidades.map(JogadorDTO::new);
+        Page<JogadorListagemDTO> pagina = jogadorRepository.buscarListagemPaginada(pageable);
 
         return new PaginacaoDTO<>(
-                paginaDTO.getContent(),
-                paginaDTO.getNumber(),
-                paginaDTO.getTotalPages(),
-                paginaDTO.getTotalElements(),
-                paginaDTO.getSize(),
-                paginaDTO.isLast()
+                pagina.getContent(),
+                pagina.getNumber(),
+                pagina.getTotalPages(),
+                pagina.getTotalElements(),
+                pagina.getSize(),
+                pagina.isLast()
         );
     }
 

@@ -119,13 +119,12 @@ public class JogadorController {
     }
 
     @GetMapping("/jogadores")
-    public ResponseEntity<Page<JogadorDTO>> listarJogadoresPaginado(
+    public ResponseEntity<Page<JogadorListagemDTO>> listarJogadoresPaginado(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size
     ) {
         PageRequest pageRequest = PageRequest.of(page, size, Sort.by("nome").ascending());
-        Page<JogadorDTO> jogadores = jogadorService.listarTodosPaginado(pageRequest).map(JogadorDTO::new);
-        return ResponseEntity.ok(jogadores);
+        return ResponseEntity.ok(jogadorService.listarTodosPaginado(pageRequest));
     }
 
     @PatchMapping("/perfil")
@@ -179,7 +178,7 @@ public class JogadorController {
     }
 
     @GetMapping("/todos")
-    public PaginacaoDTO<JogadorDTO> listarTodos(
+    public PaginacaoDTO<JogadorListagemDTO> listarTodos(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
         return jogadorService.listarJogadoresDinamico(page, size);

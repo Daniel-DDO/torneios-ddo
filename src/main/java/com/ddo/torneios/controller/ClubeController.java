@@ -1,9 +1,6 @@
 package com.ddo.torneios.controller;
 
-import com.ddo.torneios.dto.ClubeLeilaoDTO;
-import com.ddo.torneios.dto.MercadoStatusDTO;
-import com.ddo.torneios.dto.MultiplicacaoResultadoDTO;
-import com.ddo.torneios.dto.PaginacaoDTO;
+import com.ddo.torneios.dto.*;
 import com.ddo.torneios.model.Clube;
 import com.ddo.torneios.model.LigaClube;
 import com.ddo.torneios.request.AtualizarValoresClubeRequest;
@@ -70,21 +67,21 @@ public class ClubeController {
     }
 
     @GetMapping("/selecoes")
-    public PaginacaoDTO<Clube> getSelecoes(
+    public PaginacaoDTO<ClubeResumoDTO> getSelecoes(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
         return clubeService.listarSomenteSelecoes(page, size);
     }
 
     @GetMapping("/clubes")
-    public PaginacaoDTO<Clube> getClubesExcetoSelecao(
+    public PaginacaoDTO<ClubeResumoDTO> getClubesExcetoSelecao(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
         return clubeService.listarExcetoSelecoes(page, size);
     }
 
     @GetMapping("/liga/{liga}")
-    public PaginacaoDTO<Clube> getPorLiga(
+    public PaginacaoDTO<ClubeResumoDTO> getPorLiga(
             @PathVariable LigaClube liga,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {

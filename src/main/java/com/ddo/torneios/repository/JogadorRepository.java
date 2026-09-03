@@ -262,4 +262,13 @@ public interface JogadorRepository extends JpaRepository<Jogador, String> {
     ORDER BY j.saldoVirtual DESC
     """)
     Page<JogadorRankingDTO> buscarRankingFinanceiro(Pageable pageable);
+
+    @Query("""
+    SELECT new com.ddo.torneios.dto.JogadorListagemDTO(
+        j.id, j.nome, j.discord, j.imagem, j.cargo, j.statusJogador, j.contaReivindicada,
+        j.partidasJogadas, j.vitorias, j.empates, j.derrotas, j.titulos, j.pontosCoeficiente, j.rank
+    )
+    FROM Jogador j
+    """)
+    Page<JogadorListagemDTO> buscarListagemPaginada(Pageable pageable);
 }
