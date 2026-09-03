@@ -99,7 +99,7 @@ public class MercadoFinanceiroService {
     }
 
     /**
-     * Roda todo dia 10 às 03:00 (data usual de divulgação do IPCA pelo IBGE/BCB).
+     * Roda no dia 10 às 03:00 (data usual de divulgação do IPCA pelo IBGE/BCB).
      * Aplica a inflação mensal como segundo fator de correção, independente do dólar.
      */
     @Scheduled(cron = "0 0 3 10 * *", zone = "America/Sao_Paulo")
@@ -145,6 +145,7 @@ public class MercadoFinanceiroService {
      * Dispara manualmente a atualização por cotação do dólar, sem esperar a meia-noite.
      * Útil para diagnosticar se o job está funcionando, ou forçar um reajuste imediato.
      */
+    @Transactional
     public void forcarAtualizacaoAgora() {
         atualizarValorDeMercadoClubes();
     }

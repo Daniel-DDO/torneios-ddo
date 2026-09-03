@@ -252,4 +252,14 @@ public interface JogadorRepository extends JpaRepository<Jogador, String> {
     WHERE j.id = :id
     """)
     Optional<JogadorComparacaoBaseDTO> buscarBaseComparacaoPorId(@Param("id") String id);
+
+    @Query("""
+    SELECT new com.ddo.torneios.dto.JogadorRankingDTO(
+        j.id, j.nome, j.discord, j.imagem, j.cargo, j.saldoVirtual
+    )
+    FROM Jogador j
+    WHERE j.saldoVirtual IS NOT NULL
+    ORDER BY j.saldoVirtual DESC
+    """)
+    Page<JogadorRankingDTO> buscarRankingFinanceiro(Pageable pageable);
 }

@@ -1,5 +1,7 @@
 package com.ddo.torneios.dto;
 
+import com.ddo.torneios.model.Cargo;
+
 import java.math.BigDecimal;
 
 public record JogadorRankingDTO(
@@ -7,6 +9,6 @@ public record JogadorRankingDTO(
         String nome,
         String discord,
         String imagem,
-        String cargo,
+        Cargo cargo,
         BigDecimal saldo
 ) {}

@@ -663,15 +663,7 @@ public class JogadorService {
     }
 
     public Page<JogadorRankingDTO> listarRankingFinanceiro(Pageable pageable) {
-        return jogadorRepository.findAllByOrderBySaldoVirtualDesc(pageable)
-                .map(jogador -> new JogadorRankingDTO(
-                        jogador.getId(),
-                        jogador.getNome(),
-                        jogador.getDiscord(),
-                        jogador.getImagem(),
-                        jogador.getCargo().name(),
-                        jogador.getSaldoVirtual() != null ? jogador.getSaldoVirtual() : BigDecimal.ZERO
-                ));
+        return jogadorRepository.buscarRankingFinanceiro(pageable);
     }
 
     public ComparacaoJogadoresDTO compararJogadores(String idJogador1, String idJogador2) {
