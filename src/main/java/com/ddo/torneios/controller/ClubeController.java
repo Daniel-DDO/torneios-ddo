@@ -147,14 +147,12 @@ public class ClubeController {
     }
 
     @PatchMapping("/mercado/multiplicar-todos")
-    @PreAuthorize("hasRole('PROPRIETARIO')")
     public ResponseEntity<MultiplicacaoResultadoDTO> multiplicarValoresDeTodos(
             @Valid @RequestBody MultiplicarValoresRequest request) {
         return ResponseEntity.ok(clubeService.multiplicarValoresDeTodos(request.multiplicador()));
     }
 
     @PatchMapping("/{id}/mercado/multiplicar")
-    @PreAuthorize("hasRole('PROPRIETARIO')")
     public ResponseEntity<Void> multiplicarValorDoClube(
             @PathVariable String id,
             @Valid @RequestBody MultiplicarValoresRequest request) {
@@ -168,7 +166,6 @@ public class ClubeController {
     }
 
     @PostMapping("/mercado/forcar-atualizacao")
-    @PreAuthorize("hasRole('PROPRIETARIO')")
     public ResponseEntity<MercadoStatusDTO> forcarAtualizacaoMercado() {
         mercadoFinanceiroService.forcarAtualizacaoAgora();
         return ResponseEntity.ok(mercadoFinanceiroService.consultarStatus());
