@@ -120,9 +120,9 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/titulos/conquistas").hasAnyAuthority("PROPRIETARIO", "DIRETOR")
                         .requestMatchers(HttpMethod.POST, "/titulos/conquistas/*/forcar-arte").hasAnyAuthority("PROPRIETARIO", "DIRETOR")
 
-                        .requestMatchers(HttpMethod.PATCH, "/mercado/multiplicar-todos").hasAuthority("PROPRIETARIO")
-                        .requestMatchers(HttpMethod.PATCH, "/{id}/mercado/multiplicar").hasAuthority("PROPRIETARIO")
-                        .requestMatchers(HttpMethod.POST, "/mercado/forcar-atualizacao").hasAuthority("PROPRIETARIO")
+                        .requestMatchers(HttpMethod.PATCH, "/clube/mercado/multiplicar-todos").hasAuthority("PROPRIETARIO")
+                        .requestMatchers(HttpMethod.PATCH, "/clube/{id}/mercado/multiplicar").hasAuthority("PROPRIETARIO")
+                        .requestMatchers(HttpMethod.POST, "/clube/mercado/forcar-atualizacao").hasAuthority("PROPRIETARIO")
 
                         .anyRequest().permitAll()
                 );
