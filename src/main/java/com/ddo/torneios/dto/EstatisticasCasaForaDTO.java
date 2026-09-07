@@ -1,21 +1,20 @@
 package com.ddo.torneios.dto;
 
 public record EstatisticasCasaForaDTO(
-        String jogadorId,
-        String nome,
-        String discord,
-        String imagem,
+        String jogadorId, String nome, String discord, String imagem,
 
-        //Como mandante nos jogos por clube
         long vClubeCasa, long eClubeCasa, long dClubeCasa,
-        //Como mandante nos jogos pela seleção
         long vSelecaoCasa, long eSelecaoCasa, long dSelecaoCasa,
 
-        //Como visitante nos jogos por clube
         long vClubeFora, long eClubeFora, long dClubeFora,
-        //Como visitante nos jogos pela seleção
-        long vSelecaoFora, long eSelecaoFora, long dSelecaoFora
+        long vSelecaoFora, long eSelecaoFora, long dSelecaoFora,
+
+        long golsMarcadosCasa, long golsSofridosCasa,
+        long golsMarcadosFora, long golsSofridosFora
 ) {
+    public long saldoGolsCasa() { return golsMarcadosCasa - golsSofridosCasa; }
+    public long saldoGolsFora() { return golsMarcadosFora - golsSofridosFora; }
+
     public long totalCasa() { return vClubeCasa+eClubeCasa+dClubeCasa+vSelecaoCasa+eSelecaoCasa+dSelecaoCasa; }
     public long totalFora() { return vClubeFora+eClubeFora+dClubeFora+vSelecaoFora+eSelecaoFora+dSelecaoFora; }
 

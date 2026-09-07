@@ -9,5 +9,11 @@ public record AgregadoCasaForaParDTO(
         Long vClubeCasaJ2, Long eClubeCasaJ2, Long dClubeCasaJ2,
         Long vSelecaoCasaJ2, Long eSelecaoCasaJ2, Long dSelecaoCasaJ2,
         Long vClubeForaJ2, Long eClubeForaJ2, Long dClubeForaJ2,
-        Long vSelecaoForaJ2, Long eSelecaoForaJ2, Long dSelecaoForaJ2
+        Long vSelecaoForaJ2, Long eSelecaoForaJ2, Long dSelecaoForaJ2,
+
+        Long golsMarcadosCasaJ1, Long golsSofridosCasaJ1,
+        Long golsMarcadosForaJ1, Long golsSofridosForaJ1,
+
+        Long golsMarcadosCasaJ2, Long golsSofridosCasaJ2,
+        Long golsMarcadosForaJ2, Long golsSofridosForaJ2
 ) {}

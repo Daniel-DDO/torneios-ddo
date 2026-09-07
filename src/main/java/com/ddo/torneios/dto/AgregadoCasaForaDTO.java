@@ -4,5 +4,7 @@ public record AgregadoCasaForaDTO(
         Long vClubeCasa, Long eClubeCasa, Long dClubeCasa,
         Long vSelecaoCasa, Long eSelecaoCasa, Long dSelecaoCasa,
         Long vClubeFora, Long eClubeFora, Long dClubeFora,
-        Long vSelecaoFora, Long eSelecaoFora, Long dSelecaoFora
+        Long vSelecaoFora, Long eSelecaoFora, Long dSelecaoFora,
+        Long golsMarcadosCasa, Long golsSofridosCasa,
+        Long golsMarcadosFora, Long golsSofridosFora
 ) {}

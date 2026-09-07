@@ -739,15 +739,18 @@ public class JogadorService {
                     nz(p.vClubeCasaJ1()), nz(p.eClubeCasaJ1()), nz(p.dClubeCasaJ1()),
                     nz(p.vSelecaoCasaJ1()), nz(p.eSelecaoCasaJ1()), nz(p.dSelecaoCasaJ1()),
                     nz(p.vClubeForaJ1()), nz(p.eClubeForaJ1()), nz(p.dClubeForaJ1()),
-                    nz(p.vSelecaoForaJ1()), nz(p.eSelecaoForaJ1()), nz(p.dSelecaoForaJ1()));
+                    nz(p.vSelecaoForaJ1()), nz(p.eSelecaoForaJ1()), nz(p.dSelecaoForaJ1()),
+                    nz(p.golsMarcadosCasaJ1()), nz(p.golsSofridosCasaJ1()),
+                    nz(p.golsMarcadosForaJ1()), nz(p.golsSofridosForaJ1()));
         }
         return new EstatisticasCasaForaDTO(jogadorId, nome, discord, imagem,
                 nz(p.vClubeCasaJ2()), nz(p.eClubeCasaJ2()), nz(p.dClubeCasaJ2()),
                 nz(p.vSelecaoCasaJ2()), nz(p.eSelecaoCasaJ2()), nz(p.dSelecaoCasaJ2()),
                 nz(p.vClubeForaJ2()), nz(p.eClubeForaJ2()), nz(p.dClubeForaJ2()),
-                nz(p.vSelecaoForaJ2()), nz(p.eSelecaoForaJ2()), nz(p.dSelecaoForaJ2()));
+                nz(p.vSelecaoForaJ2()), nz(p.eSelecaoForaJ2()), nz(p.dSelecaoForaJ2()),
+                nz(p.golsMarcadosCasaJ2()), nz(p.golsSofridosCasaJ2()),
+                nz(p.golsMarcadosForaJ2()), nz(p.golsSofridosForaJ2()));
     }
-
 
     private ComparacaoJogadoresDTO.FormaRecenteDTO calcularFormaRecente(String jogadorId) {
         List<String> ultimos = partidaRepository.buscarUltimos5Resultados(jogadorId); // já existe
@@ -1338,7 +1341,9 @@ public class JogadorService {
                 nz(a.vClubeCasa()), nz(a.eClubeCasa()), nz(a.dClubeCasa()),
                 nz(a.vSelecaoCasa()), nz(a.eSelecaoCasa()), nz(a.dSelecaoCasa()),
                 nz(a.vClubeFora()), nz(a.eClubeFora()), nz(a.dClubeFora()),
-                nz(a.vSelecaoFora()), nz(a.eSelecaoFora()), nz(a.dSelecaoFora())
+                nz(a.vSelecaoFora()), nz(a.eSelecaoFora()), nz(a.dSelecaoFora()),
+                nz(a.golsMarcadosCasa()), nz(a.golsSofridosCasa()),
+                nz(a.golsMarcadosFora()), nz(a.golsSofridosFora())
         );
     }
 
