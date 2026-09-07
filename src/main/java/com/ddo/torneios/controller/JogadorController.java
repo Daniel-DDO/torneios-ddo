@@ -7,6 +7,7 @@ import com.ddo.torneios.model.StatusJogador;
 import com.ddo.torneios.request.*;
 import com.ddo.torneios.service.JogadorService;
 import com.ddo.torneios.service.PlanilhaJogadorService;
+import com.ddo.torneios.service.RadarService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -40,6 +41,9 @@ public class JogadorController {
 
     @Autowired
     private PlanilhaJogadorService planilhaJogadorService;
+
+    @Autowired
+    private RadarService radarService;
 
     @PostMapping("/cadastrar")
     public ResponseEntity<?> cadastrarJogador(@RequestBody JogadorRequest jogador) {
@@ -410,5 +414,13 @@ public class JogadorController {
     @GetMapping("/{id}/estilo-provavel")
     public ResponseEntity<EstiloJogadorDTO> estiloProvavel(@PathVariable String id) {
         return ResponseEntity.ok(jogadorService.obterEstiloProvavel(id));
+    }
+
+    @GetMapping("/radar")
+    public ResponseEntity<RadarComparacaoDTO> getRadarComparacao(
+            @RequestParam String id1,
+            @RequestParam(required = false) String id2) {
+        RadarComparacaoDTO response = radarService.gerarRadar(id1, id2);
+        return ResponseEntity.ok(response);
     }
 }

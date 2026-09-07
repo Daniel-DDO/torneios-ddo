@@ -71,4 +71,23 @@ public record JogadorDTO(
                 jogador.getStrikesRebaixamento()
         );
     }
+
+    public JogadorDTO(
+            String id, String nome, String discord, Integer finais, Integer titulos,
+            Integer golsMarcados, Integer golsSofridos, Integer partidasJogadas,
+            Integer vitorias, Integer empates, Integer derrotas,
+            LocalDateTime criacaoConta, LocalDateTime modificacaoConta,
+            StatusJogador statusJogador, boolean contaReivindicada, Cargo cargo,
+            String imagem, String descricao, LocalDateTime suspensoAte,
+            Long cartoesAmarelos, Long cartoesVermelhos, BigDecimal saldoVirtual,
+            BigDecimal pontosCoeficiente, Integer rankPoints, RankJogador rank,
+            Integer partidasRankeadas, Integer strikesRebaixamento
+    ) {
+        this(id, nome, discord, finais, titulos, golsMarcados, golsSofridos,
+                partidasJogadas, vitorias, empates, derrotas, criacaoConta,
+                modificacaoConta, statusJogador, contaReivindicada, cargo, imagem,
+                descricao, suspensoAte, cartoesAmarelos, cartoesVermelhos, saldoVirtual,
+                null, pontosCoeficiente, rankPoints, rank, partidasRankeadas,
+                strikesRebaixamento);
+    }
 }

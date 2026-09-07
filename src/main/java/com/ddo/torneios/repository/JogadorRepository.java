@@ -271,4 +271,43 @@ public interface JogadorRepository extends JpaRepository<Jogador, String> {
     FROM Jogador j
     """)
     Page<JogadorListagemDTO> buscarListagemPaginada(Pageable pageable);
+
+    @Query("""
+    SELECT new com.ddo.torneios.dto.JogadorDTO(
+        j.id, j.nome, j.discord, j.finais, j.titulos,
+        j.golsMarcados, j.golsSofridos, j.partidasJogadas, j.vitorias, j.empates, j.derrotas,
+        j.criacaoConta, j.modificacaoConta, j.statusJogador, j.contaReivindicada, j.cargo,
+        j.imagem, j.descricao, j.suspensoAte, j.cartoesAmarelos, j.cartoesVermelhos,
+        j.saldoVirtual, j.pontosCoeficiente, j.rankPoints, j.rank, j.partidasRankeadas, j.strikesRebaixamento
+    )
+    FROM Jogador j
+    WHERE j.id = :id
+    """)
+    Optional<JogadorDTO> buscarJogadorDtoPorId(@Param("id") String id);
+
+    @Query("SELECT AVG(j.partidasJogadas) FROM Jogador j WHERE j.partidasJogadas > 0")
+    Optional<Double> buscarMediaPartidasJogadas();
+
+    @Query("""
+    SELECT new com.ddo.torneios.dto.LigaMediasDTO(
+        CASE WHEN SUM(j.partidasJogadas) > 0 THEN SUM(j.golsMarcados) * 1.0 / SUM(j.partidasJogadas) ELSE 0.0 END,
+        CASE WHEN SUM(j.partidasJogadas) > 0 THEN SUM(j.golsSofridos) * 1.0 / SUM(j.partidasJogadas) ELSE 0.0 END,
+        CASE WHEN SUM(j.partidasJogadas) > 0 THEN (SUM(j.cartoesAmarelos) * 2.0 + SUM(j.cartoesVermelhos) * 5.0) / SUM(j.partidasJogadas) ELSE 0.0 END,
+        CASE WHEN COUNT(j) > 0 THEN AVG(j.partidasJogadas) ELSE 0.0 END
+    )
+    FROM Jogador j
+    WHERE j.partidasJogadas > 0
+    """)
+    LigaMediasDTO buscarMediasLiga();
+
+    @Query(value = """
+        SELECT
+            SUM(gols_marcados) * 1.0 / SUM(partidas_jogadas)  AS mediaGolsProPorJogo,
+            SUM(gols_sofridos) * 1.0 / SUM(partidas_jogadas)  AS mediaGolsContraPorJogo,
+            (SUM(cartoes_amarelos) * 2.0 + SUM(cartoes_vermelhos) * 5.0) / SUM(partidas_jogadas) AS mediaCartoesPorJogo,
+            PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY partidas_jogadas) AS mediaJogos
+        FROM jogador
+        WHERE partidas_jogadas >= :minimoPartidas
+        """, nativeQuery = true)
+    LigaMediasProjection buscarMediasLigaNative(@Param("minimoPartidas") int minimoPartidas);
 }
