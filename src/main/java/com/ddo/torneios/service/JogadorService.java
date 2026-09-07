@@ -1,10 +1,7 @@
 package com.ddo.torneios.service;
 
 import com.ddo.torneios.dto.*;
-import com.ddo.torneios.exception.EmailJaCadastradoException;
-import com.ddo.torneios.exception.JogadorExisteException;
-import com.ddo.torneios.exception.RegraNegocioException;
-import com.ddo.torneios.exception.SaldoInsuficienteException;
+import com.ddo.torneios.exception.*;
 import com.ddo.torneios.model.*;
 import com.ddo.torneios.repository.*;
 import com.ddo.torneios.request.*;
@@ -201,6 +198,22 @@ public class JogadorService {
 
         if (!jogador.isContaReivindicada()) {
             throw new RegraNegocioException("Conta não reivindicada. Solicite o código ao Admin.");
+        }
+
+        if (jogador.getStatusJogador() == StatusJogador.APOSENTADO) {
+            throw new ContaAposentadaException();
+        }
+
+        if (jogador.getStatusJogador() == StatusJogador.SUSPENSO) {
+            throw new ContaBloqueadaException("Sua conta está suspensa no momento. Fale com a administração para mais detalhes.");
+        }
+
+        if (jogador.getStatusJogador() == StatusJogador.BLOQUEADO) {
+            throw new ContaBloqueadaException("Sua conta está bloqueada. Fale com a administração para mais detalhes.");
+        }
+
+        if (jogador.getStatusJogador() == StatusJogador.INATIVO) {
+            throw new ContaBloqueadaException("Sua conta está inativa no momento. Fale com a administração para reativá-la.");
         }
 
         if (!passwordEncoder.matches(login.getSenha(), jogador.getSenha())) {

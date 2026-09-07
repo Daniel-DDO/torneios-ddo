@@ -1,5 +1,7 @@
 package com.ddo.torneios.config;
 
+import com.ddo.torneios.exception.ContaAposentadaException;
+import com.ddo.torneios.exception.ContaBloqueadaException;
 import com.ddo.torneios.exception.RegraNegocioException;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.extern.slf4j.Slf4j;
@@ -26,6 +28,30 @@ public class RestExceptionHandler extends ResponseEntityExceptionHandler {
         body.put("error", "Erro de Validação");
         body.put("message", ex.getMessage());
         return new ResponseEntity<>(body, HttpStatus.BAD_REQUEST);
+    }
+
+    @ExceptionHandler(ContaAposentadaException.class)
+    public ResponseEntity<Object> handleContaAposentada(ContaAposentadaException ex) {
+        log.info("Tentativa de login em conta aposentada: {}", ex.getMessage());
+        Map<String, Object> body = new LinkedHashMap<>();
+        body.put("timestamp", LocalDateTime.now());
+        body.put("status", HttpStatus.FORBIDDEN.value());
+        body.put("error", "Conta Aposentada");
+        body.put("codigo", "CONTA_APOSENTADA");
+        body.put("message", ex.getMessage());
+        return new ResponseEntity<>(body, HttpStatus.FORBIDDEN);
+    }
+
+    @ExceptionHandler(ContaBloqueadaException.class)
+    public ResponseEntity<Object> handleContaBloqueada(ContaBloqueadaException ex) {
+        log.info("Tentativa de login em conta bloqueada/suspensa/inativa: {}", ex.getMessage());
+        Map<String, Object> body = new LinkedHashMap<>();
+        body.put("timestamp", LocalDateTime.now());
+        body.put("status", HttpStatus.FORBIDDEN.value());
+        body.put("error", "Conta Bloqueada");
+        body.put("codigo", "CONTA_BLOQUEADA");
+        body.put("message", ex.getMessage());
+        return new ResponseEntity<>(body, HttpStatus.FORBIDDEN);
     }
 
     @ExceptionHandler(EntityNotFoundException.class)

@@ -4,6 +4,7 @@ import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
@@ -14,6 +15,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
 @Component
+@Slf4j
 public class RateLimitFilter extends OncePerRequestFilter {
 
     private record Contador(AtomicInteger tentativas, long inicioJanela) {}
@@ -21,11 +23,11 @@ public class RateLimitFilter extends OncePerRequestFilter {
     private final Map<String, Contador> contadores = new ConcurrentHashMap<>();
 
     private static final Map<String, Integer> LIMITES_ESPECIFICOS = Map.of(
-            "/jogador/login", 5,
-            "/jogador/reivindicar", 3,
+            "/jogador/login", 7,
+            "/jogador/reivindicar", 5,
             "/jogador/reivindicar-direto", 3,
             "/jogador/recuperar-senha", 3,
-            "/jogador/gerar-codigo", 5
+            "/jogador/gerar-codigo", 7
     );
 
     private static final int LIMITE_PADRAO = 60;
@@ -37,6 +39,12 @@ public class RateLimitFilter extends OncePerRequestFilter {
 
         String ip = extrairIp(request);
         String path = request.getRequestURI();
+
+        if (LIMITES_ESPECIFICOS.containsKey(path)) {
+            log.info("RateLimit — path: {} | IP extraído: {} | X-Forwarded-For bruto: {}",
+                    path, ip, request.getHeader("X-Forwarded-For"));
+        }
+
         int limite = LIMITES_ESPECIFICOS.getOrDefault(path, LIMITE_PADRAO);
         String chave = ip + ":" + path;
 
@@ -61,10 +69,20 @@ public class RateLimitFilter extends OncePerRequestFilter {
     }
 
     private String extrairIp(HttpServletRequest request) {
-        String forwarded = request.getHeader("X-Forwarded-For");
-        if (forwarded != null && !forwarded.isBlank()) {
-            return forwarded.split(",")[0].trim();
+        String[] headersCandidatos = {
+                "X-Forwarded-For",
+                "X-Real-IP",
+                "CF-Connecting-IP",
+                "True-Client-IP"
+        };
+
+        for (String header : headersCandidatos) {
+            String valor = request.getHeader(header);
+            if (valor != null && !valor.isBlank()) {
+                return valor.split(",")[0].trim();
+            }
         }
+
         return request.getRemoteAddr();
     }
 }
