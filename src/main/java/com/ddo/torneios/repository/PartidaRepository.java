@@ -919,4 +919,18 @@ public interface PartidaRepository extends JpaRepository<Partida, String> {
       AND p.anulada = false
     """)
     int anularPorTemporada(@Param("temporadaId") String temporadaId, @Param("motivo") String motivo, @Param("agora") LocalDateTime agora);
+
+    @Query("""
+    SELECT new com.ddo.torneios.dto.PartidaHistoricoResumoDTO(
+        jm.id, p.golsMandante, p.golsVisitante
+    )
+    FROM Partida p
+    JOIN p.mandante m JOIN m.jogador jm
+    JOIN p.visitante v JOIN v.jogador jv
+    WHERE p.realizada = true AND p.anulada = false
+      AND ((jm.id = :id1 AND jv.id = :id2) OR (jm.id = :id2 AND jv.id = :id1))
+    ORDER BY p.dataHora DESC
+    """)
+    List<PartidaHistoricoResumoDTO> buscarTodosConfrontosDiretos(
+            @Param("id1") String id1, @Param("id2") String id2);
 }
