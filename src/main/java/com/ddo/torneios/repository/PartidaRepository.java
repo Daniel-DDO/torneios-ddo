@@ -796,7 +796,7 @@ public interface PartidaRepository extends JpaRepository<Partida, String> {
 
     @Query("""
     SELECT new com.ddo.torneios.dto.PartidaProbabilidadeDTO(
-        p.id, p.realizada, p.fase.id, p.chaveIndex, p.tipoPartida,
+        p.id, p.realizada, p.fase.id, p.chaveIndex, p.tipoPartida, p.etapaMataMata,
 
         jm.id, jm.nome, jm.partidasJogadas, jm.vitorias, jm.golsMarcados, jm.golsSofridos,
         m.partidasJogadas, m.aproveitamento, m.totalGolsMarcados, m.totalGolsSofridos, cm.estrelas,
@@ -933,4 +933,23 @@ public interface PartidaRepository extends JpaRepository<Partida, String> {
     """)
     List<PartidaHistoricoResumoDTO> buscarTodosConfrontosDiretos(
             @Param("id1") String id1, @Param("id2") String id2);
+
+    @Query("""
+    SELECT new com.ddo.torneios.dto.PartidaIdaResultadoDTO(p.golsMandante, p.golsVisitante)
+    FROM Partida p
+    JOIN p.mandante m JOIN m.jogador jm
+    JOIN p.visitante v JOIN v.jogador jv
+    WHERE p.proximaPartida.id = :partidaVoltaId
+      AND p.realizada = true
+      AND p.anulada = false
+      AND p.tipoPartida IN (com.ddo.torneios.model.TipoPartida.MATA_MATA_IDA, com.ddo.torneios.model.TipoPartida.FINAL_IDA)
+      AND p.etapaMataMata = :etapaMataMata
+      AND ((jm.id = :mandanteVoltaId AND jv.id = :visitanteVoltaId) OR (jm.id = :visitanteVoltaId AND jv.id = :mandanteVoltaId))
+    """)
+    Optional<PartidaIdaResultadoDTO> buscarResultadoPartidaIdaPorProximaPartida(
+            @Param("partidaVoltaId") String partidaVoltaId,
+            @Param("mandanteVoltaId") String mandanteVoltaId,
+            @Param("visitanteVoltaId") String visitanteVoltaId,
+            @Param("etapaMataMata") FaseMataMata etapaMataMata
+    );
 }

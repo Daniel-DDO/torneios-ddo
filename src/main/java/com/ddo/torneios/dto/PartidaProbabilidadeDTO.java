@@ -1,5 +1,6 @@
 package com.ddo.torneios.dto;
 
+import com.ddo.torneios.model.FaseMataMata;
 import com.ddo.torneios.model.TipoPartida;
 
 import java.math.BigDecimal;
@@ -10,6 +11,7 @@ public record PartidaProbabilidadeDTO(
         String faseId,
         Integer chaveIndex,
         TipoPartida tipoPartida,
+        FaseMataMata etapaMataMata,
 
         String mandanteJogadorId,
         String mandanteJogadorNome,

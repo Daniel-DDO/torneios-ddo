@@ -1,6 +1,7 @@
 package com.ddo.torneios.service;
 
 import com.ddo.torneios.dto.*;
+import com.ddo.torneios.model.*;
 import com.ddo.torneios.model.TipoPartida;
 import com.ddo.torneios.repository.PartidaRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -64,7 +65,9 @@ public class ProbabilidadeService {
         TipoPartida tipo = partida.tipoPartida();
 
         if (tipo == TipoPartida.MATA_MATA_VOLTA || tipo == TipoPartida.FINAL_VOLTA) {
-            ResultadoIda resultadoIda = analisarJogoIda(partida.id());
+            ResultadoIda resultadoIda = analisarJogoIda(
+                    partida.id(), partida.mandanteJogadorId(), partida.visitanteJogadorId(), partida.etapaMataMata()
+            );
             if (resultadoIda.temJogoAnterior()) {
                 aplicarLogicaJogoVolta(resultadoIda, contexto);
             }
@@ -264,8 +267,9 @@ public class ProbabilidadeService {
         }
     }
 
-    private ResultadoIda analisarJogoIda(String partidaVoltaId) {
-        Optional<PartidaIdaResultadoDTO> idaOpt = partidaRepository.buscarResultadoPartidaIdaPorProximaPartida(partidaVoltaId);
+    private ResultadoIda analisarJogoIda(String partidaVoltaId, String mandanteVoltaId, String visitanteVoltaId, FaseMataMata etapaMataMata) {
+        Optional<PartidaIdaResultadoDTO> idaOpt = partidaRepository
+                .buscarResultadoPartidaIdaPorProximaPartida(partidaVoltaId, mandanteVoltaId, visitanteVoltaId, etapaMataMata);
 
         if (idaOpt.isEmpty()) {
             return new ResultadoIda(false, 0, 0, 0);
