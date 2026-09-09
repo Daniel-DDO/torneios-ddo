@@ -270,4 +270,9 @@ public class PartidaController {
             @Valid @RequestBody AnularEmMassaRequest request) {
         return ResponseEntity.ok(partidaService.anularPorTemporada(temporadaId, request.motivo()));
     }
+
+    @GetMapping("/estatisticas/acuracia-modelo")
+    public ResponseEntity<AcuraciaModeloDTO> acuraciaDoModelo() {
+        return ResponseEntity.ok(classificacaoService.obterAcuraciaModelo());
+    }
 }

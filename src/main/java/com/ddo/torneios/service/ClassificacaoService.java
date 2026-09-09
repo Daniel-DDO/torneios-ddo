@@ -51,7 +51,10 @@ public class ClassificacaoService {
     private PunicaoRepository punicaoRepository;
     @Autowired
     private RankingService rankingService;
-
+    @Autowired
+    private ProbabilidadeService probabilidadeService;
+    @Autowired
+    private PrevisaoPartidaRepository previsaoPartidaRepository;
 
     @Transactional
     public void registrarResultado(PartidaDTO dto) {
@@ -60,25 +63,132 @@ public class ClassificacaoService {
         Partida partida = partidaRepository.buscarPartidaCompleta(dto.id())
                 .orElseThrow(() -> new RuntimeException("Partida não encontrada"));
 
-        if (partida.isAnulada()) {
-            log.warn("Tentativa de registrar resultado em partida anulada: {}", dto.id());
-            throw new IllegalStateException("Não é possível registrar resultado de uma partida anulada");
-        }
+        validarPartidaParaRegistro(partida, dto.id());
 
-        if (partida.isRealizada()) {
-            log.warn("Tentativa de registrar resultado em partida já realizada: {}", dto.id());
-            return;
-        }
+        // A previsão SÓ é calculada e persistida aqui — no instante em que o admin confirma
+        // o resultado — nunca quando um jogador comum apenas consulta a probabilidade.
+        // Nesse ponto a partida ainda está com realizada=false, então o cálculo reflete
+        // fielmente o estado "pré-jogo".
+        registrarPrevisaoSeAusente(partida, dto);
 
         FaseTorneio fase = partida.getFase();
-
-        Integer valorCompeticao = fase.getTorneio().getCompeticao().getValor();
-        if (valorCompeticao == null) valorCompeticao = 100;
+        Integer valorCompeticao = valorDaCompeticao(fase);
 
         ParticipacaoFase pMandante = encontrarParticipacao(fase.getId(), partida.getMandante().getId());
         ParticipacaoFase pVisitante = encontrarParticipacao(fase.getId(), partida.getVisitante().getId());
 
-        BigDecimal coefM = calcularCoeficiente(
+        BigDecimal coefM = calcularCoeficienteMandante(dto, partida, valorCompeticao);
+        BigDecimal coefV = calcularCoeficienteVisitante(dto, partida, valorCompeticao);
+
+        aplicarDadosBasicosNaPartida(partida, dto, coefM, coefV);
+        aplicarPenaltisSeHouver(partida, dto);
+
+        atribuirHistoricoJogadores(partida, pMandante, pVisitante);
+
+        JogadorClube jcMandante = partida.getMandante();
+        JogadorClube jcVisitante = partida.getVisitante();
+        Jogador jGlobalMandante = jcMandante.getJogador();
+        Jogador jGlobalVisitante = jcVisitante.getJogador();
+
+        acumularPontosCoeficiente(jcMandante, jcVisitante, jGlobalMandante, jGlobalVisitante, coefM, coefV);
+
+        persistirEntidadesBase(partida, jcMandante, jcVisitante, jGlobalMandante, jGlobalVisitante, pMandante, pVisitante);
+        economiaService.processarEconomiaPartida(partida);
+
+        processarFluxoPorTipoTorneio(partida, dto, fase, pMandante, pVisitante);
+
+        registrarRankingSeNaoWo(partida, jGlobalMandante, jGlobalVisitante);
+
+        if (partida.getTipoPartida() == TipoPartida.FINAL_UNICA) {
+            processarFinalUnica(partida, dto, fase, jcMandante, jcVisitante, jGlobalMandante, jGlobalVisitante);
+        }
+
+        List<LinhaClassificacaoDTO> novaClassificacao = calcularEPersistirClassificacao(fase);
+
+        insigniaService.processarPosPartida(jGlobalMandante, dto.golsMandante());
+        insigniaService.processarPosPartida(jGlobalVisitante, dto.golsVisitante());
+
+        agendarGeracaoDeNoticiaAposCommit(partida);
+        notificarClassificacaoViaWebSocket(fase.getId(), novaClassificacao);
+    }
+
+    // ---- Validação ----
+
+    private void validarPartidaParaRegistro(Partida partida, String partidaId) {
+        if (partida.isAnulada()) {
+            log.warn("Tentativa de registrar resultado em partida anulada: {}", partidaId);
+            throw new IllegalStateException("Não é possível registrar resultado de uma partida anulada");
+        }
+        if (partida.isRealizada()) {
+            log.warn("Tentativa de registrar resultado em partida já realizada: {}", partidaId);
+            throw new IllegalStateException("Esta partida já teve seu resultado registrado.");
+        }
+    }
+
+    // ---- Previsão (registro único, no momento da confirmação do resultado) ----
+
+    private void registrarPrevisaoSeAusente(Partida partida, PartidaDTO dto) {
+        if (previsaoPartidaRepository.existsByPartidaId(partida.getId())) return;
+        // proteção extra: existsById usa o id da PrevisaoPartida, não da partida — checamos via query dedicada
+        // (ver observação abaixo do bloco de código)
+
+        try {
+            PartidaProbabilidadeDTO dadosProbabilidade = partidaRepository
+                    .buscarPartidaParaProbabilidade(partida.getId())
+                    .orElse(null);
+
+            if (dadosProbabilidade == null) return;
+
+            ProbabilidadePartidaDTO previsao = probabilidadeService.calcularProbabilidade(dadosProbabilidade);
+            if (previsao.placarCotado() == null) return; // partida sem os dois lados definidos, por exemplo
+
+            salvarPrevisao(partida, previsao, dto.golsMandante(), dto.golsVisitante());
+
+        } catch (Exception e) {
+            // Falha ao calcular/persistir a previsão NUNCA deve impedir o registro do resultado real.
+            log.error("Não foi possível registrar a previsão da partida {}: {}", partida.getId(), e.getMessage());
+        }
+    }
+
+    private void salvarPrevisao(Partida partida, ProbabilidadePartidaDTO previsao, int golsMandanteReal, int golsVisitanteReal) {
+        var placar = previsao.placarCotado();
+
+        String resultadoReal = golsMandanteReal > golsVisitanteReal ? "MANDANTE"
+                : golsVisitanteReal > golsMandanteReal ? "VISITANTE" : "EMPATE";
+
+        String resultadoPrevisto = previsao.chanceMandante() >= previsao.chanceEmpate() && previsao.chanceMandante() >= previsao.chanceVisitante() ? "MANDANTE"
+                : previsao.chanceVisitante() >= previsao.chanceEmpate() ? "VISITANTE" : "EMPATE";
+
+        boolean acertouResultado = resultadoReal.equals(resultadoPrevisto);
+        boolean acertouPlacarExato = placar.golsMandante() == golsMandanteReal && placar.golsVisitante() == golsVisitanteReal;
+
+        PrevisaoPartida entidade = new PrevisaoPartida();
+        entidade.setPartida(partida);
+        entidade.setChanceMandantePrevista(previsao.chanceMandante());
+        entidade.setChanceEmpatePrevista(previsao.chanceEmpate());
+        entidade.setChanceVisitantePrevista(previsao.chanceVisitante());
+        entidade.setGolsMandanteCotado(placar.golsMandante());
+        entidade.setGolsVisitanteCotado(placar.golsVisitante());
+        entidade.setExpectativaGolsMandante(placar.expectativaGolsMandante());
+        entidade.setExpectativaGolsVisitante(placar.expectativaGolsVisitante());
+        entidade.setGolsMandanteReal(golsMandanteReal);
+        entidade.setGolsVisitanteReal(golsVisitanteReal);
+        entidade.setAcertouResultado(acertouResultado);
+        entidade.setAcertouPlacarExato(acertouPlacarExato);
+        entidade.setCalculadaEm(LocalDateTime.now());
+
+        previsaoPartidaRepository.save(entidade);
+    }
+
+    // ---- Coeficientes ----
+
+    private Integer valorDaCompeticao(FaseTorneio fase) {
+        Integer valor = fase.getTorneio().getCompeticao().getValor();
+        return valor != null ? valor : 100;
+    }
+
+    private BigDecimal calcularCoeficienteMandante(PartidaDTO dto, Partida partida, Integer valorCompeticao) {
+        return calcularCoeficiente(
                 dto.golsMandante(), dto.golsVisitante(),
                 dto.golsMandante() > dto.golsVisitante(),
                 dto.golsMandante().equals(dto.golsVisitante()),
@@ -87,8 +197,10 @@ public class ClassificacaoService {
                 partida.getMandante().getClube().getEstrelas(),
                 valorCompeticao
         );
+    }
 
-        BigDecimal coefV = calcularCoeficiente(
+    private BigDecimal calcularCoeficienteVisitante(PartidaDTO dto, Partida partida, Integer valorCompeticao) {
+        return calcularCoeficiente(
                 dto.golsVisitante(), dto.golsMandante(),
                 dto.golsVisitante() > dto.golsMandante(),
                 dto.golsVisitante().equals(dto.golsMandante()),
@@ -97,7 +209,11 @@ public class ClassificacaoService {
                 partida.getVisitante().getClube().getEstrelas(),
                 valorCompeticao
         );
+    }
 
+    // ---- Aplicação de dados na entidade Partida ----
+
+    private void aplicarDadosBasicosNaPartida(Partida partida, PartidaDTO dto, BigDecimal coefM, BigDecimal coefV) {
         partida.setDataHora(LocalDateTime.now());
         partida.setCoeficienteMandante(coefM);
         partida.setCoeficienteVisitante(coefV);
@@ -109,9 +225,10 @@ public class ClassificacaoService {
         partida.setCartoesVermelhosMandante(dto.cartoesVermelhosMandante());
         partida.setCartoesAmarelosVisitante(dto.cartoesAmarelosVisitante());
         partida.setCartoesVermelhosVisitante(dto.cartoesVermelhosVisitante());
-
         partida.setHouveProrrogacao(dto.houveProrrogacao());
+    }
 
+    private void aplicarPenaltisSeHouver(Partida partida, PartidaDTO dto) {
         if (dto.houvePenaltis()) {
             DisputaPenaltis penaltis = new DisputaPenaltis();
             penaltis.setGolsMandante(dto.penaltisMandante());
@@ -120,26 +237,31 @@ public class ClassificacaoService {
         } else {
             partida.setPenaltis(null);
         }
+    }
 
-        atribuirHistoricoJogadores(partida, pMandante, pVisitante);
-
-        JogadorClube jcMandante = partida.getMandante();
-        JogadorClube jcVisitante = partida.getVisitante();
-        Jogador jGlobalMandante = jcMandante.getJogador();
-        Jogador jGlobalVisitante = jcVisitante.getJogador();
-
+    private void acumularPontosCoeficiente(JogadorClube jcMandante, JogadorClube jcVisitante,
+                                           Jogador jGlobalMandante, Jogador jGlobalVisitante,
+                                           BigDecimal coefM, BigDecimal coefV) {
         jcMandante.setPontosCoeficiente(safeAdd(jcMandante.getPontosCoeficiente(), coefM));
         jcVisitante.setPontosCoeficiente(safeAdd(jcVisitante.getPontosCoeficiente(), coefV));
 
         jGlobalMandante.setPontosCoeficiente(safeAdd(jGlobalMandante.getPontosCoeficiente(), coefM));
         jGlobalVisitante.setPontosCoeficiente(safeAdd(jGlobalVisitante.getPontosCoeficiente(), coefV));
+    }
 
+    private void persistirEntidadesBase(Partida partida, JogadorClube jcMandante, JogadorClube jcVisitante,
+                                        Jogador jGlobalMandante, Jogador jGlobalVisitante,
+                                        ParticipacaoFase pMandante, ParticipacaoFase pVisitante) {
         partidaRepository.save(partida);
         jogadorClubeRepository.saveAll(List.of(jcMandante, jcVisitante));
         jogadorRepository.saveAll(List.of(jGlobalMandante, jGlobalVisitante));
         participacaoRepository.saveAll(List.of(pMandante, pVisitante));
-        economiaService.processarEconomiaPartida(partida);
+    }
 
+    // ---- Fluxo por tipo de torneio ----
+
+    private void processarFluxoPorTipoTorneio(Partida partida, PartidaDTO dto, FaseTorneio fase,
+                                              ParticipacaoFase pMandante, ParticipacaoFase pVisitante) {
         if (fase.getTipoTorneio() == TipoTorneio.MATA_MATA) {
             processarMataMata(partida, dto, pMandante, pVisitante);
             bracketService.processarAvancoVencedor(partida);
@@ -149,121 +271,117 @@ public class ClassificacaoService {
         } else {
             processarLiga(dto, pMandante, pVisitante);
         }
+    }
 
-        if (!partida.isWo()) {
-            rankingService.aplicarResultado(jGlobalMandante.getId(), ResultadoPartida.VITORIA, partida.getId(), RankingService.Lado.MANDANTE);
-            rankingService.aplicarResultado(jGlobalVisitante.getId(), ResultadoPartida.DERROTA, partida.getId(), RankingService.Lado.VISITANTE);
+    private void registrarRankingSeNaoWo(Partida partida, Jogador jGlobalMandante, Jogador jGlobalVisitante) {
+        if (partida.isWo()) return;
+
+        rankingService.aplicarResultado(jGlobalMandante.getId(), ResultadoPartida.VITORIA, partida.getId(), RankingService.Lado.MANDANTE);
+        rankingService.aplicarResultado(jGlobalVisitante.getId(), ResultadoPartida.DERROTA, partida.getId(), RankingService.Lado.VISITANTE);
+    }
+
+    // ---- Final única: premiação e título ----
+
+    private void processarFinalUnica(Partida partida, PartidaDTO dto, FaseTorneio fase,
+                                     JogadorClube jcMandante, JogadorClube jcVisitante,
+                                     Jogador jGlobalMandante, Jogador jGlobalVisitante) {
+
+        incrementarContagemDeFinais(jGlobalMandante, jGlobalVisitante);
+
+        JogadorClube vencedor = definirVencedorFinal(dto, jcMandante, jcVisitante);
+        JogadorClube perdedor = (vencedor == jcMandante) ? jcVisitante : (vencedor == jcVisitante ? jcMandante : null);
+
+        if (vencedor == null || perdedor == null) return; // empate sem pênaltis: sem premiação, evita pagamento indevido
+
+        Competicao competicao = fase.getTorneio().getCompeticao();
+        int pctValor = percentualPremiacao(competicao);
+
+        BigDecimal premioCampeao = new BigDecimal("100000").multiply(BigDecimal.valueOf(pctValor).movePointLeft(2));
+        BigDecimal premioVice = new BigDecimal("60000").multiply(BigDecimal.valueOf(pctValor).movePointLeft(2));
+
+        pagarPremiacaoFinal(vencedor, perdedor, premioCampeao, premioVice, fase);
+        registrarLogDaFinal(partida, vencedor, perdedor, premioCampeao, premioVice, pctValor);
+        concederTituloAoCampeao(vencedor, competicao, fase);
+    }
+
+    private void incrementarContagemDeFinais(Jogador jGlobalMandante, Jogador jGlobalVisitante) {
+        jGlobalMandante.setFinais((jGlobalMandante.getFinais() == null ? 0 : jGlobalMandante.getFinais()) + 1);
+        jGlobalVisitante.setFinais((jGlobalVisitante.getFinais() == null ? 0 : jGlobalVisitante.getFinais()) + 1);
+        jogadorRepository.saveAll(List.of(jGlobalMandante, jGlobalVisitante));
+    }
+
+    private JogadorClube definirVencedorFinal(PartidaDTO dto, JogadorClube jcMandante, JogadorClube jcVisitante) {
+        if (dto.wo()) {
+            return dto.golsMandante() > dto.golsVisitante() ? jcMandante : jcVisitante;
         }
-
-        if (partida.getTipoPartida() == TipoPartida.FINAL_UNICA) {
-            // Atualiza contagem de finais
-            jGlobalMandante.setFinais((jGlobalMandante.getFinais() == null ? 0 : jGlobalMandante.getFinais()) + 1);
-            jGlobalVisitante.setFinais((jGlobalVisitante.getFinais() == null ? 0 : jGlobalVisitante.getFinais()) + 1);
-
-            jogadorRepository.saveAll(List.of(jGlobalMandante, jGlobalVisitante));
-
-            JogadorClube vencedor = null;
-            JogadorClube perdedor = null;
-
-            // 1. Definição de Vencedor e Perdedor
-            if (dto.wo()) {
-                if (dto.golsMandante() > dto.golsVisitante()) {
-                    vencedor = jcMandante;
-                    perdedor = jcVisitante;
-                } else {
-                    vencedor = jcVisitante;
-                    perdedor = jcMandante;
-                }
-            } else if (dto.houvePenaltis()) {
-                if (dto.penaltisMandante() > dto.penaltisVisitante()) {
-                    vencedor = jcMandante;
-                    perdedor = jcVisitante;
-                } else {
-                    vencedor = jcVisitante;
-                    perdedor = jcMandante;
-                }
-            } else {
-                // Tempo normal
-                if (dto.golsMandante() > dto.golsVisitante()) {
-                    vencedor = jcMandante;
-                    perdedor = jcVisitante;
-                } else if (dto.golsVisitante() > dto.golsMandante()) {
-                    vencedor = jcVisitante;
-                    perdedor = jcMandante;
-                }
-                // Se empatou no tempo normal e não teve pênaltis, vencedor continua null (correto, pois evita pagar prêmio indevido)
-            }
-
-            // 2. Pagamento da Premiação
-            if (vencedor != null && perdedor != null) {
-                Competicao competicao = fase.getTorneio().getCompeticao();
-
-                // Pega o valor ou usa 15% como padrão se for nulo
-                int pctValor = (competicao != null && competicao.getValor() != null) ? competicao.getValor() : 15;
-
-                // Garante o mínimo de 15%
-                if (pctValor < 15) pctValor = 15;
-
-                // Bases de cálculo
-                BigDecimal baseCampeao = new BigDecimal("100000");
-                BigDecimal baseVice = new BigDecimal("60000");
-
-                // Multiplicador: converte inteiro (ex: 60) para porcentagem (0.60)
-                BigDecimal multiplicador = BigDecimal.valueOf(pctValor).movePointLeft(2);
-
-                BigDecimal premioCampeao = baseCampeao.multiply(multiplicador);
-                BigDecimal premioVice = baseVice.multiply(multiplicador);
-
-                try {
-                    // VERIFIQUE A ORDEM DO SEU CONSTRUTOR DTO AQUI
-                    MovimentacaoSaldoDTO dtoCampeao = new MovimentacaoSaldoDTO(
-                            premioCampeao,
-                            "Premiação Campeão - " + fase.getTorneio().getNome(),
-                            MovimentacaoSaldoDTO.TipoOperacao.ADICIONAR,
-                            false
-                    );
-                    jogadorService.atualizarSaldo(vencedor.getJogador().getId(), dtoCampeao, "SISTEMA");
-
-                    MovimentacaoSaldoDTO dtoVice = new MovimentacaoSaldoDTO(
-                            premioVice,
-                            "Premiação Vice - " + fase.getTorneio().getNome(),
-                            MovimentacaoSaldoDTO.TipoOperacao.ADICIONAR,
-                            false
-                    );
-                    jogadorService.atualizarSaldo(perdedor.getJogador().getId(), dtoVice, "SISTEMA");
-
-                    log.info("Premiação paga. Campeão: {}, Vice: {}", premioCampeao, premioVice);
-                } catch (Exception e) {
-                    log.error("Erro ao pagar premiação da final", e);
-                }
-
-                String logMsg = String.format(
-                        "\nFINAL ENCERRADA\n\nCampeão: %s (Prêmio: %s)\nVice: %s (Prêmio: %s)\nValor Competição: %d%%",
-                        vencedor.getClube().getNome(),
-                        java.text.NumberFormat.getCurrencyInstance().format(premioCampeao),
-                        perdedor.getClube().getNome(),
-                        java.text.NumberFormat.getCurrencyInstance().format(premioVice),
-                        pctValor
-                );
-
-                String logAtual = partida.getLogEventos() != null ? partida.getLogEventos() : "";
-                partida.setLogEventos(logAtual + logMsg);
-
-                if (competicao != null && competicao.getTitulo() != null) {
-                    tituloService.concederTituloAoJogador(vencedor.getId(), competicao.getTitulo().getId(), fase.getTorneio().getNome());
-                } else {
-                    log.warn("Campeão definido (Partida {}), mas não foi possível localizar o Título vinculado à Competição.", partida.getId());
-                }
-            }
+        if (dto.houvePenaltis()) {
+            return dto.penaltisMandante() > dto.penaltisVisitante() ? jcMandante : jcVisitante;
         }
+        if (dto.golsMandante() > dto.golsVisitante()) return jcMandante;
+        if (dto.golsVisitante() > dto.golsMandante()) return jcVisitante;
+        return null; // empate no tempo normal sem pênaltis
+    }
 
+    private int percentualPremiacao(Competicao competicao) {
+        int pctValor = (competicao != null && competicao.getValor() != null) ? competicao.getValor() : 15;
+        return Math.max(pctValor, 15);
+    }
+
+    private void pagarPremiacaoFinal(JogadorClube vencedor, JogadorClube perdedor,
+                                     BigDecimal premioCampeao, BigDecimal premioVice, FaseTorneio fase) {
+        try {
+            MovimentacaoSaldoDTO dtoCampeao = new MovimentacaoSaldoDTO(
+                    premioCampeao, "Premiação Campeão - " + fase.getTorneio().getNome(),
+                    MovimentacaoSaldoDTO.TipoOperacao.ADICIONAR, false
+            );
+            jogadorService.atualizarSaldo(vencedor.getJogador().getId(), dtoCampeao, "SISTEMA");
+
+            MovimentacaoSaldoDTO dtoVice = new MovimentacaoSaldoDTO(
+                    premioVice, "Premiação Vice - " + fase.getTorneio().getNome(),
+                    MovimentacaoSaldoDTO.TipoOperacao.ADICIONAR, false
+            );
+            jogadorService.atualizarSaldo(perdedor.getJogador().getId(), dtoVice, "SISTEMA");
+
+            log.info("Premiação paga. Campeão: {}, Vice: {}", premioCampeao, premioVice);
+        } catch (Exception e) {
+            log.error("Erro ao pagar premiação da final", e);
+        }
+    }
+
+    private void registrarLogDaFinal(Partida partida, JogadorClube vencedor, JogadorClube perdedor,
+                                     BigDecimal premioCampeao, BigDecimal premioVice, int pctValor) {
+        String logMsg = String.format(
+                "\nFINAL ENCERRADA\n\nCampeão: %s (Prêmio: %s)\nVice: %s (Prêmio: %s)\nValor Competição: %d%%",
+                vencedor.getClube().getNome(),
+                java.text.NumberFormat.getCurrencyInstance().format(premioCampeao),
+                perdedor.getClube().getNome(),
+                java.text.NumberFormat.getCurrencyInstance().format(premioVice),
+                pctValor
+        );
+
+        String logAtual = partida.getLogEventos() != null ? partida.getLogEventos() : "";
+        partida.setLogEventos(logAtual + logMsg);
+    }
+
+    private void concederTituloAoCampeao(JogadorClube vencedor, Competicao competicao, FaseTorneio fase) {
+        if (competicao != null && competicao.getTitulo() != null) {
+            tituloService.concederTituloAoJogador(vencedor.getId(), competicao.getTitulo().getId(), fase.getTorneio().getNome());
+        } else {
+            log.warn("Campeão definido, mas não foi possível localizar o Título vinculado à Competição.");
+        }
+    }
+
+    // ---- Classificação ----
+
+    private List<LinhaClassificacaoDTO> calcularEPersistirClassificacao(FaseTorneio fase) {
         ResultadoClassificacao resultado = calcularClassificacaoCompleto(fase);
-        List<LinhaClassificacaoDTO> novaClassificacao = resultado.linhas();
         persistirClassificacao(resultado);
+        return resultado.linhas();
+    }
 
-        insigniaService.processarPosPartida(jGlobalMandante, dto.golsMandante());
-        insigniaService.processarPosPartida(jGlobalVisitante, dto.golsVisitante());
+    // ---- Pós-commit / assíncrono ----
 
+    private void agendarGeracaoDeNoticiaAposCommit(Partida partida) {
         TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
             @Override
             public void afterCommit() {
@@ -276,12 +394,13 @@ public class ClassificacaoService {
                 }).start();
             }
         });
+    }
 
+    private void notificarClassificacaoViaWebSocket(String faseId, List<LinhaClassificacaoDTO> classificacao) {
         try {
-            String topico = "/topic/classificacao/" + fase.getId();
-            messagingTemplate.convertAndSend(topico, novaClassificacao);
-
-            log.info("Classificação atualizada e enviada via WebSocket para a fase: {}", fase.getId());
+            String topico = "/topic/classificacao/" + faseId;
+            messagingTemplate.convertAndSend(topico, classificacao);
+            log.info("Classificação atualizada e enviada via WebSocket para a fase: {}", faseId);
         } catch (Exception e) {
             log.error("Erro ao enviar atualização de classificação via WebSocket", e);
         }
@@ -332,14 +451,14 @@ public class ClassificacaoService {
         atualizarStatsEntidades(pVisitante, jcVisitante, jVisitante, gv, gm, cav, cvv);
 
         if (gm > gv) {
-            incrementarResultado(pMandante, jcMandante, jMandante, 1, 0, 0); //vitoria mandante
-            incrementarResultado(pVisitante, jcVisitante, jVisitante, 0, 0, 1); //derrota visitante
+            incrementarResultado(pMandante, jcMandante, jMandante, 1, 0, 0);
+            incrementarResultado(pVisitante, jcVisitante, jVisitante, 0, 0, 1);
         } else if (gv > gm) {
-            incrementarResultado(pMandante, jcMandante, jMandante, 0, 0, 1); //derrota mandante
-            incrementarResultado(pVisitante, jcVisitante, jVisitante, 1, 0, 0); //vitoria visitante
+            incrementarResultado(pMandante, jcMandante, jMandante, 0, 0, 1);
+            incrementarResultado(pVisitante, jcVisitante, jVisitante, 1, 0, 0);
         } else {
-            incrementarResultado(pMandante, jcMandante, jMandante, 0, 1, 0); //empate
-            incrementarResultado(pVisitante, jcVisitante, jVisitante, 0, 1, 0); //empate
+            incrementarResultado(pMandante, jcMandante, jMandante, 0, 1, 0);
+            incrementarResultado(pVisitante, jcVisitante, jVisitante, 0, 1, 0);
         }
     }
 
@@ -380,8 +499,6 @@ public class ClassificacaoService {
     }
 
     private void processarLiga(PartidaDTO dto, ParticipacaoFase m, ParticipacaoFase v) {
-        //Os gols e saldos já foram atualizados em 'atribuirHistoricoJogadores'
-
         int gm = safeInt(dto.golsMandante());
         int gv = safeInt(dto.golsVisitante());
 
@@ -434,11 +551,10 @@ public class ClassificacaoService {
         if (jogos.isEmpty()) return null;
         if (jogos.size() == 1) return jogos.get(0).getVencedor();
 
-        //Lógica para IDA e VOLTA
         Partida ida = jogos.stream().filter(p -> isIda(p.getTipoPartida())).findFirst().orElse(null);
         Partida volta = jogos.stream().filter(p -> isVolta(p.getTipoPartida())).findFirst().orElse(null);
 
-        if (ida == null || volta == null) return null; // Inconsistência
+        if (ida == null || volta == null) return null;
 
         JogadorClube timeA = ida.getMandante();
         JogadorClube timeB = ida.getVisitante();
@@ -852,24 +968,22 @@ public class ClassificacaoService {
         removerStatsEntidades(pVisitante, jcVisitante, jVisitante, gv, gm, cav, cvv);
 
         if (gm > gv) {
-            decrementarResultado(pMandante, jcMandante, jMandante, 1, 0, 0); // Remove vitoria mandante
-            decrementarResultado(pVisitante, jcVisitante, jVisitante, 0, 0, 1); // Remove derrota visitante
+            decrementarResultado(pMandante, jcMandante, jMandante, 1, 0, 0);
+            decrementarResultado(pVisitante, jcVisitante, jVisitante, 0, 0, 1);
         } else if (gv > gm) {
-            decrementarResultado(pMandante, jcMandante, jMandante, 0, 0, 1); // Remove derrota mandante
-            decrementarResultado(pVisitante, jcVisitante, jVisitante, 1, 0, 0); // Remove vitoria visitante
+            decrementarResultado(pMandante, jcMandante, jMandante, 0, 0, 1);
+            decrementarResultado(pVisitante, jcVisitante, jVisitante, 1, 0, 0);
         } else {
-            decrementarResultado(pMandante, jcMandante, jMandante, 0, 1, 0); // Remove empate
-            decrementarResultado(pVisitante, jcVisitante, jVisitante, 0, 1, 0); // Remove empate
+            decrementarResultado(pMandante, jcMandante, jMandante, 0, 1, 0);
+            decrementarResultado(pVisitante, jcVisitante, jVisitante, 0, 1, 0);
         }
     }
 
     private void removerStatsEntidades(ParticipacaoFase pf, JogadorClube jc, Jogador j, int golsPro, int golsContra, int ca, int cv) {
-        //Subtrai Jogos
         pf.setPartidasJogadas(Math.max(0, safeInt(pf.getPartidasJogadas()) - 1));
         jc.setPartidasJogadas(Math.max(0, safeInt(jc.getPartidasJogadas()) - 1));
         j.setPartidasJogadas(Math.max(0, safeInt(j.getPartidasJogadas()) - 1));
 
-        //Subtrai Gols
         pf.setGolsPro(Math.max(0, safeInt(pf.getGolsPro()) - golsPro));
         jc.setTotalGolsMarcados(Math.max(0, safeInt(jc.getTotalGolsMarcados()) - golsPro));
         j.setGolsMarcados(Math.max(0, safeInt(j.getGolsMarcados()) - golsPro));
@@ -950,5 +1064,19 @@ public class ClassificacaoService {
         partida.setCartoesAmarelosVisitante(null);
         partida.setCartoesVermelhosVisitante(null);
         partida.setWo(false);
+    }
+
+    public AcuraciaModeloDTO obterAcuraciaModelo() {
+        Object[] r = previsaoPartidaRepository.buscarResumoAcuracia();
+
+        long total = r[0] != null ? (Long) r[0] : 0;
+        long acertosResultado = r[1] != null ? (Long) r[1] : 0;
+        long acertosPlacar = r[2] != null ? (Long) r[2] : 0;
+
+        double pctResultado = total > 0 ? (acertosResultado * 100.0 / total) : 0.0;
+        double pctPlacar = total > 0 ? (acertosPlacar * 100.0 / total) : 0.0;
+
+        return new AcuraciaModeloDTO(total, acertosResultado, acertosPlacar,
+                Math.round(pctResultado * 10) / 10.0, Math.round(pctPlacar * 10) / 10.0);
     }
 }
