@@ -107,4 +107,11 @@ public class LeilaoController {
     public ResponseEntity<List<ResultadoParcialDTO>> verResultadosParciais(@PathVariable String leilaoId) {
         return ResponseEntity.ok(leilaoService.calcularResultadosParciais(leilaoId));
     }
+
+    @GetMapping("/{leilaoId}/clubes/buscar")
+    public ResponseEntity<List<ClubeLeilaoDTO>> buscarClubesDoLeilao(
+            @PathVariable String leilaoId,
+            @RequestParam String termo) {
+        return ResponseEntity.ok(leilaoService.buscarClubesParaLeilao(leilaoId, termo));
+    }
 }

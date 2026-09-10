@@ -316,7 +316,7 @@ public class JogadorService {
     }
 
     @Transactional
-    public Jogador editarPerfilLogado(String idString, JogadorEditarRequest request) {
+    public JogadorDTO editarPerfilLogado(String idString, JogadorEditarRequest request) {
 
         Jogador jogador = jogadorRepository.findById(idString)
                 .orElseThrow(() -> new EntityNotFoundException("Jogador não encontrado com ID: " + idString));
@@ -334,11 +334,11 @@ public class JogadorService {
         }
 
         jogador.setModificacaoConta(LocalDateTime.now());
-        return jogadorRepository.save(jogador);
+        return new JogadorDTO(jogadorRepository.save(jogador));
     }
 
     @Transactional
-    public Jogador atualizarFotoPerfil(String idJogador, MultipartFile arquivo) {
+    public JogadorDTO atualizarFotoPerfil(String idJogador, MultipartFile arquivo) {
         if (arquivo.isEmpty()) {
             throw new RuntimeException("Arquivo de imagem vazio.");
         }
@@ -352,20 +352,20 @@ public class JogadorService {
             jogador.setImagem(urlImagem);
             jogador.setModificacaoConta(LocalDateTime.now());
 
-            return jogadorRepository.save(jogador);
+            return new JogadorDTO(jogadorRepository.save(jogador));
 
         } catch (IOException e) {
             throw new RuntimeException("Erro ao processar arquivo", e);
         }
     }
 
-    public Jogador atualizarFotoPorAvatarId(String idJogador, String avatarId) {
+    public JogadorDTO atualizarFotoPorAvatarId(String idJogador, String avatarId) {
         Jogador jogador = jogadorRepository.findById(idJogador)
                 .orElseThrow(() -> new RuntimeException("Jogador não encontrado com ID: " + idJogador));
 
         jogador.setImagem(avatarId);
         jogador.setModificacaoConta(LocalDateTime.now());
-        return jogadorRepository.save(jogador);
+        return new JogadorDTO(jogadorRepository.save(jogador));
     }
 
     @Transactional
@@ -1114,7 +1114,7 @@ public class JogadorService {
     }
 
     @Transactional
-    public Jogador mesclarContas(String idPrincipal, List<String> idsAntigosRequest) {
+    public JogadorDTO mesclarContas(String idPrincipal, List<String> idsAntigosRequest) {
 
         List<String> idsAntigos = idsAntigosRequest.stream().distinct().toList();
 
@@ -1164,7 +1164,7 @@ public class JogadorService {
 
         jogadorRepository.deleteAll(antigos);
 
-        return jogadorRepository.save(principal);
+        return new JogadorDTO(jogadorRepository.save(principal));
     }
 
     private void mesclarJogadorClube(String idPrincipal, List<String> idsAntigos, Jogador principal) {

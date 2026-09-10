@@ -203,10 +203,25 @@ public class LeilaoService {
                 } catch (Exception e) {
                     log.warn("Falha ao publicar atualização de lances via WS", e);
                 }
+
+                try {
+                    List<ResultadoParcialDTO> parciais = calcularResultadosParciais(leilaoId);
+                    messagingTemplate.convertAndSend("/topic/leilao/" + leilaoId + "/resultados-parciais", parciais);
+                } catch (Exception e) {
+                    log.warn("Falha ao publicar resultados parciais via WS", e);
+                }
+
+                for (String clubeId : clubeIds) {
+                    try {
+                        DisputaClubeDTO disputa = obterDetalhesDisputa(leilaoId, clubeId);
+                        messagingTemplate.convertAndSend("/topic/leilao/" + leilaoId + "/disputa/" + clubeId, disputa);
+                    } catch (Exception e) {
+                        log.warn("Falha ao publicar disputa do clube {} via WS", clubeId, e);
+                    }
+                }
             }
         });
     }
-
     private Leilao validarLeilao(String leilaoId) {
         Leilao leilao = leilaoRepository.findById(leilaoId)
                 .orElseThrow(() -> new RegraNegocioException("Leilão não encontrado"));
@@ -560,5 +575,16 @@ public class LeilaoService {
                 });
             }
         }
+    }
+
+    @Transactional(readOnly = true)
+    public List<ClubeLeilaoDTO> buscarClubesParaLeilao(String leilaoId, String termo) {
+        if (termo == null || termo.trim().length() < 2) {
+            return Collections.emptyList();
+        }
+        Leilao leilao = leilaoRepository.findById(leilaoId)
+                .orElseThrow(() -> new RegraNegocioException("Leilão não encontrado"));
+
+        return clubeRepository.buscarParaLeilao(termo.trim(), leilao.isSelecao(), PageRequest.of(0, 10));
     }
 }

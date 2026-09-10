@@ -132,11 +132,11 @@ public class JogadorController {
     }
 
     @PatchMapping("/perfil")
-    public ResponseEntity<Jogador> editarPerfil(@RequestBody JogadorEditarRequest request) {
+    public ResponseEntity<JogadorDTO> editarPerfil(@RequestBody JogadorEditarRequest request) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
         String idJogadorLogado = authentication.getName();
-        Jogador jogadorAtualizado = jogadorService.editarPerfilLogado(idJogadorLogado, request);
+        JogadorDTO jogadorAtualizado = jogadorService.editarPerfilLogado(idJogadorLogado, request);
 
         return ResponseEntity.ok(jogadorAtualizado);
     }
@@ -156,9 +156,7 @@ public class JogadorController {
 
         String avatarId = payload.get("avatarId");
 
-        Jogador jogadorAtualizado = jogadorService.atualizarFotoPorAvatarId(idJogador, avatarId);
-
-        JogadorDTO responseDTO = new JogadorDTO(jogadorAtualizado);
+        JogadorDTO responseDTO = jogadorService.atualizarFotoPorAvatarId(idJogador, avatarId);
         return ResponseEntity.ok(responseDTO);
     }
 
@@ -378,8 +376,8 @@ public class JogadorController {
     @PreAuthorize("hasAuthority('PROPRIETARIO')")
     @PostMapping("/mesclar-contas")
     public ResponseEntity<JogadorDTO> mesclarContas(@RequestBody @Valid MesclarContasRequest request) {
-        Jogador jogadorMesclado = jogadorService.mesclarContas(request.idPrincipal(), request.idsAntigos());
-        return ResponseEntity.ok(new JogadorDTO(jogadorMesclado));
+        JogadorDTO jogadorMesclado = jogadorService.mesclarContas(request.idPrincipal(), request.idsAntigos());
+        return ResponseEntity.ok(jogadorMesclado);
     }
 
     @PreAuthorize("hasAuthority('PROPRIETARIO')")

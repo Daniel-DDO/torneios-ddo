@@ -5,7 +5,9 @@ import com.ddo.torneios.dto.ClubeResumoDTO;
 import com.ddo.torneios.dto.MultiplicacaoResultadoDTO;
 import com.ddo.torneios.dto.PaginacaoDTO;
 import com.ddo.torneios.exception.ClubeExisteException;
+import com.ddo.torneios.exception.RegraNegocioException;
 import com.ddo.torneios.model.Clube;
+import com.ddo.torneios.model.Leilao;
 import com.ddo.torneios.model.LigaClube;
 import com.ddo.torneios.repository.ClubeRepository;
 import com.ddo.torneios.request.AtualizarValoresClubeRequest;
@@ -29,6 +31,7 @@ public class ClubeService {
 
     @Autowired
     private ClubeRepository clubeRepository;
+
 
     public void cadastrarClube(ClubeRequest request) {
         if (clubeRepository.existsBySigla(request.getSigla()) &&

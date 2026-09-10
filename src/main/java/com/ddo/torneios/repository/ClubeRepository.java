@@ -102,4 +102,16 @@ public interface ClubeRepository extends JpaRepository<Clube, String> {
     WHERE c.ligaClube <> :liga
     """)
     Page<ClubeResumoDTO> buscarResumoExceto(@Param("liga") LigaClube liga, Pageable pageable);
+
+    @Query("""
+    SELECT new com.ddo.torneios.dto.ClubeLeilaoDTO(
+        c.id, c.nome, c.nomeExtenso, c.imagem, c.sigla, c.lanceMinimo, c.valorAvaliado, c.ligaClube, c.estrelas)
+    FROM Clube c
+    WHERE c.ativo = true
+      AND LOWER(c.nome) LIKE LOWER(CONCAT('%', :termo, '%'))
+      AND ((:isSelecao = true  AND c.ligaClube = com.ddo.torneios.model.LigaClube.SELECAO)
+        OR (:isSelecao = false AND c.ligaClube <> com.ddo.torneios.model.LigaClube.SELECAO))
+    ORDER BY c.nome ASC
+""")
+    List<ClubeLeilaoDTO> buscarParaLeilao(@Param("termo") String termo, @Param("isSelecao") boolean isSelecao, Pageable pageable);
 }

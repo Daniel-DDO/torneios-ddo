@@ -1067,11 +1067,11 @@ public class ClassificacaoService {
     }
 
     public AcuraciaModeloDTO obterAcuraciaModelo() {
-        Object[] r = previsaoPartidaRepository.buscarResumoAcuracia();
+        ResumoAcuraciaDTO r = previsaoPartidaRepository.buscarResumoAcuracia();
 
-        long total = r[0] != null ? (Long) r[0] : 0;
-        long acertosResultado = r[1] != null ? (Long) r[1] : 0;
-        long acertosPlacar = r[2] != null ? (Long) r[2] : 0;
+        long total = r.totalPrevisoes() != null ? r.totalPrevisoes() : 0;
+        long acertosResultado = r.acertosResultado() != null ? r.acertosResultado() : 0;
+        long acertosPlacar = r.acertosPlacarExato() != null ? r.acertosPlacarExato() : 0;
 
         double pctResultado = total > 0 ? (acertosResultado * 100.0 / total) : 0.0;
         double pctPlacar = total > 0 ? (acertosPlacar * 100.0 / total) : 0.0;
