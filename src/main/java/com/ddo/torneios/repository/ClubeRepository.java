@@ -114,4 +114,8 @@ public interface ClubeRepository extends JpaRepository<Clube, String> {
     ORDER BY c.nome ASC
 """)
     List<ClubeLeilaoDTO> buscarParaLeilao(@Param("termo") String termo, @Param("isSelecao") boolean isSelecao, Pageable pageable);
+
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("UPDATE Clube c SET c.titulos = GREATEST(COALESCE(c.titulos, 0) - 1, 0) WHERE c.id = :id")
+    void decrementarTitulos(@Param("id") String id);
 }

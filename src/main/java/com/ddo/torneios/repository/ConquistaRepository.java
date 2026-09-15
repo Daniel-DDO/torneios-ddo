@@ -84,4 +84,6 @@ public interface ConquistaRepository extends JpaRepository<Conquista, String> {
         ORDER BY COUNT(c) DESC
         """)
     List<JogadorDestaqueClubeDTO> buscarJogadorDestaquePorClube(String clubeId, Pageable pageable);
+
+    Optional<Conquista> findByTituloIdAndNomeEdicaoAndJogadorId(String tituloId, String nomeEdicao, String jogadorId);
 }

@@ -137,7 +137,7 @@ public class SecurityConfig {
         configuration.setAllowedOrigins(Arrays.asList(
                 "https://torneios-ddo-front.onrender.com",
                 "https://torneios-ddo.vercel.app"
-                //"http://localhost:5173"
+                //, "http://localhost:5173", "http://192.168.0.105:5173"
         ));
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
         configuration.setAllowedHeaders(Arrays.asList("*"));

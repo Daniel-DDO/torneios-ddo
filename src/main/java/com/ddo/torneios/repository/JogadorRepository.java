@@ -310,4 +310,8 @@ public interface JogadorRepository extends JpaRepository<Jogador, String> {
         WHERE partidas_jogadas >= :minimoPartidas
         """, nativeQuery = true)
     LigaMediasProjection buscarMediasLigaNative(@Param("minimoPartidas") int minimoPartidas);
+
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("UPDATE Jogador j SET j.titulos = GREATEST(COALESCE(j.titulos, 0) - 1, 0) WHERE j.id = :id")
+    void decrementarTitulos(@Param("id") String id);
 }

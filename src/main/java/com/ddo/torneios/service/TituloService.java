@@ -5,6 +5,7 @@ import com.ddo.torneios.model.*;
 import com.ddo.torneios.repository.*;
 import com.ddo.torneios.request.ConcederTituloColetivoRequest;
 import com.ddo.torneios.request.TituloRequest;
+import jakarta.persistence.EntityNotFoundException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -304,5 +305,28 @@ public class TituloService {
     @Transactional(readOnly = true)
     public List<ConquistaResumoDTO> listarTodasConquistas() {
         return conquistaRepository.buscarTodasResumo();
+    }
+
+    @Transactional
+    public void revogarTituloDoJogador(String jogadorClubeId, String idTitulo, String nomeEdicao) {
+
+        if (nomeEdicao == null || nomeEdicao.trim().isEmpty()) {
+            throw new RuntimeException("O nome da edição é obrigatório.");
+        }
+        nomeEdicao = nomeEdicao.trim();
+
+        JogadorClubeConcessaoView view = jogadorClubeRepository.buscarParaConcessao(jogadorClubeId)
+                .orElseThrow(() -> new RuntimeException("Vínculo Jogador-Clube não encontrado"));
+
+        String finalNomeEdicao = nomeEdicao;
+        Conquista conquista = conquistaRepository
+                .findByTituloIdAndNomeEdicaoAndJogadorId(idTitulo, nomeEdicao, view.getJogadorId())
+                .orElseThrow(() -> new EntityNotFoundException(
+                        "O jogador " + view.getJogadorNome() + " não possui o título desta edição (" + finalNomeEdicao + ")."));
+
+        conquistaRepository.delete(conquista);
+
+        jogadorRepository.decrementarTitulos(view.getJogadorId());
+        clubeRepository.decrementarTitulos(view.getClubeId());
     }
 }

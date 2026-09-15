@@ -3,6 +3,7 @@ package com.ddo.torneios.service;
 import com.ddo.torneios.dto.*;
 import com.ddo.torneios.model.*;
 import com.ddo.torneios.repository.*;
+import jakarta.persistence.EntityNotFoundException;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -12,6 +13,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
+import org.springframework.util.StringUtils;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -1078,5 +1080,102 @@ public class ClassificacaoService {
 
         return new AcuraciaModeloDTO(total, acertosResultado, acertosPlacar,
                 Math.round(pctResultado * 10) / 10.0, Math.round(pctPlacar * 10) / 10.0);
+    }
+
+    private void revogarTituloSeConcedido(JogadorClube vencedor, FaseTorneio fase) {
+        Competicao competicao = fase.getTorneio().getCompeticao();
+        if (competicao == null || competicao.getTitulo() == null) return;
+
+        try {
+            tituloService.revogarTituloDoJogador(
+                    vencedor.getId(), competicao.getTitulo().getId(), fase.getTorneio().getNome()
+            );
+        } catch (EntityNotFoundException e) {
+            log.warn("Nenhuma conquista encontrada para revogar (pode já ter sido removida manualmente): {}", e.getMessage());
+        }
+    }
+
+    @Transactional
+    public void reverterFinal(String partidaId, String motivo) {
+        Partida partida = partidaRepository.buscarPartidaCompleta(partidaId)
+                .orElseThrow(() -> new EntityNotFoundException("Partida não encontrada"));
+
+        if (!partida.isRealizada()) {
+            throw new IllegalStateException("Esta partida não está registrada como realizada.");
+        }
+        if (partida.getTipoPartida() != TipoPartida.FINAL_UNICA) {
+            throw new IllegalStateException("Reversão de final só se aplica a partidas do tipo FINAL_UNICA.");
+        }
+
+        FaseTorneio fase = partida.getFase();
+        JogadorClube jcMandante = partida.getMandante();
+        JogadorClube jcVisitante = partida.getVisitante();
+        Jogador jGlobalMandante = jcMandante.getJogador();
+        Jogador jGlobalVisitante = jcVisitante.getJogador();
+
+        JogadorClube vencedor = identificarVencedorRegistrado(partida, jcMandante, jcVisitante);
+        JogadorClube perdedor = (vencedor == jcMandante) ? jcVisitante : (vencedor == jcVisitante ? jcMandante : null);
+
+        if (vencedor != null && perdedor != null) {
+            estornarPremiacaoFinal(partida, vencedor, perdedor, fase, motivo);
+            revogarTituloSeConcedido(vencedor, fase);
+        }
+
+        decrementarContagemDeFinais(jGlobalMandante, jGlobalVisitante);
+
+        // Reaproveita toda a reversão "padrão" já existente: histórico, pontos, coeficientes, economia
+        desfazerResultado(partidaId);
+    }
+
+    private JogadorClube identificarVencedorRegistrado(Partida partida, JogadorClube jcMandante, JogadorClube jcVisitante) {
+        if (partida.isWo()) {
+            return partida.getGolsMandante() > partida.getGolsVisitante() ? jcMandante : jcVisitante;
+        }
+        if (partida.houvePenaltis()) {
+            var pen = partida.getPenaltis();
+            return pen.getGolsMandante() > pen.getGolsVisitante() ? jcMandante : jcVisitante;
+        }
+        if (partida.getGolsMandante() > partida.getGolsVisitante()) return jcMandante;
+        if (partida.getGolsVisitante() > partida.getGolsMandante()) return jcVisitante;
+        return null; // empate sem pênaltis: não houve vencedor, logo não houve premiação nem título
+    }
+
+    private void estornarPremiacaoFinal(Partida partida, JogadorClube vencedor, JogadorClube perdedor,
+                                        FaseTorneio fase, String motivo) {
+        Competicao competicao = fase.getTorneio().getCompeticao();
+        int pctValor = percentualPremiacao(competicao);
+
+        BigDecimal premioCampeao = new BigDecimal("100000").multiply(BigDecimal.valueOf(pctValor).movePointLeft(2));
+        BigDecimal premioVice = new BigDecimal("60000").multiply(BigDecimal.valueOf(pctValor).movePointLeft(2));
+
+        String motivoFinal = StringUtils.hasText(motivo)
+                ? "Estorno de premiação (reversão de final): " + motivo
+                : "Estorno de premiação — resultado da final revertido pela administração";
+
+        try {
+            MovimentacaoSaldoDTO estornoCampeao = new MovimentacaoSaldoDTO(
+                    premioCampeao, motivoFinal, MovimentacaoSaldoDTO.TipoOperacao.REMOVER, true
+            );
+            jogadorService.atualizarSaldo(vencedor.getJogador().getId(), estornoCampeao, "SISTEMA");
+
+            MovimentacaoSaldoDTO estornoVice = new MovimentacaoSaldoDTO(
+                    premioVice, motivoFinal, MovimentacaoSaldoDTO.TipoOperacao.REMOVER, true
+            );
+            jogadorService.atualizarSaldo(perdedor.getJogador().getId(), estornoVice, "SISTEMA");
+
+            log.info("Premiação estornada. Campeão: {}, Vice: {}", premioCampeao, premioVice);
+        } catch (Exception e) {
+            log.error("Erro ao estornar premiação da final — prosseguindo com a revogação do restante", e);
+        }
+    }
+
+    private void decrementarContagemDeFinais(Jogador jGlobalMandante, Jogador jGlobalVisitante) {
+        if (jGlobalMandante.getFinais() != null && jGlobalMandante.getFinais() > 0) {
+            jGlobalMandante.setFinais(jGlobalMandante.getFinais() - 1);
+        }
+        if (jGlobalVisitante.getFinais() != null && jGlobalVisitante.getFinais() > 0) {
+            jGlobalVisitante.setFinais(jGlobalVisitante.getFinais() - 1);
+        }
+        jogadorRepository.saveAll(List.of(jGlobalMandante, jGlobalVisitante));
     }
 }
