@@ -18,9 +18,9 @@ public class ProbabilidadeService {
     @Autowired
     private PartidaRepository partidaRepository;
 
-    private static final double PESO_CLUBE = 0.35;
+    private static final double PESO_CLUBE = 0.34;
     private static final double PESO_MOMENTO = 0.25;
-    private static final double PESO_HISTORICO = 0.20;
+    private static final double PESO_HISTORICO = 0.21;
     private static final double PESO_CONFRONTO = 0.20;
 
     private static final double FATOR_CASA_GOLS = 1.13;
@@ -32,7 +32,7 @@ public class ProbabilidadeService {
 
     private static final double SKEW_MAXIMO = 0.40;
 
-    private static final int MAX_GOLS_MATRIZ = 6;
+    private static final int MAX_GOLS_MATRIZ = 12;
 
     public ProbabilidadePartidaDTO calcularProbabilidade(PartidaProbabilidadeDTO partida) {
         if (partida.realizada()) {
