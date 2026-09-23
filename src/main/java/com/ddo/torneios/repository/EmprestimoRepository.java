@@ -2,6 +2,8 @@ package com.ddo.torneios.repository;
 
 import com.ddo.torneios.model.Emprestimo;
 import com.ddo.torneios.model.StatusEmprestimo;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -31,4 +33,11 @@ public interface EmprestimoRepository extends JpaRepository<Emprestimo, String> 
         ORDER BY e.dataContratacao DESC
     """)
     List<Emprestimo> buscarHistoricoComParcelas(@Param("jogadorId") String jogadorId);
+
+    @Query("""
+        SELECT e FROM Emprestimo e
+        JOIN FETCH e.jogador
+        ORDER BY e.dataContratacao DESC
+    """)
+    Page<Emprestimo> buscarTodosParaListaPublica(Pageable pageable);
 }

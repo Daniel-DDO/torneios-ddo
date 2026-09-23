@@ -12,6 +12,8 @@ import com.ddo.torneios.repository.TransacaoRepository;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -32,6 +34,7 @@ public class EmprestimoService {
     @Autowired private JogadorRepository jogadorRepository;
     @Autowired private TransacaoRepository transacaoRepository;
     @Autowired private NotificacaoService notificacaoService;
+    @Autowired private CartaoGlobalCache cartaoGlobalCache;
 
     // ---------------------------------------------------------------------
     // TABELAS DE REGRAS DE NEGÓCIO
@@ -59,6 +62,9 @@ public class EmprestimoService {
     private static final BigDecimal SALDO_MINIMO_JA_NEGATIVADO = new BigDecimal("100000");
     private static final BigDecimal TETO_EMPRESTIMO = new BigDecimal("2000000");
     private static final int DIAS_CRITERIO_RIGOROSO_APOS_NEGATIVACAO = 30;
+
+    /** Redução máxima no limite de empréstimo pra quem tem cartão muito acima da média (10%) */
+    private static final BigDecimal REDUCAO_MAXIMA_CARTOES = new BigDecimal("0.10");
 
     // ---------------------------------------------------------------------
     // ELEGIBILIDADE
@@ -92,7 +98,7 @@ public class EmprestimoService {
         }
 
         // 4) histórico de negativação -> saldo mínimo exigido é maior
-        boolean jaFoiNegativado = jogador.dataQuitacaoNegativacao() != null;
+        boolean jaFoiNegativado = jogador.jaFoiNegativadoAlgumaVez();
         BigDecimal saldoMinimoExigido = jaFoiNegativado ? SALDO_MINIMO_JA_NEGATIVADO : SALDO_MINIMO_NUNCA_NEGATIVADO;
 
         if (saldo.compareTo(saldoMinimoExigido) < 0) {
@@ -103,13 +109,16 @@ public class EmprestimoService {
         // 5) limite base pelas partidas jogadas
         BigDecimal limite = limitePorPartidas(partidas);
 
-        // 6) critério mais rigoroso se foi negativado nos últimos 30 dias (mesmo já limpo)
-        if (jaFoiNegativado) {
+        // 6) critério mais rigoroso se saiu da negativação há até 30 dias (mesmo já limpo)
+        if (jaFoiNegativado && jogador.dataQuitacaoNegativacao() != null) {
             long diasDesdeQuitacao = ChronoUnit.DAYS.between(jogador.dataQuitacaoNegativacao(), LocalDateTime.now());
             if (diasDesdeQuitacao <= DIAS_CRITERIO_RIGOROSO_APOS_NEGATIVACAO) {
                 limite = limite.multiply(new BigDecimal("0.5")).setScale(2, RoundingMode.DOWN);
             }
         }
+
+        // 7) penalização por cartões (amarelos + vermelhos) muito acima da média: até 10% a menos
+        limite = aplicarPenalizacaoCartoes(limite, jogador, partidas);
 
         limite = limite.min(TETO_EMPRESTIMO);
 
@@ -125,6 +134,31 @@ public class EmprestimoService {
     private BigDecimal limitePorPartidas(int partidas) {
         Map.Entry<Integer, BigDecimal> entry = LIMITE_POR_PARTIDAS.floorEntry(partidas);
         return entry != null ? entry.getValue() : BigDecimal.ZERO;
+    }
+
+    /**
+     * Quem tem (cartões amarelos + vermelhos) por partida acima da média global
+     * perde até 10% do limite calculado. Quanto maior o excesso em relação à
+     * média, mais perto do teto de 10%, mas nunca passa disso.
+     */
+    private BigDecimal aplicarPenalizacaoCartoes(BigDecimal limite, JogadorEmprestimoProjecaoDTO jogador, int partidas) {
+        double mediaGlobal = cartaoGlobalCache.obterMediaCartoesPorPartida();
+        if (mediaGlobal <= 0 || partidas <= 0) {
+            return limite;
+        }
+
+        long amarelos = jogador.cartoesAmarelos() != null ? jogador.cartoesAmarelos() : 0L;
+        long vermelhos = jogador.cartoesVermelhos() != null ? jogador.cartoesVermelhos() : 0L;
+        double cartoesPorPartidaDoJogador = (amarelos + vermelhos) / (double) partidas;
+
+        if (cartoesPorPartidaDoJogador <= mediaGlobal) {
+            return limite;
+        }
+
+        double excessoPercentual = (cartoesPorPartidaDoJogador - mediaGlobal) / mediaGlobal;
+        BigDecimal reducao = BigDecimal.valueOf(excessoPercentual).min(REDUCAO_MAXIMA_CARTOES);
+
+        return limite.multiply(BigDecimal.ONE.subtract(reducao)).setScale(2, RoundingMode.DOWN);
     }
 
     // ---------------------------------------------------------------------
@@ -241,6 +275,50 @@ public class EmprestimoService {
     public List<EmprestimoDTO> listarHistorico(String jogadorId) {
         return emprestimoRepository.buscarHistoricoComParcelas(jogadorId)
                 .stream().map(EmprestimoDTO::de).toList();
+    }
+
+    // ---------------------------------------------------------------------
+    // CONSULTAS PÚBLICAS (visível pra todo mundo, não só o dono da conta)
+    // ---------------------------------------------------------------------
+
+    /** Lista pública paginada: quem pegou empréstimo, de quanto, quanto já pagou. */
+    @Transactional(readOnly = true)
+    public Page<EmprestimoPublicoDTO> listarPublico(Pageable pageable) {
+        return emprestimoRepository.buscarTodosParaListaPublica(pageable).map(EmprestimoPublicoDTO::de);
+    }
+
+    /** Todo mundo com o nome sujo (negativado) agora. */
+    @Transactional(readOnly = true)
+    public List<StatusNomeDTO> listarNomesSujos() {
+        return jogadorRepository.buscarNomesSujos();
+    }
+
+    /** Situação de nome (limpo/sujo) de um jogador específico. */
+    @Transactional(readOnly = true)
+    public StatusNomeDTO buscarStatusNome(String jogadorId) {
+        return jogadorRepository.buscarStatusNomePorId(jogadorId)
+                .orElseThrow(() -> new EntityNotFoundException("Jogador não encontrado com ID: " + jogadorId));
+    }
+
+    /** Visão completa: nome limpo/sujo + elegibilidade atual + empréstimo em andamento (se tiver). */
+    @Transactional(readOnly = true)
+    public SituacaoJogadorEmprestimoDTO obterSituacaoCompleta(String jogadorId) {
+        JogadorEmprestimoProjecaoDTO jogador = jogadorRepository.buscarProjecaoEmprestimoPorId(jogadorId)
+                .orElseThrow(() -> new EntityNotFoundException("Jogador não encontrado com ID: " + jogadorId));
+
+        ElegibilidadeEmprestimoDTO elegibilidade = calcularElegibilidade(jogador);
+
+        EmprestimoDTO emprestimoAtivo = emprestimoRepository.findByJogador_IdAndStatus(jogadorId, StatusEmprestimo.EM_ANDAMENTO)
+                .flatMap(e -> emprestimoRepository.buscarComParcelas(e.getId()))
+                .map(EmprestimoDTO::de)
+                .orElse(null);
+
+        return new SituacaoJogadorEmprestimoDTO(
+                jogador.id(), jogador.nome(), jogador.discord(), jogador.imagem(),
+                jogador.negativado(), jogador.jaFoiNegativadoAlgumaVez(),
+                jogador.dataNegativacao(), jogador.dataQuitacaoNegativacao(),
+                elegibilidade, emprestimoAtivo
+        );
     }
 
     // ---------------------------------------------------------------------

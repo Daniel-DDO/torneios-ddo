@@ -317,10 +317,40 @@ public interface JogadorRepository extends JpaRepository<Jogador, String> {
 
     @Query("""
     SELECT new com.ddo.torneios.dto.JogadorEmprestimoProjecaoDTO(
-        j.id, j.nome, j.partidasJogadas, j.saldoVirtual, j.negativado, j.dataQuitacaoNegativacao
+        j.id, j.nome, j.discord, j.imagem, j.partidasJogadas, j.saldoVirtual,
+        j.negativado, j.jaFoiNegativadoAlgumaVez, j.dataNegativacao, j.dataQuitacaoNegativacao,
+        j.cartoesAmarelos, j.cartoesVermelhos
     )
     FROM Jogador j
     WHERE j.id = :id
-    """)
+""")
     Optional<JogadorEmprestimoProjecaoDTO> buscarProjecaoEmprestimoPorId(@Param("id") String id);
+
+    @Query("""
+    SELECT new com.ddo.torneios.dto.StatusNomeDTO(
+        j.id, j.nome, j.discord, j.imagem, j.negativado, j.jaFoiNegativadoAlgumaVez,
+        j.dataNegativacao, j.dataQuitacaoNegativacao
+    )
+    FROM Jogador j
+    WHERE j.negativado = true
+    ORDER BY j.dataNegativacao DESC
+""")
+    List<StatusNomeDTO> buscarNomesSujos();
+
+    @Query("""
+    SELECT new com.ddo.torneios.dto.StatusNomeDTO(
+        j.id, j.nome, j.discord, j.imagem, j.negativado, j.jaFoiNegativadoAlgumaVez,
+        j.dataNegativacao, j.dataQuitacaoNegativacao
+    )
+    FROM Jogador j
+    WHERE j.id = :id
+""")
+    Optional<StatusNomeDTO> buscarStatusNomePorId(@Param("id") String id);
+
+    @Query("""
+    SELECT AVG( (COALESCE(j.cartoesAmarelos, 0) + COALESCE(j.cartoesVermelhos, 0)) * 1.0 / j.partidasJogadas )
+    FROM Jogador j
+    WHERE j.partidasJogadas > 0
+""")
+    Double buscarMediaCartoesPorPartida();
 }

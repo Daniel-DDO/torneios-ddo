@@ -1,19 +1,16 @@
 package com.ddo.torneios.dto;
 
-import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
-public record JogadorEmprestimoProjecaoDTO(
-        String id,
+public record SituacaoJogadorEmprestimoDTO(
+        String jogadorId,
         String nome,
         String discord,
         String imagem,
-        Integer partidasJogadas,
-        BigDecimal saldoVirtual,
         boolean negativado,
         boolean jaFoiNegativadoAlgumaVez,
         LocalDateTime dataNegativacao,
         LocalDateTime dataQuitacaoNegativacao,
-        Long cartoesAmarelos,
-        Long cartoesVermelhos
+        ElegibilidadeEmprestimoDTO elegibilidade,
+        EmprestimoDTO emprestimoAtivo
 ) {}
