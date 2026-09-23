@@ -7,6 +7,7 @@ import com.ddo.torneios.request.AtualizarValoresClubeRequest;
 import com.ddo.torneios.request.ClubeRequest;
 import com.ddo.torneios.request.MultiplicarValoresRequest;
 import com.ddo.torneios.service.ClubeService;
+import com.ddo.torneios.service.InflacaoMercadoService;
 import com.ddo.torneios.service.MercadoFinanceiroService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -30,6 +31,9 @@ public class ClubeController {
 
     @Autowired
     private MercadoFinanceiroService mercadoFinanceiroService;
+
+    @Autowired
+    private InflacaoMercadoService inflacaoMercadoService;
 
     @PostMapping("/cadastrar")
     public ResponseEntity<?> cadastrarClube(@Valid @RequestBody ClubeRequest request) {
@@ -169,5 +173,16 @@ public class ClubeController {
     public ResponseEntity<MercadoStatusDTO> forcarAtualizacaoMercado() {
         mercadoFinanceiroService.forcarAtualizacaoAgora();
         return ResponseEntity.ok(mercadoFinanceiroService.consultarStatus());
+    }
+
+    @GetMapping("/mercado/inflacao/simular")
+    public ResponseEntity<InflacaoMercadoDTO> simularInflacao() {
+        return ResponseEntity.ok(inflacaoMercadoService.simular());
+    }
+
+    @PostMapping("/mercado/inflacao/aplicar")
+    @PreAuthorize("hasRole('PROPRIETARIO')")
+    public ResponseEntity<InflacaoMercadoDTO> aplicarInflacao() {
+        return ResponseEntity.ok(inflacaoMercadoService.aplicar());
     }
 }

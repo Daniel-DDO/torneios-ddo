@@ -353,4 +353,12 @@ public interface JogadorRepository extends JpaRepository<Jogador, String> {
     WHERE j.partidasJogadas > 0
 """)
     Double buscarMediaCartoesPorPartida();
+
+    @Query("""
+    SELECT j.saldoVirtual
+    FROM Jogador j
+    WHERE j.saldoVirtual IS NOT NULL
+      AND j.contaReivindicada = true
+""")
+    List<BigDecimal> buscarSaldosDeContasReivindicadas();
 }

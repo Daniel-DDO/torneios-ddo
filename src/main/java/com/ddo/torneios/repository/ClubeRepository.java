@@ -118,4 +118,20 @@ public interface ClubeRepository extends JpaRepository<Clube, String> {
     @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("UPDATE Clube c SET c.titulos = GREATEST(COALESCE(c.titulos, 0) - 1, 0) WHERE c.id = :id")
     void decrementarTitulos(@Param("id") String id);
+
+    @Modifying
+    @Query(value = """
+    UPDATE Clube c
+    SET c.valorAvaliado = CASE
+            WHEN (c.valorAvaliado * :multiplicador) < :piso THEN :piso
+            ELSE (c.valorAvaliado * :multiplicador)
+        END,
+        c.lanceMinimo = CASE
+            WHEN (c.valorAvaliado * :multiplicador) < :piso THEN (:piso * 0.5)
+            ELSE (c.valorAvaliado * :multiplicador * 0.5)
+        END
+    WHERE c.valorAvaliado IS NOT NULL
+    """)
+    int aplicarFatorInflacao(@Param("multiplicador") BigDecimal multiplicador, @Param("piso") BigDecimal piso);
+
 }
