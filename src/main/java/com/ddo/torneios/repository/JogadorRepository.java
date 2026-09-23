@@ -314,4 +314,13 @@ public interface JogadorRepository extends JpaRepository<Jogador, String> {
     @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("UPDATE Jogador j SET j.titulos = GREATEST(COALESCE(j.titulos, 0) - 1, 0) WHERE j.id = :id")
     void decrementarTitulos(@Param("id") String id);
+
+    @Query("""
+    SELECT new com.ddo.torneios.dto.JogadorEmprestimoProjecaoDTO(
+        j.id, j.nome, j.partidasJogadas, j.saldoVirtual, j.negativado, j.dataQuitacaoNegativacao
+    )
+    FROM Jogador j
+    WHERE j.id = :id
+    """)
+    Optional<JogadorEmprestimoProjecaoDTO> buscarProjecaoEmprestimoPorId(@Param("id") String id);
 }

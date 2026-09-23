@@ -114,6 +114,22 @@ public class Jogador implements UserDetails {
     @ColumnDefault("0")
     private Integer strikesRebaixamento;
 
+    /** true quando o saldoVirtual está negativo por causa de empréstimo não pago */
+    @Column(nullable = false, columnDefinition = "boolean default false")
+    private boolean negativado = false;
+
+    /** Quando o jogador ficou negativado pela primeira vez nesse ciclo */
+    private LocalDateTime dataNegativacao;
+
+    /** Quando o jogador voltou a ficar com saldo positivo depois de negativado.
+     *  Usado para saber se ele "foi negativado nos últimos 30 dias" mesmo já
+     *  estando com o nome limpo hoje. */
+    private LocalDateTime dataQuitacaoNegativacao;
+
+    /** true se o jogador já foi negativado alguma vez na vida (nome "sujo" historicamente) */
+    @Column(nullable = false, columnDefinition = "boolean default false")
+    private boolean jaFoiNegativadoAlgumaVez = false;
+
     public Jogador(String nome, String discord) {
         this.nome = nome;
         this.discord = discord;
