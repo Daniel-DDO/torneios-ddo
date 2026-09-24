@@ -12,6 +12,6 @@ public record InflacaoMercadoDTO(
         BigDecimal indicadorAnterior,
         BigDecimal crescimentoPercentual,
         BigDecimal multiplicadorAplicado,
-        Integer clubesAtualizados,
+        BigDecimal mediaEstrelas, Integer clubesAtualizados,
         LocalDateTime dataCalculo
 ) {}

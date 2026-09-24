@@ -134,4 +134,6 @@ public interface ClubeRepository extends JpaRepository<Clube, String> {
     """)
     int aplicarFatorInflacao(@Param("multiplicador") BigDecimal multiplicador, @Param("piso") BigDecimal piso);
 
+    @Query("SELECT AVG(c.estrelas) FROM Clube c WHERE c.estrelas IS NOT NULL")
+    BigDecimal buscarMediaEstrelas();
 }

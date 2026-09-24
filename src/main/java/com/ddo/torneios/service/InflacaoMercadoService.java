@@ -2,6 +2,7 @@ package com.ddo.torneios.service;
 
 import com.ddo.torneios.dto.InflacaoMercadoDTO;
 import com.ddo.torneios.exception.RegraNegocioException;
+import com.ddo.torneios.model.Clube;
 import com.ddo.torneios.model.EstadoMercado;
 import com.ddo.torneios.repository.ClubeRepository;
 import com.ddo.torneios.repository.EstadoMercadoRepository;
@@ -14,7 +15,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDateTime;
-import java.util.Collections;
 import java.util.List;
 
 @Slf4j
@@ -25,18 +25,31 @@ public class InflacaoMercadoService {
     @Autowired private ClubeRepository clubeRepository;
     @Autowired private EstadoMercadoRepository estadoMercadoRepository;
 
-    /** Piso mínimo de valorAvaliado de um clube, mesmo depois de qualquer ajuste (mesmo valor já usado no multiplicar manual) */
     private static final BigDecimal VALOR_PISO_CLUBE = new BigDecimal("40000");
 
     /**
-     * Quanto do crescimento do saldo dos jogadores é "repassado" pro preço dos
-     * clubes. 0.5 = metade do crescimento vira inflação. Se todo o dinheiro
-     * dobrasse (crescimento de 100%), os clubes subiriam só 50%.
+     * Quanto do crescimento do saldo dos jogadores é "repassado" pro preço BASE
+     * dos clubes. 0.5 = metade do crescimento vira inflação. Esse é o número
+     * médio do mercado — cada clube depois varia em cima disso (ver
+     * calcularFatorIndividual).
      */
     private static final BigDecimal FATOR_REPASSE = new BigDecimal("0.5");
 
-    /** Teto de inflação aplicada de uma vez só, pra nenhuma execução dar um salto absurdo */
+    /** Teto de inflação BASE aplicada de uma vez só, antes da variação por clube */
     private static final BigDecimal INFLACAO_MAXIMA_POR_EXECUCAO = new BigDecimal("0.15");
+
+    /**
+     * Quanto o desvio de estrelas de um clube em relação à média amplia ou
+     * reduz a inflação DELE especificamente. Ex: 0.6 = um clube com 50% mais
+     * estrelas que a média tem sua inflação amplificada em até 30%
+     * (0.5 * 0.6), sempre dentro do clamp abaixo.
+     */
+    private static final BigDecimal SENSIBILIDADE_ESTRELAS = new BigDecimal("0.6");
+
+    /** Nenhum clube recebe menos que 40% da inflação base... */
+    private static final BigDecimal FATOR_INDIVIDUAL_MINIMO = new BigDecimal("0.4");
+    /** ...nem mais que 160% dela. Garante variação sem exagero. */
+    private static final BigDecimal FATOR_INDIVIDUAL_MAXIMO = new BigDecimal("1.6");
 
     // ---------------------------------------------------------------------
     // SIMULAÇÃO (não persiste nada, não mexe nos clubes nem no baseline)
@@ -45,6 +58,7 @@ public class InflacaoMercadoService {
     @Transactional(readOnly = true)
     public InflacaoMercadoDTO simular() {
         Indicadores indicadores = calcularIndicadores();
+        BigDecimal mediaEstrelas = obterMediaEstrelas();
 
         EstadoMercado estadoAtual = estadoMercadoRepository.findById("GLOBAL").orElse(null);
 
@@ -52,7 +66,7 @@ public class InflacaoMercadoService {
                 || estadoAtual.getUltimoIndicadorSaldo().compareTo(BigDecimal.ZERO) <= 0) {
             return new InflacaoMercadoDTO(
                     false, "Ainda não existe uma medição anterior salva — a primeira execução real só define o ponto de partida, sem inflacionar nada.",
-                    indicadores.media(), indicadores.mediana(), indicadores.indicador(), null, null, null, null, LocalDateTime.now()
+                    indicadores.media(), indicadores.mediana(), indicadores.indicador(), null, null, null, mediaEstrelas, null, LocalDateTime.now()
             );
         }
 
@@ -62,16 +76,16 @@ public class InflacaoMercadoService {
         if (crescimento.compareTo(BigDecimal.ZERO) <= 0) {
             return new InflacaoMercadoDTO(
                     false, "O indicador de saldo não cresceu desde a última medição, então nenhuma inflação seria aplicada.",
-                    indicadores.media(), indicadores.mediana(), indicadores.indicador(), indicadorAnterior, crescimento, BigDecimal.ONE, 0, LocalDateTime.now()
+                    indicadores.media(), indicadores.mediana(), indicadores.indicador(), indicadorAnterior, crescimento, BigDecimal.ONE, mediaEstrelas, 0, LocalDateTime.now()
             );
         }
 
-        BigDecimal multiplicador = calcularMultiplicador(crescimento);
+        BigDecimal multiplicadorBase = calcularMultiplicadorBase(crescimento);
 
         return new InflacaoMercadoDTO(
-                false, "Simulação: se aplicada agora, os valores dos clubes subiriam " +
-                pct(multiplicador.subtract(BigDecimal.ONE)) + ".",
-                indicadores.media(), indicadores.mediana(), indicadores.indicador(), indicadorAnterior, crescimento, multiplicador, null, LocalDateTime.now()
+                false, "Simulação: se aplicada agora, os clubes subiriam em média " +
+                pct(multiplicadorBase.subtract(BigDecimal.ONE)) + " (variando por clube conforme as estrelas — veja o detalhe por clube).",
+                indicadores.media(), indicadores.mediana(), indicadores.indicador(), indicadorAnterior, crescimento, multiplicadorBase, mediaEstrelas, null, LocalDateTime.now()
         );
     }
 
@@ -82,6 +96,7 @@ public class InflacaoMercadoService {
     @Transactional
     public InflacaoMercadoDTO aplicar() {
         Indicadores indicadores = calcularIndicadores();
+        BigDecimal mediaEstrelas = obterMediaEstrelas();
 
         EstadoMercado estadoAtual = estadoMercadoRepository.findById("GLOBAL").orElse(null);
 
@@ -93,15 +108,14 @@ public class InflacaoMercadoService {
 
             return new InflacaoMercadoDTO(
                     false, "Ponto de partida do mercado definido. Nenhuma inflação foi aplicada nessa primeira execução — a próxima chamada já compara com esse valor.",
-                    indicadores.media(), indicadores.mediana(), indicadores.indicador(), null, null, null, 0, LocalDateTime.now()
+                    indicadores.media(), indicadores.mediana(), indicadores.indicador(), null, null, null, mediaEstrelas, 0, LocalDateTime.now()
             );
         }
 
         BigDecimal indicadorAnterior = estadoAtual.getUltimoIndicadorSaldo();
         BigDecimal crescimento = calcularCrescimentoPercentual(indicadores.indicador(), indicadorAnterior);
 
-        // O baseline sempre é atualizado pro indicador atual, suba ou desça,
-        // pra próxima comparação refletir o nível real de dinheiro em jogo.
+        // O baseline sempre é atualizado pro indicador atual, suba ou desça.
         estadoAtual.setUltimoIndicadorSaldo(indicadores.indicador());
         estadoAtual.setDataUltimaAplicacao(LocalDateTime.now());
 
@@ -111,28 +125,50 @@ public class InflacaoMercadoService {
 
             return new InflacaoMercadoDTO(
                     false, "O indicador de saldo não cresceu desde a última medição — nenhuma inflação foi aplicada.",
-                    indicadores.media(), indicadores.mediana(), indicadores.indicador(), indicadorAnterior, crescimento, BigDecimal.ONE, 0, LocalDateTime.now()
+                    indicadores.media(), indicadores.mediana(), indicadores.indicador(), indicadorAnterior, crescimento, BigDecimal.ONE, mediaEstrelas, 0, LocalDateTime.now()
             );
         }
 
-        BigDecimal multiplicador = calcularMultiplicador(crescimento);
+        BigDecimal multiplicadorBase = calcularMultiplicadorBase(crescimento);
+        BigDecimal inflacaoBase = multiplicadorBase.subtract(BigDecimal.ONE);
 
-        int clubesAtualizados = clubeRepository.aplicarFatorInflacao(multiplicador, VALOR_PISO_CLUBE);
+        // Aqui não dá pra usar um UPDATE em massa de uma linha só, porque cada
+        // clube tem um multiplicador diferente (depende das estrelas dele).
+        // Como Clube não tem coleções pesadas carregadas por padrão (conquistas
+        // é LAZY), buscar tudo e recalcular em memória é leve o suficiente.
+        List<Clube> clubes = clubeRepository.findAll().stream()
+                .filter(c -> c.getValorAvaliado() != null)
+                .toList();
 
-        estadoAtual.setUltimoMultiplicadorAplicado(multiplicador);
+        for (Clube clube : clubes) {
+            BigDecimal fatorIndividual = calcularFatorIndividual(clube.getEstrelas(), mediaEstrelas);
+            BigDecimal multiplicadorClube = BigDecimal.ONE.add(inflacaoBase.multiply(fatorIndividual));
+
+            BigDecimal novoValorAvaliado = clube.getValorAvaliado()
+                    .multiply(multiplicadorClube)
+                    .max(VALOR_PISO_CLUBE)
+                    .setScale(2, RoundingMode.HALF_EVEN);
+
+            clube.setValorAvaliado(novoValorAvaliado);
+            clube.atualizarLanceMinimo();
+        }
+
+        clubeRepository.saveAll(clubes);
+
+        estadoAtual.setUltimoMultiplicadorAplicado(multiplicadorBase);
         estadoMercadoRepository.save(estadoAtual);
 
-        log.info("[InflacaoMercadoService] Inflação aplicada: crescimento={}, multiplicador={}, clubes atualizados={}",
-                crescimento, multiplicador, clubesAtualizados);
+        log.info("[InflacaoMercadoService] Inflação aplicada: crescimento={}, multiplicadorBase={}, clubes atualizados={}",
+                crescimento, multiplicadorBase, clubes.size());
 
         return new InflacaoMercadoDTO(
-                true, "Inflação aplicada: os valores dos clubes subiram " + pct(multiplicador.subtract(BigDecimal.ONE)) + ".",
-                indicadores.media(), indicadores.mediana(), indicadores.indicador(), indicadorAnterior, crescimento, multiplicador, clubesAtualizados, LocalDateTime.now()
+                true, "Inflação aplicada: os clubes subiram em média " + pct(inflacaoBase) + " (variando por clube conforme as estrelas).",
+                indicadores.media(), indicadores.mediana(), indicadores.indicador(), indicadorAnterior, crescimento, multiplicadorBase, mediaEstrelas, clubes.size(), LocalDateTime.now()
         );
     }
 
     // ---------------------------------------------------------------------
-    // CÁLCULO
+    // CÁLCULO — indicador de dinheiro em circulação
     // ---------------------------------------------------------------------
 
     private record Indicadores(BigDecimal media, BigDecimal mediana, BigDecimal indicador) {}
@@ -147,8 +183,6 @@ public class InflacaoMercadoService {
         BigDecimal media = calcularMedia(saldos);
         BigDecimal mediana = calcularMediana(saldos);
 
-        // Combina média (sensível a outliers, "baleias") e mediana (mais realista pro jogador comum),
-        // pra um jogador rico sozinho não inflacionar o mercado inteiro sozinho.
         BigDecimal indicador = media.add(mediana).divide(BigDecimal.valueOf(2), 2, RoundingMode.HALF_EVEN);
 
         return new Indicadores(media, mediana, indicador);
@@ -180,10 +214,40 @@ public class InflacaoMercadoService {
                 .divide(indicadorAnterior, 6, RoundingMode.HALF_EVEN);
     }
 
-    private BigDecimal calcularMultiplicador(BigDecimal crescimentoPercentual) {
+    private BigDecimal calcularMultiplicadorBase(BigDecimal crescimentoPercentual) {
         BigDecimal inflacaoRepassada = crescimentoPercentual.multiply(FATOR_REPASSE);
         BigDecimal inflacaoLimitada = inflacaoRepassada.min(INFLACAO_MAXIMA_POR_EXECUCAO);
         return BigDecimal.ONE.add(inflacaoLimitada).setScale(4, RoundingMode.HALF_EVEN);
+    }
+
+    // ---------------------------------------------------------------------
+    // CÁLCULO — variação por clube (critério: estrelas em relação à média)
+    // ---------------------------------------------------------------------
+
+    private BigDecimal obterMediaEstrelas() {
+        BigDecimal media = clubeRepository.buscarMediaEstrelas();
+        return media != null ? media.setScale(2, RoundingMode.HALF_EVEN) : BigDecimal.ZERO;
+    }
+
+    /**
+     * Clubes com estrelas acima da média (mais cobiçados) sentem MAIS a
+     * inflação; clubes abaixo da média sentem MENOS. Nunca inverte o sinal
+     * da inflação base — só varia a intensidade, sempre dentro do clamp
+     * [FATOR_INDIVIDUAL_MINIMO, FATOR_INDIVIDUAL_MAXIMO].
+     */
+    private BigDecimal calcularFatorIndividual(BigDecimal estrelasClube, BigDecimal mediaEstrelas) {
+        if (estrelasClube == null || mediaEstrelas == null || mediaEstrelas.compareTo(BigDecimal.ZERO) <= 0) {
+            return BigDecimal.ONE;
+        }
+
+        BigDecimal desvio = estrelasClube.subtract(mediaEstrelas)
+                .divide(mediaEstrelas, 6, RoundingMode.HALF_EVEN);
+
+        BigDecimal fator = BigDecimal.ONE.add(desvio.multiply(SENSIBILIDADE_ESTRELAS));
+
+        if (fator.compareTo(FATOR_INDIVIDUAL_MINIMO) < 0) return FATOR_INDIVIDUAL_MINIMO;
+        if (fator.compareTo(FATOR_INDIVIDUAL_MAXIMO) > 0) return FATOR_INDIVIDUAL_MAXIMO;
+        return fator;
     }
 
     private String pct(BigDecimal fracao) {
