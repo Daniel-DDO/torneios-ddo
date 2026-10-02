@@ -1285,11 +1285,11 @@ public class JogadorService {
             }
         }
 
-        if (!reatribuicaoSimples.isEmpty()) {
-            lanceRepository.reatribuirJogador(reatribuicaoSimples, principal);
-        }
         if (!paraDeletar.isEmpty()) {
             lanceRepository.deletarPorIds(paraDeletar);
+        }
+        if (!reatribuicaoSimples.isEmpty()) {
+            lanceRepository.reatribuirJogador(reatribuicaoSimples, principal);
         }
     }
 
