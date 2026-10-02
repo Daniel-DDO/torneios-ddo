@@ -952,4 +952,72 @@ public interface PartidaRepository extends JpaRepository<Partida, String> {
             @Param("visitanteVoltaId") String visitanteVoltaId,
             @Param("etapaMataMata") FaseMataMata etapaMataMata
     );
+
+    @Query("""
+SELECT new com.ddo.torneios.dto.PartidaFinalDTO(
+    p.id, p.fase.id, p.tipoPartida, p.dataHora, p.realizada, p.wo, p.houveProrrogacao,
+    jm.id, jm.nome, jv.id, jv.nome,
+    p.golsMandante, p.golsVisitante,
+    p.penaltis.golsMandante, p.penaltis.golsVisitante,
+    p.linkPartida
+)
+FROM Partida p
+LEFT JOIN p.mandante m LEFT JOIN m.jogador jm
+LEFT JOIN p.visitante v LEFT JOIN v.jogador jv
+WHERE p.tipoPartida IN :tipos AND p.anulada = false
+ORDER BY p.dataHora DESC NULLS LAST
+""")
+    Page<PartidaFinalDTO> buscarFinais(@Param("tipos") List<TipoPartida> tipos, Pageable pageable);
+
+    @Query("""
+SELECT new com.ddo.torneios.dto.PartidaFinalDTO(
+    p.id, p.fase.id, p.tipoPartida, p.dataHora, p.realizada, p.wo, p.houveProrrogacao,
+    jm.id, jm.nome, jv.id, jv.nome,
+    p.golsMandante, p.golsVisitante,
+    p.penaltis.golsMandante, p.penaltis.golsVisitante,
+    p.linkPartida
+)
+FROM Partida p
+LEFT JOIN p.mandante m LEFT JOIN m.jogador jm
+LEFT JOIN p.visitante v LEFT JOIN v.jogador jv
+WHERE p.tipoPartida IN :tipos AND p.anulada = false AND p.realizada = true
+ORDER BY p.dataHora DESC NULLS LAST
+""")
+    Page<PartidaFinalDTO> buscarFinaisRealizadas(@Param("tipos") List<TipoPartida> tipos, Pageable pageable);
+
+    @Query("""
+SELECT new com.ddo.torneios.dto.PartidaFinalDTO(
+    p.id, p.fase.id, p.tipoPartida, p.dataHora, p.realizada, p.wo, p.houveProrrogacao,
+    jm.id, jm.nome, jv.id, jv.nome,
+    p.golsMandante, p.golsVisitante,
+    p.penaltis.golsMandante, p.penaltis.golsVisitante,
+    p.linkPartida
+)
+FROM Partida p
+LEFT JOIN p.mandante m LEFT JOIN m.jogador jm
+LEFT JOIN p.visitante v LEFT JOIN v.jogador jv
+WHERE p.tipoPartida IN :tipos AND p.anulada = false AND p.realizada = false
+ORDER BY p.dataHora ASC NULLS LAST
+""")
+    Page<PartidaFinalDTO> buscarFinaisPendentes(@Param("tipos") List<TipoPartida> tipos, Pageable pageable);
+
+    @Query("""
+SELECT new com.ddo.torneios.dto.PartidaFinalDTO(
+    p.id, p.fase.id, p.tipoPartida, p.dataHora, p.realizada, p.wo, p.houveProrrogacao,
+    jm.id, jm.nome, jv.id, jv.nome,
+    p.golsMandante, p.golsVisitante,
+    p.penaltis.golsMandante, p.penaltis.golsVisitante,
+    p.linkPartida
+)
+FROM Partida p
+LEFT JOIN p.mandante m LEFT JOIN m.jogador jm
+LEFT JOIN p.visitante v LEFT JOIN v.jogador jv
+WHERE p.tipoPartida IN :tipos AND p.anulada = false
+  AND (jm.id = :jogadorId OR jv.id = :jogadorId)
+ORDER BY p.dataHora DESC NULLS LAST
+""")
+    Page<PartidaFinalDTO> buscarFinaisPorJogador(
+            @Param("tipos") List<TipoPartida> tipos,
+            @Param("jogadorId") String jogadorId,
+            Pageable pageable);
 }
