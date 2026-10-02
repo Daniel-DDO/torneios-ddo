@@ -20,12 +20,12 @@ public class EconomiaService {
     private final JogadorClubeRepository jogadorClubeRepository;
     private final PartidaRepository partidaRepository;
 
-    private static final BigDecimal COTA_TV_FIXA = new BigDecimal("5000");
-    private static final BigDecimal VALOR_POR_ESTRELA_BILHETERIA = new BigDecimal("2000");
-    private static final BigDecimal PREMIO_VITORIA = new BigDecimal("10000");
-    private static final BigDecimal PREMIO_EMPATE = new BigDecimal("4000");
+    private static final BigDecimal COTA_TV_FIXA = new BigDecimal("6000");
+    private static final BigDecimal VALOR_POR_ESTRELA_BILHETERIA = new BigDecimal("2100");
+    private static final BigDecimal PREMIO_VITORIA = new BigDecimal("12000");
+    private static final BigDecimal PREMIO_EMPATE = new BigDecimal("6000");
     private static final BigDecimal CUSTO_BASE_ESTRELA = new BigDecimal("500");
-    private static final BigDecimal BONUS_ZEBRA_POR_ESTRELA = new BigDecimal("3000");
+    private static final BigDecimal BONUS_ZEBRA_POR_ESTRELA = new BigDecimal("4000");
     private static final BigDecimal FATOR_PUNICAO_GOLEADA = new BigDecimal("0.40");
 
     //piso mínimo

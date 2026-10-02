@@ -298,8 +298,8 @@ public class ClassificacaoService {
         Competicao competicao = fase.getTorneio().getCompeticao();
         int pctValor = percentualPremiacao(competicao);
 
-        BigDecimal premioCampeao = new BigDecimal("100000").multiply(BigDecimal.valueOf(pctValor).movePointLeft(2));
-        BigDecimal premioVice = new BigDecimal("60000").multiply(BigDecimal.valueOf(pctValor).movePointLeft(2));
+        BigDecimal premioCampeao = new BigDecimal("200000").multiply(BigDecimal.valueOf(pctValor).movePointLeft(2));
+        BigDecimal premioVice = new BigDecimal("120000").multiply(BigDecimal.valueOf(pctValor).movePointLeft(2));
 
         pagarPremiacaoFinal(vencedor, perdedor, premioCampeao, premioVice, fase);
         registrarLogDaFinal(partida, vencedor, perdedor, premioCampeao, premioVice, pctValor);
