@@ -8,6 +8,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.util.List;
+import java.util.Optional;
 
 public interface LeilaoRepository extends JpaRepository<Leilao, String> {
     boolean existsByTemporadaAndAtivoTrue(Temporada temporada);
@@ -24,4 +25,6 @@ public interface LeilaoRepository extends JpaRepository<Leilao, String> {
     """)
     List<LeilaoResumoDTO> listarResumoPorTemporada(@Param("temporadaId") String temporadaId);
 
+    @Query("select l.selecao from Leilao l where l.id = :id")
+    Optional<Boolean> findSelecaoById(@Param("id") String id);
 }

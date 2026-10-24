@@ -9,6 +9,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Slice;
+import org.springframework.data.domain.Sort;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -150,6 +153,12 @@ public class LeilaoService {
 
             ClubeLeilaoDTO clubeInfo = clubeRepository.buscarParaLeilao(item.clubeId())
                     .orElseThrow(() -> new RegraNegocioException("Clube inválido"));
+
+            if ((clubeInfo.ligaClube() == LigaClube.SELECAO) != leilao.isSelecao()) {
+                throw new RegraNegocioException(leilao.isSelecao()
+                        ? clubeInfo.nome() + " não é uma seleção e não pode receber lances neste leilão."
+                        : clubeInfo.nome() + " é uma seleção e não pode receber lances neste leilão.");
+            }
 
             if (item.valor().compareTo(clubeInfo.lanceMinimo()) < 0) {
                 throw new RegraNegocioException("Valor abaixo do mínimo para " + clubeInfo.nome());
@@ -586,5 +595,27 @@ public class LeilaoService {
                 .orElseThrow(() -> new RegraNegocioException("Leilão não encontrado"));
 
         return clubeRepository.buscarParaLeilao(termo.trim(), leilao.isSelecao(), PageRequest.of(0, 10));
+    }
+
+    private static final Set<String> SORTS_PERMITIDOS = Set.of("valorAvaliado", "estrelas", "nome", "lanceMinimo");
+
+    @Transactional(readOnly = true)
+    public PaginacaoDTO<ClubeLeilaoDTO> listarClubesDoLeilao(String leilaoId, Pageable pageable) {
+        boolean selecao = leilaoRepository.findSelecaoById(leilaoId)
+                .orElseThrow(() -> new RegraNegocioException("Leilão não encontrado"));
+
+        Sort sort = Sort.by(pageable.getSort().stream()
+                .filter(o -> SORTS_PERMITIDOS.contains(o.getProperty()))
+                .toList());
+        if (sort.isUnsorted()) sort = Sort.by(Sort.Direction.DESC, "valorAvaliado");
+        sort = sort.and(Sort.by("id")); // desempate: sem isso a paginação repete/pula itens com valor igual
+
+        Pageable seguro = PageRequest.of(pageable.getPageNumber(), Math.min(pageable.getPageSize(), 50), sort);
+
+        Slice<ClubeLeilaoDTO> slice = selecao
+                ? clubeRepository.listarSelecoesParaLeilao(seguro)
+                : clubeRepository.listarClubesParaLeilao(seguro);
+
+        return new PaginacaoDTO<>(slice.getContent(), slice.getNumber(), 0, 0, slice.getSize(), slice.isLast());
     }
 }

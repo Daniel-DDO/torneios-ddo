@@ -5,6 +5,9 @@ import com.ddo.torneios.request.IniciarLeilaoRequest;
 import com.ddo.torneios.service.LeilaoService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
@@ -113,5 +116,12 @@ public class LeilaoController {
             @PathVariable String leilaoId,
             @RequestParam String termo) {
         return ResponseEntity.ok(leilaoService.buscarClubesParaLeilao(leilaoId, termo));
+    }
+
+    @GetMapping("/{leilaoId}/clubes")
+    public ResponseEntity<PaginacaoDTO<ClubeLeilaoDTO>> listarClubesDoLeilao(
+            @PathVariable String leilaoId,
+            @PageableDefault(size = 20, sort = "valorAvaliado", direction = Sort.Direction.DESC) Pageable pageable) {
+        return ResponseEntity.ok(leilaoService.listarClubesDoLeilao(leilaoId, pageable));
     }
 }

@@ -5,6 +5,7 @@ import com.ddo.torneios.model.Clube;
 import com.ddo.torneios.model.LigaClube;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Slice;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -136,4 +137,20 @@ public interface ClubeRepository extends JpaRepository<Clube, String> {
 
     @Query("SELECT AVG(c.estrelas) FROM Clube c WHERE c.estrelas IS NOT NULL")
     BigDecimal buscarMediaEstrelas();
+
+    @Query("""
+    SELECT new com.ddo.torneios.dto.ClubeLeilaoDTO(
+        c.id, c.nome, c.nomeExtenso, c.imagem, c.sigla, c.lanceMinimo, c.valorAvaliado, c.ligaClube, c.estrelas)
+    FROM Clube c
+    WHERE c.ativo = true AND c.ligaClube = com.ddo.torneios.model.LigaClube.SELECAO
+""")
+    Slice<ClubeLeilaoDTO> listarSelecoesParaLeilao(Pageable pageable);
+
+    @Query("""
+    SELECT new com.ddo.torneios.dto.ClubeLeilaoDTO(
+        c.id, c.nome, c.nomeExtenso, c.imagem, c.sigla, c.lanceMinimo, c.valorAvaliado, c.ligaClube, c.estrelas)
+    FROM Clube c
+    WHERE c.ativo = true AND c.ligaClube <> com.ddo.torneios.model.LigaClube.SELECAO
+""")
+    Slice<ClubeLeilaoDTO> listarClubesParaLeilao(Pageable pageable);
 }
