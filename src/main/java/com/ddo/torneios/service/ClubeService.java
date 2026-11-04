@@ -1,9 +1,6 @@
 package com.ddo.torneios.service;
 
-import com.ddo.torneios.dto.ClubeLeilaoDTO;
-import com.ddo.torneios.dto.ClubeResumoDTO;
-import com.ddo.torneios.dto.MultiplicacaoResultadoDTO;
-import com.ddo.torneios.dto.PaginacaoDTO;
+import com.ddo.torneios.dto.*;
 import com.ddo.torneios.exception.ClubeExisteException;
 import com.ddo.torneios.exception.RegraNegocioException;
 import com.ddo.torneios.model.Clube;
@@ -271,5 +268,10 @@ public class ClubeService {
         if (atualizados == 0) {
             throw new EntityNotFoundException("Clube não encontrado ou sem valor avaliado definido: " + id);
         }
+    }
+
+    @Transactional(readOnly = true)
+    public List<ClubeOpcaoDTO> listarOpcoes() {
+        return clubeRepository.listarOpcoes();
     }
 }

@@ -1,15 +1,13 @@
 package com.ddo.torneios.controller;
 
 import com.ddo.torneios.dto.*;
-import com.ddo.torneios.request.ConfirmacaoSorteioRequest;
-import com.ddo.torneios.request.JogadorClubeRequest;
-import com.ddo.torneios.request.SorteioRequest;
-import com.ddo.torneios.request.TrocarJogadorClubePartidaRequest;
+import com.ddo.torneios.request.*;
 import com.ddo.torneios.service.JogadorClubeService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -125,5 +123,12 @@ public class JogadorClubeController {
 
         TrocaJogadorClubePartidaResultadoDTO resultado = jogadorClubeService.trocarJogadorNaPartida(request);
         return ResponseEntity.ok(resultado);
+    }
+
+    @PatchMapping("{id}/clube")
+    @PreAuthorize("hasAnyRole('PROPRIETARIO','DIRETOR')")
+    public InscricaoClubeAtualizadoDTO atualizarClube(
+            @PathVariable String id, @Valid @RequestBody AtualizarClubeInscricaoRequest req) {
+        return jogadorClubeService.atualizarClube(id, req.clubeId());
     }
 }

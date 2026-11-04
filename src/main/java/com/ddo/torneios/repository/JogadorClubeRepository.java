@@ -185,4 +185,8 @@ public interface JogadorClubeRepository extends JpaRepository<JogadorClube, Stri
     WHERE jc.id = :id
     """)
     Optional<JogadorClubeBaseDTO> buscarBasePorId(@Param("id") String id);
+
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("UPDATE JogadorClube jc SET jc.clube.id = :clubeId WHERE jc.id = :id")
+    int atualizarClube(@Param("id") String id, @Param("clubeId") String clubeId);
 }

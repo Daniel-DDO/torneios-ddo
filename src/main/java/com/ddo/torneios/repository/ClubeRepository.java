@@ -153,4 +153,14 @@ public interface ClubeRepository extends JpaRepository<Clube, String> {
     WHERE c.ativo = true AND c.ligaClube <> com.ddo.torneios.model.LigaClube.SELECAO
 """)
     Slice<ClubeLeilaoDTO> listarClubesParaLeilao(Pageable pageable);
+
+    @Query("select new com.ddo.torneios.dto.ClubeOpcaoDTO(c.id, c.nome, c.sigla, c.imagem) " +
+            "from Clube c where c.ativo = true order by c.nome")
+    List<ClubeOpcaoDTO> listarOpcoes();
+
+    @Query("select new com.ddo.torneios.dto.InscricaoClubeAtualizadoDTO(:inscricaoId, c.id, c.nome, c.sigla, c.imagem) " +
+            "from Clube c where c.id = :clubeId and c.ativo = true")
+    Optional<InscricaoClubeAtualizadoDTO> buscarParaInscricao(
+            @Param("inscricaoId") String inscricaoId, @Param("clubeId") String clubeId);
+
 }

@@ -11,8 +11,10 @@ import com.ddo.torneios.request.TrocarJogadorClubePartidaRequest;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
@@ -588,5 +590,22 @@ public class JogadorClubeService {
         } else {
             jogadorClubeRepository.delete(novoJC);
         }
+    }
+
+    @Transactional
+    public InscricaoClubeAtualizadoDTO atualizarClube(String id, String clubeId) {
+        JogadorClubeBaseDTO base = jogadorClubeRepository.buscarBasePorId(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Jogador não encontrado na temporada"));
+
+        InscricaoClubeAtualizadoDTO dto = clubeRepository.buscarParaInscricao(id, clubeId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Clube não encontrado ou inativo"));
+
+        if (base.clubeId().equals(clubeId)) return dto;
+
+        if (jogadorClubeRepository.existsByClubeIdAndTemporadaId(clubeId, base.temporadaId()))
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Esse clube já está em uso nesta temporada");
+
+        jogadorClubeRepository.atualizarClube(id, clubeId);
+        return dto;
     }
 }

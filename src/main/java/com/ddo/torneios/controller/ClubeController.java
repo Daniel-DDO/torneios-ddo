@@ -185,4 +185,7 @@ public class ClubeController {
     public ResponseEntity<InflacaoMercadoDTO> aplicarInflacao() {
         return ResponseEntity.ok(inflacaoMercadoService.aplicar());
     }
+
+    @GetMapping("/resumo")
+    public List<ClubeOpcaoDTO> opcoes() { return clubeService.listarOpcoes(); }
 }
