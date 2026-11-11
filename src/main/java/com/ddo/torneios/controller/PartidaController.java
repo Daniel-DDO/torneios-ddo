@@ -236,13 +236,13 @@ public class PartidaController {
     }
 
     @PostMapping("/{id}/anular")
-    @PreAuthorize("hasRole('PROPRIETARIO')")
+    @PreAuthorize("hasAnyRole('PROPRIETARIO', 'DIRETOR')")
     public ResponseEntity<PartidaDTO> anular(@PathVariable String id, @RequestBody AnularPartidaRequest request) {
         return ResponseEntity.ok(partidaService.anularPartida(id, request.motivo()));
     }
 
     @PostMapping("/{id}/desanular")
-    @PreAuthorize("hasRole('PROPRIETARIO')")
+    @PreAuthorize("hasAnyRole('PROPRIETARIO', 'DIRETOR')")
     public ResponseEntity<PartidaDTO> desanular(@PathVariable String id) {
         return ResponseEntity.ok(partidaService.desanularPartida(id));
     }
