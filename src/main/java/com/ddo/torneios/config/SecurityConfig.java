@@ -124,6 +124,9 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.PATCH, "/clube/{id}/mercado/multiplicar").hasAuthority("PROPRIETARIO")
                         .requestMatchers(HttpMethod.POST, "/clube/mercado/forcar-atualizacao").hasAuthority("PROPRIETARIO")
 
+                        .requestMatchers(HttpMethod.GET, "/players/top-titles").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/transactions").permitAll()
+
                         .anyRequest().permitAll()
                 );
 
