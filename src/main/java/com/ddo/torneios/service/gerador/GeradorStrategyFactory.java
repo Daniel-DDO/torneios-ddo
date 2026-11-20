@@ -4,7 +4,6 @@ import com.ddo.torneios.model.AlgoritmoGeracaoLiga;
 import com.ddo.torneios.model.AlgoritmoGeracaoMataMata;
 import com.ddo.torneios.model.FaseTorneio;
 import com.ddo.torneios.model.TipoTorneio;
-import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -19,6 +18,8 @@ public class GeradorStrategyFactory {
     private GeradorLigaSuicaStrategy suicaStrategy;
     @Autowired
     private GeradorFaseGruposStrategy gruposStrategy;
+    @Autowired
+    private GeradorLigaClasStrategy ligaClasStrategy;
 
     @Autowired
     private GeradorMataMataRankingStrategy rankingStrategy;
@@ -32,6 +33,8 @@ public class GeradorStrategyFactory {
     private GeradorCopaRealStrategy geradorCopaRealStrategy;
     @Autowired
     private GeradorCopaLigaStrategy geradorCopaLigaStrategy;
+    @Autowired
+    private GeradorMataMataClasStrategy mataMataClasStrategy;
 
     public GeradorPartidasStrategy<?> getStrategy(FaseTorneio fase) {
         if (fase.getTipoTorneio() == TipoTorneio.PONTOS_CORRIDOS) {
@@ -47,6 +50,7 @@ public class GeradorStrategyFactory {
             case ALEATORIO_BALANCEADO -> balanceadaStrategy;
             case SISTEMA_SUICO -> suicaStrategy;
             case FASE_GRUPOS -> gruposStrategy;
+            case TORNEIO_CLAS -> ligaClasStrategy;
         };
     }
 
@@ -58,6 +62,7 @@ public class GeradorStrategyFactory {
             case POTES_MANUAIS -> potesManuaisStrategy;
             case COPA_REAL_DDO -> geradorCopaRealStrategy;
             case COPA_LIGA -> geradorCopaLigaStrategy;
+            case TORNEIO_CLAS -> mataMataClasStrategy;
         };
     }
 }

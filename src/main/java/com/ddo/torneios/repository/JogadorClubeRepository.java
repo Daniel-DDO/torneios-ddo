@@ -189,4 +189,8 @@ public interface JogadorClubeRepository extends JpaRepository<JogadorClube, Stri
     @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("UPDATE JogadorClube jc SET jc.clube.id = :clubeId WHERE jc.id = :id")
     int atualizarClube(@Param("id") String id, @Param("clubeId") String clubeId);
+
+    @Query("SELECT new com.ddo.torneios.dto.JogadorClubeTemporadaDTO(jc.id, jc.temporada.id, jc.statusTemporada) " +
+            "FROM JogadorClube jc WHERE jc.id IN :ids")
+    List<JogadorClubeTemporadaDTO> buscarTemporadas(@Param("ids") List<String> ids);
 }

@@ -5,5 +5,6 @@ public enum AlgoritmoGeracaoLiga {
     TODOS_CONTRA_TODOS_UNICO,       //ex: metade de uma LaLiga
     FASE_GRUPOS,                    //ex: fase de grupos
     SISTEMA_SUICO,                  //ex: xadrez/e-sports
-    ALEATORIO_BALANCEADO            //ex: fase de liga UCL
-}
+    ALEATORIO_BALANCEADO,           //ex: fase de liga UCL
+    TORNEIO_CLAS                    //Torneio de Equipes
+    }

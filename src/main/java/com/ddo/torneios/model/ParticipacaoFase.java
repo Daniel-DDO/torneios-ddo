@@ -10,9 +10,14 @@ import java.util.List;
 @Getter
 @Setter
 @Entity
-@Table(uniqueConstraints = {
-        @UniqueConstraint(columnNames = {"fase_id", "jogador_clube_id"})
-})
+@Table(
+        uniqueConstraints = {
+                @UniqueConstraint(columnNames = {"fase_id", "jogador_clube_id"})
+        },
+        indexes = {
+                @Index(name = "idx_participacao_fase_equipe", columnList = "fase_id, equipe_id")
+        }
+)
 public class ParticipacaoFase {
 
     @Id
@@ -26,6 +31,11 @@ public class ParticipacaoFase {
     @ManyToOne
     @JoinColumn(name = "jogador_clube_id", nullable = false)
     private JogadorClube jogadorClube;
+
+    //nullable, as outras fases continuam funcionando
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "equipe_id")
+    private Equipe equipe;
 
     private Integer pontos = 0;
     private Integer partidasJogadas = 0;
@@ -41,7 +51,7 @@ public class ParticipacaoFase {
 
     private Integer posicaoClassificacao;
 
-    private String grupo; //para fase de grupos
+    private String grupo;
 
     @ElementCollection
     @CollectionTable(name = "participacao_fase_historico_jc", joinColumns = @JoinColumn(name = "participacao_fase_id"))

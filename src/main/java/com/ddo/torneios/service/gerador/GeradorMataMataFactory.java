@@ -25,7 +25,9 @@ public class GeradorMataMataFactory {
                 estrategias.put(AlgoritmoGeracaoMataMata.POTES_MANUAIS, strategy);
             } else if (strategy instanceof GeradorCopaLigaStrategy) {
                 estrategias.put(AlgoritmoGeracaoMataMata.COPA_LIGA, strategy);
-            }
+            } else if (strategy instanceof GeradorMataMataClasStrategy) {
+            estrategias.put(AlgoritmoGeracaoMataMata.TORNEIO_CLAS, strategy);
+        }
         }
     }
 

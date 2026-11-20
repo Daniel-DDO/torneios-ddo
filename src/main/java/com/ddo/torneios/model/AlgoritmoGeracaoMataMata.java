@@ -6,5 +6,6 @@ public enum AlgoritmoGeracaoMataMata {
     SORTEIO_DIRIGIDO,   //Pote A (melhores) x Pote B (piores)
     POTES_MANUAIS,      //Pote a e b com escolha manual
     COPA_REAL_DDO,      //Copa Real
-    COPA_LIGA           //Copa Liga
+    COPA_LIGA,          //Copa Liga
+    TORNEIO_CLAS        //Torneio de Equipes
 }

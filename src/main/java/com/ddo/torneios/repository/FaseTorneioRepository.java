@@ -1,5 +1,6 @@
 package com.ddo.torneios.repository;
 
+import com.ddo.torneios.dto.FaseRefDTO;
 import com.ddo.torneios.model.FaseTorneio;
 import com.ddo.torneios.model.ZonaFase;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -19,4 +20,7 @@ public interface FaseTorneioRepository extends JpaRepository<FaseTorneio, String
 
     @Query("SELECT f FROM FaseTorneio f LEFT JOIN FETCH f.zonas WHERE f.id = :faseId")
     Optional<FaseTorneio> buscarComZonas(@Param("faseId") String faseId);
+
+    @Query("SELECT new com.ddo.torneios.dto.FaseRefDTO(f.torneio.id, f.torneio.temporada.id) FROM FaseTorneio f WHERE f.id = :id")
+    Optional<FaseRefDTO> buscarRef(@Param("id") String id);
 }

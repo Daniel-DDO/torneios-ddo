@@ -127,6 +127,9 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/players/top-titles").permitAll()
                         .requestMatchers(HttpMethod.GET, "/transactions").permitAll()
 
+                        .requestMatchers(HttpMethod.GET, "/equipe/torneio/**", "/equipe/fase/*/tabelao").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/equipe/*", "/equipe/*/fase/*").permitAll()
+                        .requestMatchers("/equipe/**").authenticated()
                         .anyRequest().permitAll()
                 );
 

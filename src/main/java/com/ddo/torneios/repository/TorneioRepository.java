@@ -8,6 +8,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface TorneioRepository extends JpaRepository<Torneio, String> {
@@ -27,4 +28,8 @@ public interface TorneioRepository extends JpaRepository<Torneio, String> {
     ORDER BY t.nome ASC
     """)
     List<TorneioDTO> buscarResumoPorTemporada(@Param("temporadaId") String temporadaId);
+
+    @Query("SELECT t.temporada.id FROM Torneio t WHERE t.id = :id")
+    Optional<String> buscarTemporadaId(@Param("id") String id);
+
 }
