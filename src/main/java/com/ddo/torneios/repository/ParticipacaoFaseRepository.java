@@ -135,8 +135,11 @@ WHERE p.fase.id = :faseId AND p.equipe IS NOT NULL
 
     @Query("""
 SELECT new com.ddo.torneios.dto.ParticipacaoEquipeDTO(
-    p.id, p.jogadorClube.id, p.equipe.id, p.fase.id, p.jogadorClube.jogador.id)
-FROM ParticipacaoFase p WHERE p.fase.id = :faseId AND p.jogadorClube.id IN :jcIds
+    p.id, jc.id, e.id, p.fase.id, jc.jogador.id)
+FROM ParticipacaoFase p
+JOIN p.jogadorClube jc
+LEFT JOIN p.equipe e
+WHERE p.fase.id = :faseId AND jc.id IN :jcIds
 """)
     List<ParticipacaoEquipeDTO> buscarPorFaseEJogadorClubes(@Param("faseId") String faseId, @Param("jcIds") List<String> jcIds);
 
