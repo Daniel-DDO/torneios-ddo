@@ -99,4 +99,27 @@ public class EquipeController {
     public ResponseEntity<EquipeTabelaoDTO> detalhe(@PathVariable String id, @PathVariable String faseId) {
         return ResponseEntity.ok(consulta.detalhe(faseId, id));
     }
+
+    @PostMapping(value = "/imagem", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PreAuthorize("hasAnyAuthority('PROPRIETARIO', 'DIRETOR')")
+    public ResponseEntity<?> uploadImagem(@RequestParam("file") MultipartFile file) {
+        if (file == null || file.isEmpty()) {
+            return ResponseEntity.badRequest().body(Map.of("message", "Nenhum arquivo enviado."));
+        }
+        if (file.getSize() > MAX_IMAGEM_BYTES) {
+            return ResponseEntity.badRequest().body(Map.of("message", "A imagem deve ter no máximo 2 MB."));
+        }
+        String contentType = file.getContentType();
+        if (contentType == null || !contentType.startsWith("image/")) {
+            return ResponseEntity.badRequest().body(Map.of("message", "Envie um arquivo de imagem."));
+        }
+
+        try {
+            String url = imgBBService.uploadImagem(file);
+            return ResponseEntity.ok(Map.of("url", url));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.BAD_GATEWAY)
+                    .body(Map.of("message", "Falha ao enviar a imagem. Tente novamente."));
+        }
+    }
 }
