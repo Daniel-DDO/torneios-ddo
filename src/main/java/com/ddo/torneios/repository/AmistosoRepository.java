@@ -96,6 +96,54 @@ public interface AmistosoRepository extends JpaRepository<Amistoso, String> {
     """)
     Page<AmistosoDTO> listarPorJogador(@Param("jogadorId") String jogadorId, Pageable pageable);
 
+    @Query(value = """
+    SELECT new com.ddo.torneios.dto.AmistosoDTO(
+        a.id,
+        new com.ddo.torneios.dto.AmistosoLadoDTO(jm.id, jm.nome, jm.imagem, cm.id, cm.nome, cm.imagem, cm.sigla),
+        new com.ddo.torneios.dto.AmistosoLadoDTO(jv.id, jv.nome, jv.imagem, cv.id, cv.nome, cv.imagem, cv.sigla),
+        a.dataHora, a.realizada, a.wo, a.golsMandante, a.golsVisitante,
+        a.cartoesAmarelosMandante, a.cartoesVermelhosMandante,
+        a.cartoesAmarelosVisitante, a.cartoesVermelhosVisitante,
+        a.receitaMandante, a.receitaVisitante, a.linkPartida, a.criadoEm, a.registradoEm
+    )
+    FROM Amistoso a
+    JOIN a.jogadorMandante jm JOIN a.clubeMandante cm
+    JOIN a.jogadorVisitante jv JOIN a.clubeVisitante cv
+    WHERE (jm.id = :jogadorId OR jv.id = :jogadorId)
+      AND a.realizada = true
+    ORDER BY a.registradoEm DESC, a.criadoEm DESC
+    """,
+            countQuery = """
+    SELECT count(a) FROM Amistoso a
+    WHERE (a.jogadorMandante.id = :jogadorId OR a.jogadorVisitante.id = :jogadorId)
+      AND a.realizada = true
+    """)
+    Page<AmistosoDTO> listarRealizadasPorJogador(@Param("jogadorId") String jogadorId, Pageable pageable);
+
+    @Query(value = """
+    SELECT new com.ddo.torneios.dto.AmistosoDTO(
+        a.id,
+        new com.ddo.torneios.dto.AmistosoLadoDTO(jm.id, jm.nome, jm.imagem, cm.id, cm.nome, cm.imagem, cm.sigla),
+        new com.ddo.torneios.dto.AmistosoLadoDTO(jv.id, jv.nome, jv.imagem, cv.id, cv.nome, cv.imagem, cv.sigla),
+        a.dataHora, a.realizada, a.wo, a.golsMandante, a.golsVisitante,
+        a.cartoesAmarelosMandante, a.cartoesVermelhosMandante,
+        a.cartoesAmarelosVisitante, a.cartoesVermelhosVisitante,
+        a.receitaMandante, a.receitaVisitante, a.linkPartida, a.criadoEm, a.registradoEm
+    )
+    FROM Amistoso a
+    JOIN a.jogadorMandante jm JOIN a.clubeMandante cm
+    JOIN a.jogadorVisitante jv JOIN a.clubeVisitante cv
+    WHERE (jm.id = :jogadorId OR jv.id = :jogadorId)
+      AND a.realizada = false
+    ORDER BY a.dataHora ASC NULLS LAST, a.criadoEm ASC
+    """,
+            countQuery = """
+    SELECT count(a) FROM Amistoso a
+    WHERE (a.jogadorMandante.id = :jogadorId OR a.jogadorVisitante.id = :jogadorId)
+      AND a.realizada = false
+    """)
+    Page<AmistosoDTO> listarPendentesPorJogador(@Param("jogadorId") String jogadorId, Pageable pageable);
+
     @Query("""
     SELECT new com.ddo.torneios.dto.AmistosoEstatisticaDTO(
         COUNT(a),

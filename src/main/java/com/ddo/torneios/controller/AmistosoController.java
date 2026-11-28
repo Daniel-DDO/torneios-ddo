@@ -9,7 +9,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
-// Não existe DELETE de propósito: amistoso não pode ser excluído.
 @RestController
 @RequestMapping("/amistosos")
 public class AmistosoController {
@@ -45,12 +44,14 @@ public class AmistosoController {
         return ResponseEntity.ok(amistosoService.listar(realizada, pagina, tamanho));
     }
 
+    // ?realizada=true (jogados) | false (agendados); sem parâmetro lista todos do jogador
     @GetMapping("/jogador/{jogadorId}")
     public ResponseEntity<PaginacaoDTO<AmistosoDTO>> listarPorJogador(
             @PathVariable String jogadorId,
+            @RequestParam(required = false) Boolean realizada,
             @RequestParam(defaultValue = "0") int pagina,
             @RequestParam(defaultValue = "20") int tamanho) {
-        return ResponseEntity.ok(amistosoService.listarPorJogador(jogadorId, pagina, tamanho));
+        return ResponseEntity.ok(amistosoService.listarPorJogador(jogadorId, realizada, pagina, tamanho));
     }
 
     @GetMapping("/jogador/{jogadorId}/estatisticas")

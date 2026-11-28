@@ -139,8 +139,17 @@ public class AmistosoService {
     }
 
     @Transactional(readOnly = true)
-    public PaginacaoDTO<AmistosoDTO> listarPorJogador(String jogadorId, int pagina, int tamanho) {
-        return montar(amistosoRepository.listarPorJogador(jogadorId, PageRequest.of(pagina, limitar(tamanho))));
+    public PaginacaoDTO<AmistosoDTO> listarPorJogador(String jogadorId, Boolean realizada, int pagina, int tamanho) {
+        PageRequest pr = PageRequest.of(pagina, limitar(tamanho));
+        Page<AmistosoDTO> page;
+        if (realizada == null) {
+            page = amistosoRepository.listarPorJogador(jogadorId, pr);
+        } else if (realizada) {
+            page = amistosoRepository.listarRealizadasPorJogador(jogadorId, pr);
+        } else {
+            page = amistosoRepository.listarPendentesPorJogador(jogadorId, pr);
+        }
+        return montar(page);
     }
 
     @Transactional(readOnly = true)
